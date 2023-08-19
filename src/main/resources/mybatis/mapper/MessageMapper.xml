@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="edu.hniu.imchatroom.mapper.MessageMapper">
+
+    <sql id="private_message_column">
+        `pr_id`, `send_id`, `receive_id`, `content`, `send_time`
+    </sql>
+
+    <resultMap id="PrivateMessageResultMap" type="edu.hniu.imchatroom.model.bean.PrivateMessage">
+        <id column="pr_id" property="prId" />
+        <result column="content" property="content" />
+        <result column="send_time" property="sendTime" />
+        <association property="sendUser" column="send_id" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById" />
+        <association property="receiveUser" column="receive_id" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById" />
+    </resultMap>
+
+<!--    List<PrivateMessage> selectPrivateMessages(@Param("privateMessage") PrivateMessage privateMessage);-->
+    <select id="selectPrivateMessages" resultMap="PrivateMessageResultMap">
+        SELECT
+            <include refid="private_message_column" />, `display_status`
+        FROM `private_message`
+        WHERE `display_status` = '0' AND (
+                (`send_id` = #{privateMessage.sendUser.uId } AND `receive_id` = #{privateMessage.receiveUser.uId })
+            OR
+                (`send_id` = #{privateMessage.receiveUser.uId } AND `receive_id` = #{privateMessage.sendUser.uId })
+        )
+        ORDER BY `send_time` ASC
+    </select>
+
+<!--    Integer insertPriMsg(@Param("privateMessage") PrivateMessage privateMessage);-->
+    <insert id="insertPriMsg" useGeneratedKeys="true" keyProperty="prId">
+        INSERT INTO `private_message`
+            (`send_id`, `receive_id`, `content`, `send_time`)
+        VALUES
+            (#{privateMessage.sendUser.uId }, #{privateMessage.receiveUser.uId },
+             #{privateMessage.content }, #{privateMessage.sendTime })
+    </insert>
+</mapper>

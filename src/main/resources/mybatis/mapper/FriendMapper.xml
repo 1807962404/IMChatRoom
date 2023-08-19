@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="edu.hniu.imchatroom.mapper.FriendMapper">
+
+    <sql id="friendship_column">
+        `fs_id`, `host_id`, `friend_id`, `remark`, `desc`, `fs_status`, `apply_time`
+    </sql>
+    <sql id="friend_column">
+        `f_id`, `fs_id`, `f_status`, `make_time`
+    </sql>
+
+    <resultMap id="FriendShipResultMap" type="edu.hniu.imchatroom.model.bean.FriendShip">
+        <id column="fs_id" property="fsId" />
+        <result column="remark" property="remark" />
+        <result column="desc" property="desc" />
+        <result column="fs_status" property="fsStatus" />
+        <result column="apply_time" property="applyTime" />
+        <result column="display_status" property="displayStatus" />
+        <association property="hostUser" column="host_id" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById" />
+        <association property="friendUser" column="friend_id" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById" />
+    </resultMap>
+
+    <resultMap id="FriendResultMap" type="edu.hniu.imchatroom.model.bean.Friend">
+        <id column="f_id" property="fId" />
+        <result column="f_status" property="fStatus" />
+        <result column="make_time" property="makeTime" />
+        <result column="display_status" property="displayStatus" />
+        <association property="friendShip" column="fs_id" select="edu.hniu.imchatroom.mapper.FriendMapper.selectFriendShipByFsId" />
+    </resultMap>
+
+    <sql id="AllFriendShipResult">
+        SELECT
+            <include refid="friendship_column" />, `display_status`
+        FROM `friendship`
+    </sql>
+
+    <sql id="AllFriendResult">
+        SELECT
+            <include refid="friend_column" />, `display_status`
+        FROM `friend`
+    </sql>
+
+<!--    FriendShip selectFriendShip(@Param("friendShip") FriendShip friendShip);-->
+    <select id="selectFriendShip" resultMap="FriendShipResultMap">
+        <include refid="AllFriendShipResult" />
+        WHERE `display_status` = '0' AND (
+                (`host_id` = #{friendShip.hostUser.uId } AND `friend_id` = #{friendShip.friendUser.uId })
+            OR
+                (`host_id` = #{friendShip.friendUser.uId } AND `friend_id` = #{friendShip.hostUser.uId })
+        )
+        <if test="null != friendShip.fsStatus and '' != friendShip.fsStatus">
+            AND `fs_status` = #{friendShip.fsStatus }
+        </if>
+    </select>
+
+<!--    FriendShip selectFriendShipByFsId(@Param("fsId") Integer fsId);-->
+    <select id="selectFriendShipByFsId" resultMap="FriendShipResultMap">
+        <include refid="AllFriendShipResult" />
+        WHERE `fs_id` = #{fsId } AND `display_status` = '0'
+    </select>
+
+<!--    List<Friend> selectFriendsByUId(@Param("uId") Integer uId);-->
+    <select id="selectFriendsByUId" resultMap="FriendResultMap">
+        SELECT
+            *
+        FROM `friend`
+        LEFT JOIN (
+            <include refid="AllFriendShipResult" />
+            WHERE `display_status` = '0' AND `fs_status` = '0' AND
+                (`host_id` = #{uId } OR `friend_id` = #{uId })
+            )
+        AS `result` USING(`fs_id`)
+        WHERE `friend`.`display_status` = '0' AND `f_status` = '0'
+    </select>
+
+    <!--    Integer insertFriendShip(@Param("friendShip") FriendShip friendShip);-->
+    <insert id="insertFriendShip">
+        INSERT INTO `friendship`
+            (`host_id`, `friend_id`, `remark`, `fs_status`, `apply_time`, `display_status`)
+        VALUES
+            (#{friendShip.hostUser.uId }, #{friendShip.friendUser.uId }, #{friendShip.friendUser.nickname },
+             #{friendShip.fsStatus }, #{friendShip.applyTime }, #{friendShip.displayStatus })
+    </insert>
+
+<!--    int updateFriendShip(@Param("friendShip") FriendShip friendShip);-->
+    <update id="updateFriendShip">
+        UPDATE `friendship`
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="null != friendShip.remark and '' != friendShip.remark">
+                `remark` = #{friendShip.remark },
+            </if>
+            <if test="null != friendShip.fsStatus and '' != friendShip.fsStatus">
+                `fs_status` = #{friendShip.fsStatus },
+            </if>
+            <if test="null != friendShip.displayStatus and '' != friendShip.displayStatus">
+                `display_status` = #{friendShip.displayStatus },
+            </if>
+        </trim>
+        WHERE `display_status` = '0' AND
+              `fs_id` = #{friendShip.fsId }
+    </update>
+
+<!--    int insertFriend(@Param("newFriend") Friend newFriend);-->
+    <insert id="insertFriend">
+        INSERT INTO `friend`
+            (`fs_id`, `f_status`, `make_time`, `display_status`)
+        VALUES
+            (#{newFriend.friendShip.fsId }, #{newFriend.fStatus }, #{newFriend.makeTime }, #{newFriend.displayStatus })
+    </insert>
+
+<!--    int updateFriend(@Param("friend") Friend friend);-->
+    <update id="updateFriend">
+        UPDATE `friend`
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="null != friend.fStatus and '' != friend.fStatus">
+                `f_status` = #{friend.fStatus },
+            </if>
+            <if test="null != friend.displayStatus and '' != friend.displayStatus">
+                `display_status` = #{friend.displayStatus },
+            </if>
+        </trim>
+        WHERE `display_status` = '0' AND
+        `fs_id` = #{friend.friendShip.fsId }
+    </update>
+</mapper>

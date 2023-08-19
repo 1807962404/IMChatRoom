@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登陆/注册页</title>
+  <link rel="icon" th:href="@{/images/favicon.ico }" type="image/x-icon">
+  <link rel="stylesheet" th:href="@{/css/sign.css }">
+
+  <!--用于消息弹窗
+    该css是引用 iconfont.cn 的一些字体图标。官方地址： https://www.iconfont.cn/ -->
+  <link rel="stylesheet" href="http://at.alicdn.com/t/font_1117508_wxidm5ry7od.css">
+  <link rel="stylesheet" th:href="@{/css/message.css }">
+  <script th:src="@{/js/message.js }"></script>
+
+  <!--ajax实现form表单提交所需js库-->
+  <script src="http://libs.baidu.com/jquery/2.1.4/jquery.min.js"></script>
+</head>
+
+<body>
+<!-- login/register container -->
+<div class="container">
+  <script type="text/javascript">
+    window.onload = () => {
+      var verifyCodeToSignIn = document.getElementsByClassName('verifyCode')[1];
+      changeCheckCode(verifyCodeToSignIn, true)   // 加载验证码
+    }
+  </script>
+
+  <!-- register -->
+  <div class="form-container sign-up-container">
+    <div class="form" id="signup">
+      <h2>注册</h2>
+      <label class="warning_words error_nickname"></label>
+      <input type="text" name="nickname" id="nickname" onblur="checkNicknameVal(this.value)" placeholder="请输入昵称..." required>
+      <label class="warning_words error_email"></label>
+      <input type="email" name="email" onblur="checkEmailVal(this.value, false)" placeholder="请输入邮箱地址..." required>
+      <label class="warning_words error_pwd"></label>
+      <input type="password" name="password" onblur="checkPasswordVal(this.value, false)" placeholder="请输入密码..." required>
+      <label class="warning_words error_code"></label>
+      <input name="verifyCode" type="text" onblur="checkVerifyCodeVal(this.value, false)" placeholder="请输入验证码..." autocomplete="off" required>
+      <!--        时间戳标识符-->
+      <input type="hidden" name="identify" class="identify" />
+      <span><img class="verifyCode shrink" src="verifyCode" alt="点击切换验证码" onclick="changeCheckCode(this, false)"></span><br />
+      <button class="signUp shrink" onclick="return doSignUp()">注册</button>
+    </div>
+  </div>
+
+  <!-- login -->
+  <div class="form-container sign-in-container">
+    <div class="form" id="signin">
+      <h2>登陆</h2>
+      <label class="warning_words error_email"></label>
+      <input type="text" name="email" onblur="checkEmailVal(this.value, true)" placeholder="请输入账号或邮箱..." required>
+      <label class="warning_words error_pwd"></label>
+      <input type="password" name="password" onblur="checkPasswordVal(this.value, true)" placeholder="请输入密码..." required>
+      <label class="warning_words error_code"></label>
+      <input name="verifyCode" type="text" onblur="checkVerifyCodeVal(this.value, true)" placeholder="请输入验证码..." autocomplete="off" required>
+      <!--        时间戳标识符-->
+      <input type="hidden" name="identify" class="identify" />
+      <span><img class="verifyCode shrink" src="verifyCode" alt="点击切换验证码" onclick="changeCheckCode(this, true)"></span><br />
+      <a href="#" class="forget-password shrink">忘记密码？</a><br />
+      <button class="signIn shrink" onclick="return doSignIn();">登陆</button>
+    </div>
+  </div>
+  <!-- overlay container -->
+  <div class="overlay_container">
+    <div class="overlay">
+      <!-- overlay left -->
+      <div class="overlay_panel overlay_left_container">
+        <h3 class="welcome_sentence">欢迎来到 IM 聊天室！</h3>
+        <p>已有账号？请输入账号密码登陆吧！</p>
+        <button id="sign-in">点击登陆</button>
+      </div>
+      <!-- overlay right -->
+      <div class="overlay_panel overlay_right_container">
+        <h3 class="welcome_sentence">欢迎来到 IM 聊天室！</h3>
+        <p>请填写好您的相关信息以便与朋友们开始畅快的聊天吧！</p>
+        <button id="sign-up">点击注册</button>
+      </div>
+    </div>
+  </div>
+  <!-- 消息外层容器，因为消息提醒基本上是全局的，所以这里用id，所有的弹出消息都是需要插入到这个容器里边的 -->
+  <div id="message-container"></div>
+</div>
+<!-- move-in：弹出消息框， move-out：隐藏消息框-->
+<!--<button class="msg_success" onclick="callMessage(0, '操作成功！')">成功消息提醒</button>
+<button class="msg_warning" onclick="callMessage(1, '请谨慎操作！')">警告消息提醒</button>
+<button class="msg_failed" onclick="callMessage(-1, '操作失败！')">失败消息提醒</button>-->
+</body>
+
+<script th:src="@{/js/sign.js }"></script>
+</html>

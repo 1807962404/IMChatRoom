@@ -1,0 +1,33 @@
+server:
+  servlet:
+    context-path: /chatroom
+    encoding:
+      charset: utf-8
+      force: true
+      enabled: true
+    session:  # 取消session的永久存储，以免程序抛出：Exception loading sessions from persistent storage
+      persistent: false
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/chatroom
+#    url: jdbc:mysql://8.130.104.52:3306/im
+    username: root
+    password: xmq154656
+
+mybatis:
+  mapper-locations: classpath:mybatis/mapper/*.xml                  # 指定sql映射文件的位置
+  configuration:    # 指定MyBatis全局配置文件中的相关配置项
+    map-underscore-to-camel-case: true    # 开启驼峰命名
+
+lux:
+  customized:
+    # 邮件配置项
+    email:
+      smtp:
+        host: smtp.163.com
+        auth: true
+      user: loveislonging@163.com   # 发件人
+      password: WKNISGLATBNFPZEW    # 邮箱的SMTP授权码
+#    project-name: 'IM 聊天室'
