@@ -52,4 +52,11 @@ public interface UserMapper {
      * @return
      */
     Integer insertUser(@Param("user") User user);
+
+    /**
+     * 根据data模糊查询出用户中 account、email或nickname中包含的内容
+     * @param data
+     * @return
+     */
+    List<User> selectUsersByFuzzyQuery(@Param("data") String data);
 }

@@ -10,6 +10,13 @@ import java.util.List;
 public interface UserService {
 
     /**
+     * 模糊查询用户信息
+     * @param data
+     * @return
+     */
+    List<User> doGetUsersByFuzzyQuery(String data);
+
+    /**
      * 【根据账号状态】查询所有用户信息
      * @return
      */
@@ -49,9 +56,11 @@ public interface UserService {
     User doCheckUserExists(User user, boolean hasPwd);
 
     /**
-     * 用户会话注销
+     * 更新账号信息
+     *  1、处理 用户会话注销 的业务逻辑
+     *  2、处理 注销用户账号 的业务逻辑
      * @param user
      * @return
      */
-    Integer doLogout(User user);
+    Integer doUpdateUser(User user);
 }

@@ -1,7 +1,9 @@
 package edu.hniu.imchatroom.mapper;
 
+import edu.hniu.imchatroom.model.bean.BroadcastMessage;
 import edu.hniu.imchatroom.model.bean.Message;
 import edu.hniu.imchatroom.model.bean.PrivateMessage;
+import edu.hniu.imchatroom.model.bean.PublicMessage;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -26,6 +28,13 @@ public interface MessageMapper {
      * @return
      */
     Integer insertPriMsg(@Param("privateMessage") PrivateMessage privateMessage);
+
+    /**
+     * 插入系统公告消息
+     * @param publicMessage
+     * @return
+     */
+    Integer insertSystemMsg(@Param("broadcastMessage") BroadcastMessage broadcastMessage);
 
     /**
      * 查询私聊消息（会根据消息发送者id和消息接收者id进行查询）

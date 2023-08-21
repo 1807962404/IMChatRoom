@@ -5,15 +5,6 @@
 
 var ws = null;
 
-//获取当前项目的名称
-/*function getProjectPath() {
-    //获取主机地址之后的目录，如： cloudlibrary/admin/books.jsp
-    var pathName = window.document.location.pathname;
-    //获取带"/"的项目名，如：/cloudlibrary
-    var projectName = pathName.substring(0, pathName.substr(1).indexOf('/') + 1);
-    return projectName;
-}*/
-
 // 创建WebSocket连接
 function createWebSocketClient(uniqueUserCode) {
 
@@ -65,15 +56,35 @@ ws.onerror = (evt) => {
     console.log(evt)
 }
 
+var priFriendId = 0;
+
 // websocket 接收到消息时执行的回调函数
 ws.onmessage = (evt) => {
     if (checkWSIsNull()) {
         console.log("尚未建立WebSocket连接！")
-        return false;
+        return ;
     }
 
     // console.log(evt);
+    let message = JSON.parse(evt.data);
+    if (message.messageType === 'private-message') {
+        // let friendId = document.querySelector('#my-friend-list a[class="my-friend content-active"]').dataset.id;
+        /*console.log('friendId: ' + friendId);
+        console.log(message.sendUser, message.sendUser.uId);
+        console.log(message.receiveUser, message.receiveUser.uId);*/
+        if (Number(priFriendId) != Number(message.receiveUser.uId)) {   // 若好友Id不等于消息接收者id
+            setMessageToPriMsgBoard(message, message.sendUser.uId);     // 则将消息记录设置到发送者id中
+        } else {
+            setMessageToPriMsgBoard(message, priFriendId);
+        }
 
+    } else if (message.messageType === 'public-message') {
+
+
+    } else if (message.messageType === 'public-message') {
+        setMessageToSystemInfoBoard(message);
+        setContentToOwnPublishedBroadcast(message);
+    }
 }
 
 // 关闭 WebSocket 连接
@@ -136,59 +147,32 @@ function callSendMessage(evt) {
     if (chatTypeElemId === 'private-message') {
         // console.log('private');
 
-        /*let msgElem = document.createElement('div');
-        msgElem.classList.add('msg', 'send_msg');
-
-        let avatarElem = document.createElement('div');
-        avatarElem.classList.add('avatar', 'send_avatar');
-        avatarElem.style.background = 'url(../images/avatar/Member005) no-repeat';
-
-        let nameElem = document.createElement('span');
-        nameElem.classList.add('name', 'ellipsis');
-        nameElem.innerText = 'Hello';
-
-        let sentenceElem = document.createElement('div');
-        sentenceElem.classList.add('sentence');
-
-        let textElem = document.createElement('p');
-        textElem.classList.add('text');
-        textElem.innerText = contentVal;
-
-        let triangleElem = document.createElement('div');
-        triangleElem.classList.add('triangle');
-
-        let timeElem = document.createElement('p');
-        timeElem.classList.add('time');
-        let sendTime = new Date();
-        timeElem.innerText = sendTime.getFullYear() + "年" + (sendTime.getMonth() + 1) + "月" + sendTime.getDate() + "日 "
-            + sendTime.getHours() + "时" + sendTime.getMinutes() + "分";
-
-        sentenceElem.append(textElem, triangleElem, timeElem);
-        msgElem.append(avatarElem, nameElem, sentenceElem);
-        chatTypeElem.appendChild(msgElem);*/
-
-        let friendId = document.querySelector('#my-friend-list a[class="my-friend content-active"]').dataset.id;
+        priFriendId = document.querySelector('#my-friend-list a[class="my-friend content-active"]').dataset.id;
         // console.log(friendId)
         let sendMsgData = doMessageJsonData(contentVal, chatTypeElemId);    // 封装需要发送的消息
         // console.log(sendMsgData);
 
         $.ajax({
-            url: getProjectPath() + '/user/chat/let-chat/' + friendId,
+            url: getProjectPath() + '/user/chat/let-chat/' + priFriendId,
             type: 'POST',
             data: sendMsgData,
             success: (resp) => {    // 消息发送成功
                 // console.log(resp);
-                callMessage(0, resp.msg);
+                if (0 == resp.code) {
+                    callMessage(0, resp.msg);
 
-                // 封装发送
-                let priMsg = resp.data;
-                // console.log(priMsg)
-                ws.send(JSON.stringify(priMsg));
-                setMessageToPriMsgBoard(priMsg, friendId);
+                    // 封装发送
+                    let priMsg = resp.data;
+                    // console.log(priMsg)
+                    ws.send(JSON.stringify(priMsg));    // 封装私聊消息
+
+                } else {    // 消息发送失败
+                    callMessage(resp.code, resp.msg);
+                }
             },
-            error: (resp) => {    // 消息发送失败
+            error: (resp) => {
                 console.log(resp);
-                callMessage(-1, resp.msg);
+                callMessage(-1, "***出错啦，请稍后再试！");
             },
         })
         // sendUrl(getProjectPath() + '/user/chat/to-personal-chat/' + friendId, doSingleDataToJson(contentVal));
@@ -205,7 +189,7 @@ function callSendMessage(evt) {
     chatElem.querySelector('textarea[id="content"]').value = '';
 }
 
-// 发送消息
+/*// 发送消息
 function sendMsg(msg) {
     const data = {
         // "messageType":
@@ -213,19 +197,91 @@ function sendMsg(msg) {
     };
     ws.send(JSON.parse(JSON.stringify(data)));
     // 同时将此消息插入至相应的消息框中（私聊消息、群聊消息、系统公告通知消息）
-}
+}*/
+
 
 // 将系统公告消息添加至 系统广播板块上
 function setMessageToSystemInfoBoard(msg) {
     let systemInfoShow = document.getElementById('system-message-show');
-    for (let i = 0; i < 3; i++) {
-        let newSystemInfoElement = document.createElement('p');
-        // <p className="info-all infos"></p>
-        newSystemInfoElement.classList.add("info-all");
-        newSystemInfoElement.classList.add("infos");
-        newSystemInfoElement.innerText = msg;
-        // console.log(newSystemInfoElement)
+    let newSystemInfoElement = document.createElement('p');
+    // <p className="info-all infos"></p>
+    newSystemInfoElement.classList.add("info-all");
+    newSystemInfoElement.classList.add("infos");
+    newSystemInfoElement.innerText = msg;
+    // console.log(newSystemInfoElement)
+
+    let hasFirstElem = systemInfoShow.firstElementChild;
+    if (hasFirstElem) {
+        systemInfoShow.insertBefore(newSystemInfoElement, hasFirstElem);
+    } else {
         systemInfoShow.appendChild(newSystemInfoElement);
     }
 }
-setMessageToSystemInfoBoard("现在是广播事件：啊是多久啊圣诞啊实打实大苏打梵蒂冈的节阿松大是南大四年冬季阿三大苏打爱上你的");
+// 监听 发布系统广播 的button
+var broadcastBtn = document.querySelector('#publish-system-broadcast button[type="button"]');
+if (broadcastBtn) {
+    broadcastBtn.addEventListener('click', function (evt) {
+        let publishBroadcastElem = document.getElementById('publish-broadcast');
+        let publishBroadcastVal = publishBroadcastElem.value;
+        if (publishBroadcastVal === '' | publishBroadcastVal.length === 0) {
+            callMessage(1, "发布内容不能为空！");
+            return;
+        };
+
+        $.ajax({
+            url: getProjectPath() + '/chat/let-chat/0',
+            type: 'POST',
+            data: doMessageJsonData(publishBroadcastVal, 'system-message'),
+            success: (resp) => {
+                callMessage(resp.code, resp.msg);
+                if (resp.code === 0) {
+                    let systemMsg = resp.data;
+                    ws.send(JSON.stringify(systemMsg));     // 封装系统公告消息
+                }
+            },
+            error: (resp) => {
+                callMessage(-1, "***出错啦，请稍后再试！");
+            }
+        })
+    });
+}
+
+/*// 监听 意见反馈 栏的提交按钮
+var feedbackElem = document.querySelector('#feedback .feedback-opt');
+feedbackElem.querySelector('button[type="button"]').addEventListener('click', (evt) => {
+    let feedbackContent = feedbackElem.querySelector('textarea[id="feedback-content"]');
+    if (feedbackContent.value === '' || feedbackContent.value.length === 0) {
+        callMessage(1, "反馈内容不能为空！");
+        return ;
+    }
+
+    let data = {
+        'fbContent': feedbackContent.value,
+        'publishTime': getDateTime()
+    }
+    $.ajax({
+        url: getProjectPath() + "/entity/send-feedback",
+        type: 'POST',
+        data: JSON.parse(JSON.stringify(data)),
+        success: (resp) => {        // 意见反馈成功
+            if (resp.code === 0) {
+                callMessage(0, resp.msg);
+                feedbackContent.value = '';
+
+                let newFeedbackContent = resp.data;
+                ws.send(doSingleDataToJson(newFeedbackContent));
+                // 写入至意见反馈中
+                setContentToFeedbackList(resp.data);
+            } else {
+                callMessage(resp.code, resp.msg);
+            }
+        },
+        error: (resp) => {
+            console.log(resp);
+            callMessage(-1, "出错啦，请稍后再试！");
+        }
+    });
+    /!*sendUrl(getProjectPath() + "/entity/send-feedback", 'POST', JSON.parse(JSON.stringify(data)),
+        getProjectPath() + "/main");
+    feedbackContent.value = '';*!/
+});*/

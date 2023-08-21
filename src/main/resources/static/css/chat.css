@@ -38,7 +38,7 @@ a {
 
 #title {
     position: absolute;
-    left: 800px;
+    left: 730px;
     top: -50px;
     color: #fff;
     font-family: 黑体;
@@ -283,16 +283,6 @@ a {
     position: relative;
 }
 
-/*隐藏元素*/
-.hidden-el {
-    display: none;!important;
-}
-
-/*显现元素*/
-.show-el {
-    display: block;!important;
-}
-
 textarea {
     padding: 7px;
     border: 0;
@@ -504,6 +494,7 @@ button:hover {
 
 #chat-box #message #entity .entity-li .has-search-result, .non-search-result {
     margin-top: 20px;
+    margin-bottom: 10px;
 }
 
 #chat-box #message #entity .entity-li .has-search-result, .non-search-result p {
@@ -573,43 +564,74 @@ button:hover {
     font-weight: bold;
 }
 
-#chat-box #message #entity .entity-li #profile {
-    position: relative;
-}
-
-#feedback #all-feedbacks {
-    margin-top: 15px;
-}
-
-#feedback #all-feedbacks .feedback-preview .feedback-preview-content {
+#publish-system-broadcast .my-pub-broadcast {
     position: relative;
     margin: 10px;
     border-bottom: 1px solid #ccc;
 }
 
-#feedback #all-feedbacks .feedback-preview .feedback-preview-content .friend-name, .apply-time {
-    margin-top: 15px;
-}
-
-#feedback #all-feedbacks .feedback-preview .feedback-preview-content .feedback-content {
+#publish-system-broadcast .my-pub-broadcast .broadcast-content {
     display: -webkit-box;
     /*设置几行*/
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     word-break: break-all;
     overflow: hidden;
     text-overflow: ellipsis;
-    line-height: 30px;
+    line-height: 25px;
     font-size: 14px;
     font-weight: normal;
     color: #000;
 }
 
-#feedback #all-feedbacks .feedback-preview .feedback-preview-content .feedback-content:before {
+#publish-system-broadcast .my-pub-broadcast .friend-name {
+    margin-top: 15px;
+}
+
+#publish-system-broadcast .my-pub-broadcast .broadcast-content:before {
     content: "广播内容：";
     color: #f00;
     font-size: 16px;
     font-weight: bold;
+}
+
+#feedback #all-feedback-list {
+    margin-top: 15px;
+}
+
+#feedback #all-feedback-list .feedback-preview .feedback-preview-content {
+    position: relative;
+    margin: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+#feedback #all-feedback-list .feedback-preview .feedback-preview-content .friend-name, .apply-time {
+    margin-top: 15px;
+}
+
+#feedback #all-feedback-list .feedback-preview .feedback-preview-content .feedback-content {
+    display: -webkit-box;
+    /*设置几行*/
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    word-break: break-all;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 25px;
+    font-size: 14px;
+    font-weight: normal;
+    color: #000;
+}
+
+#feedback #all-feedback-list .feedback-preview .feedback-preview-content .feedback-content:before {
+    content: "反馈内容：";
+    color: #f00;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#chat-box #message #entity .entity-li #profile {
+    position: relative;
 }
 
 #profile #profile-avatar img {
@@ -642,6 +664,13 @@ button:hover {
     font-weight: bold;
 }
 
+#profile #logout-account {
+    margin-left: 40px;
+    color: #fff;
+    font-weight: bold;
+    background-color: #f00!important;
+}
+
 #chat-box #message #default-message {
     margin-top: 120px;
     text-align: center;
@@ -660,7 +689,7 @@ button:hover {
 #chat-box #message .send_avatar {
     position: absolute;
     left: 470px;
-    background-image: url("../images/avatar/avatar.png")!important;
+    background-image: url("../images/avatar/avatar.png");
 }
 
 #chat-box #message .name {
@@ -681,5 +710,5 @@ button:hover {
 #chat-box #message .rece_avatar {
     position: absolute;
     left: -45px;
-    background-image: url("../images/avatar/Member002.jpg")!important;
+    background-image: url("../images/avatar/Member002.jpg");
 }

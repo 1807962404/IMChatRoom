@@ -13,6 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Iterator;
+import java.util.List;
+
 import static edu.hniu.imchatroom.util.VariableUtil.*;
 import static edu.hniu.imchatroom.util.VariableUtil.RESPONSE_SUCCESS_CODE;
 
@@ -31,6 +34,7 @@ public class FriendController {
     public void setFriendService(FriendService friendService) {
         this.friendService = friendService;
     }
+
     /**
      * 根据 data（account或email）查找用户
      * @param data
@@ -38,59 +42,45 @@ public class FriendController {
      */
     @ResponseBody
     @PostMapping("/find-friend")
-    public ResultVO<User> findUser(String data, HttpServletRequest request) {
-        ResultVO<User> resultVO = new ResultVO<>();
+    public ResultVO<List<User>> findFriends(String data) {
+        ResultVO<List<User>> resultVO = new ResultVO<>();
 
-        log.info("查找用户的data（account或email）为: {}", data);
+        log.info("查找用户的data为: {}", data);
         // 1、检查传入的数据是否为空
         if (StringUtil.isEmpty(data)) {
             resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("账号异常：'" + data + "'，请查证后再试！");
+            resultVO.setMsg("输入内容异常：'" + data + "'，请检查输入！");
 
-            log.warn("账号异常：'{}'，请查证后再试！", data);
+            log.warn("输入内容异常：'{}'，请检查输入！", data);
             return resultVO;
         }
 
-        User user = new User();
-        user.setEmail(data);
-
         // 2、检查用户是否存在
-        User userToUse = userService.doCheckUserExists(user, false);
-        if (null == userToUse) {        // 不存在此用户
+        List<User> userToUse = userService.doGetUsersByFuzzyQuery(data);
+        Iterator<User> iterator = userToUse.iterator();
+        while (iterator.hasNext()) {
+            User next = iterator.next();
+//            该用户账号处于非激活状态
+            if (!next.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ACTIVATED))) {
+                log.info("Invalid User: {}", next);
+                iterator.remove();
+            }
+        }
+        // 不存在此用户
+        if (null == userToUse || userToUse.size() == 0) {
             resultVO.setCode(RESPONSE_WARNING_CODE);
             resultVO.setMsg("未搜索到账号为：'" + data + "' 的用户，请查证后再试！");
             log.warn("未搜索到账号为：'{}' 的用户，请查证后再试！", data);
             return resultVO;
         }
 
-        // 3、检查是否为本人账号
-        final User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
-        if (userToUse.equals(thisUser)) {
-            resultVO.setCode(RESPONSE_WARNING_CODE);
-            resultVO.setMsg("无法添加自己的账号为好友！");
-            log.warn("无法添加自己的账号为好友！");
-            return resultVO;
-        }
-
-        // 4、检查输入的账号是否 已经是自己的好友
-        FriendShip friendShip = friendService.doCheckIsFriend(thisUser, userToUse, StatusCodeEnum.getStatusCode(StatusCodeEnum.ISFRIEND));
-        if (null != friendShip) {
-            if (friendShip.getFsStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ISFRIEND))) {
-                resultVO.setCode(RESPONSE_WARNING_CODE);
-                resultVO.setMsg("账号为：" + data + "的用户：" + userToUse.getNickname() + " 已经是您的朋友了！");
-                log.warn("账号为：{} 的用户：{} 已经是您的朋友了！", data, userToUse.getNickname());
-                return resultVO;
-            }
-        }
-
         resultVO.setCode(RESPONSE_SUCCESS_CODE);
         resultVO.setData(userToUse);
-        resultVO.setMsg("已搜索到账号为：" + data + " 的用户：" + userToUse.getNickname() + " ！");
-        log.info("搜索到账号为：{} 的好友信息为：{}", data, userToUse);
+        resultVO.setMsg("已查找出账号信息大致为：" + data + " 的用户信息！");
+        log.info("已查找出账号信息大致为：{} 的用户信息 {}！", data, userToUse);
 
         return resultVO;
     }
-
 
     /**
      * 添加好友
@@ -120,13 +110,29 @@ public class FriendController {
             return resultVO;
         }
 
-        // 3、检查该uId的用户是否 已经是自己的好友 或者为 已发送过好友请求，正处于好友关系确认中
+        // 3、检查需要添加的好友是否为本人账号
         final User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
+        if (friendUser.equals(thisUser)) {
+            resultVO.setCode(RESPONSE_WARNING_CODE);
+            resultVO.setMsg("无法添加自己的账号为好友！");
+            log.warn("无法添加自己的账号为好友！");
+            return resultVO;
+        }
+
+        // 3、检查该uId的用户是否 已经是自己的好友 或者为 已发送过好友请求，正处于好友关系确认中
         FriendShip friendShip = friendService.doCheckIsFriend(thisUser, friendUser, null);
         log.info("{} 与 {} 间的好友关系为：{}", thisUser.getNickname(), friendUser.getNickname(),
                 friendShip == null ? "暂无关系！" : friendShip);
 
         if (null != friendShip) {
+            // 若对方账号尚未激活，也不可添加好友！
+            if (!friendShip.getFriendUser().getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ACTIVATED))) {
+                resultVO.setCode(RESPONSE_FAILED_CODE);
+                resultVO.setMsg("添加好友失败，uId为：" + uId + " 的用户 " + friendUser.getNickname() + " 的账号尚未激活！");
+                log.warn("添加好友失败，uId为：{} 的用户 {} 的账号尚未激活！", uId, friendUser.getNickname());
+                return resultVO;
+            }
+
             if (friendShip.getFsStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ISFRIEND))) {
                 resultVO.setCode(RESPONSE_FAILED_CODE);
                 resultVO.setMsg("添加好友失败，uId为：" + uId + " 的用户 " + friendUser.getNickname() + " 已经是您的朋友了！");
@@ -252,7 +258,6 @@ public class FriendController {
         resultVO.setCode(RESPONSE_SUCCESS_CODE);
         resultVO.setMsg("已成功删除用户id为：" + friendId + " 的好友： " + friendUser.getNickname() + "！");
         log.warn("已成功删除用户id为：{} 的好友：{}！", friendId, friendUser.getNickname());
-
 
         return resultVO;
     }

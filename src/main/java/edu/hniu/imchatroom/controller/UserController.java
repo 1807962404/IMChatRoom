@@ -1,7 +1,9 @@
 package edu.hniu.imchatroom.controller;
 
 import edu.hniu.imchatroom.model.bean.*;
+import edu.hniu.imchatroom.model.enums.RoleEnum;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
+import edu.hniu.imchatroom.service.EntityService;
 import edu.hniu.imchatroom.service.FriendService;
 import edu.hniu.imchatroom.service.UserService;
 import edu.hniu.imchatroom.util.Md5Util;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +35,8 @@ public class UserController {
 
     private UserService userService;
     private FriendService friendService;
+    private EntityService entityService;
+
     // 记录所有用户
     private final Set<User> users = new CopyOnWriteArraySet<>();
     // 记录在线用户
@@ -43,10 +48,13 @@ public class UserController {
     public void setUserService(UserService userService) {
         this.userService = userService;
     }
-
     @Autowired
     public void setFriendService(FriendService friendService) {
         this.friendService = friendService;
+    }
+    @Autowired
+    public void setEntityService(EntityService entityService) {
+        this.entityService = entityService;
     }
 
     /**
@@ -124,15 +132,15 @@ public class UserController {
 
         // 4、注册一个新用户
         int result = userService.doSignUp(user);
-        if (0 != result) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("账号注册失败，请检查邮箱地址是否有误！");
-            log.warn("账号注册失败，请检查邮箱地址是否有误！");
-
-        } else {
+        if (1 == result) {
             resultVO.setCode(RESPONSE_SUCCESS_CODE);
             resultVO.setMsg("账号激活已发送至您的邮箱，请检查邮箱并点击链接激活账号！");
             log.info("账号激活已发送至您的邮箱，请检查邮箱并点击链接激活账号！");
+
+        } else {
+            resultVO.setCode(RESPONSE_FAILED_CODE);
+            resultVO.setMsg("账号注册失败，请检查邮箱地址是否有误！");
+            log.warn("账号注册失败，请检查邮箱地址是否有误！");
         }
 
         return resultVO;
@@ -230,8 +238,23 @@ public class UserController {
 
         log.info("用户信息：{}", userByIdentified);
 
-        // 5、将登陆的用户信息存入至session中，以及存入在线人数中
+        // 6、设置资源-->
         HttpSession session = request.getSession();
+
+        // 设置系统通告
+        List<BroadcastMessage> broadcastMessages = entityService.doGetBroadcasts(null);
+        session.setAttribute(BROADCAST_MESSAGE_NAME, broadcastMessages);
+        // 如果是管理员，则还需设置该管理员所发布的系统公告
+        /*List<BroadcastMessage> myPublishedBroadcasts = new ArrayList<>();
+        for (BroadcastMessage broadcastMessage : broadcastMessages) {
+            if (broadcastMessage.getUser().getRole().equals(RoleEnum.getRoleName(RoleEnum.ADMIN)) &&
+                    broadcastMessage.getUser().equals(userByIdentified))
+                // 如果是管理员并且是登陆的用户本人则为其设置：其发布的系统公告
+                myPublishedBroadcasts.add(broadcastMessage);
+        }
+        userByIdentified.setMyPublishedBroadcasts(myPublishedBroadcasts);*/
+
+        // 将登陆的用户信息存入至session中，以及存入在线人数中
         session.setAttribute(SIGNINED_USER, userByIdentified);
 
         // 建立WebSocket连接时需要使用
@@ -339,19 +362,62 @@ public class UserController {
      * @param request
      * @return
      */
+    @ResponseBody
     @GetMapping("/logout")
-    public String doLogout(HttpServletRequest request) {
+    public ResultVO doLogout(HttpServletRequest request) {
 
         User logoutUser = (User) request.getSession().getAttribute(SIGNINED_USER);
-        int result = userService.doLogout(logoutUser);
+        // 1、修改该用户为离线状态
+        logoutUser.setOnlineStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.OFFLINE));
+        int result = userService.doUpdateUser(logoutUser);
+
+        ResultVO resultVO = new ResultVO();
+        log.info("用户 {} 注销会话情况：{}", logoutUser.getNickname(), result == 1 ? "已成功退出登陆！" : "注销会话失败！");
+        if (result != 1) {
+            resultVO.setCode(RESPONSE_FAILED_CODE);
+            resultVO.setMsg("注销会话失败！");
+            return resultVO;
+        }
+
         onlineUserToUseMap.remove(logoutUser);     // 在线用户数量-1
         subOnlineCount();
-
-        log.info("用户 {} 注销会话结果：{}", logoutUser.getNickname(), result == 1 ? "已成功退出登陆！" : "注销会话失败！");
         request.getSession().invalidate();
-        log.info("当前在线总人数为：{}", getOnlineCount());
 
-        return "redirect:/login";
+        resultVO.setCode(RESPONSE_SUCCESS_CODE);
+        resultVO.setMsg("已成功退出登陆！");
+        log.info("当前在线总人数为：{}", getOnlineCount());
+        return resultVO;
+    }
+
+    /**
+     * 用户账号注销
+     * @return
+     */
+    @ResponseBody
+    @GetMapping("/logout-account")
+    public ResultVO doLogoutAccount(HttpServletRequest request) {
+        User logoutAccountUser = (User) request.getSession().getAttribute(SIGNINED_USER);
+        // 设置该用户的账号为：已注销状态
+        logoutAccountUser.setAccountStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.INVALID));
+        int result = userService.doUpdateUser(logoutAccountUser);
+
+        ResultVO resultVO = new ResultVO();
+        log.info("用户 {} 注销账号情况：{}", logoutAccountUser.getNickname(), result == 1 ? "已成功注销账号！" : "注销账号失败！");
+        if (result != 1) {
+            resultVO.setCode(RESPONSE_FAILED_CODE);
+            resultVO.setMsg("注销账号失败！");
+            return resultVO;
+
+        }
+
+        onlineUserToUseMap.remove(logoutAccountUser);     // 在线用户数量-1
+        subOnlineCount();
+        request.getSession().invalidate();
+
+        resultVO.setCode(RESPONSE_SUCCESS_CODE);
+        resultVO.setMsg("已成功注销账号！");
+        log.info("当前在线总人数为：{}", getOnlineCount());
+        return resultVO;
     }
 
     /**

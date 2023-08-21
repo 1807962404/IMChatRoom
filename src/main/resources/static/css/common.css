@@ -1,0 +1,81 @@
+/*弹窗显示*/
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 101;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal .modal-content {
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 50%;
+    background-color: #fff;
+    text-align: center;
+}
+
+.modal .modal-content .default-modal-content h2{
+    margin-bottom: 10px;
+    color: #f00;
+    font-size: 20px;
+}
+
+.modal .modal-content .default-modal-content h2:before {
+    content: "IM 聊天室";
+    margin-right: 5px;
+    font-size: 24px;
+    font-weight: bold;
+    font-family: 黑体;
+    color: #fff;
+    z-index: 1;
+    text-shadow: 0 0 0.4em #F87, 0 0 0.2em #F87;
+}
+
+.modal .modal-content button[class="opt-cancel"] {
+    background-color: #999;
+}
+.modal .modal-content button {
+    margin-top: 10px;
+    padding: 10px 50px;
+    text-transform: uppercase;
+    color: white;
+    outline: none;
+    border: 1px solid transparent;
+    border-radius: 20px;
+    background-color: #ff4b2b;
+}
+
+.modal .modal-content button, .close {
+    cursor: pointer;
+}
+
+.modal .default-modal-content .close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.modal .default-modal-content {
+    margin-bottom: 10px;
+}
+
+.close:hover {
+    color: #000000;
+}
+
+/*隐藏元素*/
+.hidden-el {
+    display: none;!important;
+}
+
+/*显现元素*/
+.show-el {
+    display: block;!important;
+}

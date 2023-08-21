@@ -7,19 +7,20 @@
 function scrollBoard() {
     let elems = new Array();
     elems.push(document.querySelector('#chat-bg #chat-box'));
-    elems.push(document.querySelector('#chat-bg #menu-bar #system-message'));
+    // elems.push(document.querySelector('#chat-bg #menu-bar #system-message'));
     for (let i = 0; i < elems.length; i++) {
         let elem = elems[i];
         //判断元素是否出现了滚动条
         if(elem.scrollHeight > elem.clientHeight) {
-            //设置滚动条到最底部
-            elem.scrollTop = elem.scrollHeight;
-            elem.style.opacity = 1;
+            let chatBoard = document.querySelector('#chat-bg #chat-box #message .exclusive-chat-box-active');
+            // 只有聊天板界面是私聊或群聊版才需要滑动至底部
+            if (chatBoard.id === 'private-message' || chatBoard.id === 'public-message') {
+                //设置滚动条到最底部
+                elem.scrollTop = elem.scrollHeight;
+                elem.style.opacity = 1;
+            }
         }
     }
-}
-window.onload = () => {
-    scrollBoard();
 }
 
 // 获取用户在线数量
@@ -43,7 +44,9 @@ function getOnlineUserCount() {
     })
 };
 
+scrollBoard();
 getOnlineUserCount();
+
 setInterval(() => {
     getOnlineUserCount();
 }, 60000);   // 1分钟发送一次请求
@@ -88,6 +91,18 @@ function getDateTime() {
     let minutes = nowDate.getMinutes();
     let seconds = nowDate.getSeconds();
     return nowDate.getFullYear() + "-" + (nowDate.getMonth() + 1) + "-" + nowDate.getDate() + " " +
+        (hour < 10 ? ('0' + hour) : hour) + ":" +
+        (minutes < 10 ? ('0' + minutes) : minutes) + ":" +
+        (seconds < 10 ? ('0' + seconds) : seconds);
+}
+
+// 格式化日期 封装函数
+function FormatDate(date) { //参数是时间
+    let myDate = new Date(date);
+    let hour = myDate.getHours();
+    let minutes = myDate.getMinutes();
+    let seconds = myDate.getSeconds();
+    return myDate.getFullYear() + "-" + (myDate.getMonth() + 1) + "-" + myDate.getDate() + " " +
         (hour < 10 ? ('0' + hour) : hour) + ":" +
         (minutes < 10 ? ('0' + minutes) : minutes) + ":" +
         (seconds < 10 ? ('0' + seconds) : seconds);
@@ -171,7 +186,6 @@ for (let i = 0; i < menubars.length; i++) {
         changeMsgWindow();
     });
 };
-
 // 切换左侧消息窗口选项卡
 function changeMsgWindow() {
     menubar_content_active = document.querySelectorAll("#chat-bg #menu-bar #menu #expand-function .box li[class='active'] a");
@@ -271,15 +285,6 @@ for (let i = 0; i < more_entities_input.length; i++) {
     });
 };
 
-// 监听 系统广播 的button
-var broadcastBtn = document.querySelector('#publish-system-broadcast button');
-if (broadcastBtn) {
-    broadcastBtn.addEventListener('click', function (evt) {
-        let broadcastElem = document.getElementById('publish-broadcast');
-        sendMessageToUrl(broadcastElem);
-    });
-}
-
 // 监听 添加好友（搜索好友） 的button
 var searchFriendBtn = document.querySelector('#add-friend button');
 if (searchFriendBtn) {
@@ -301,42 +306,68 @@ if (searchFriendBtn) {
                 // 成功处理逻辑
 
                 let rootElem = document.querySelector('#add-friend');
+                let hasResultElem = rootElem.querySelector('.has-search-result');
+                let hasNonResultElem = rootElem.querySelector('.non-search-result');
                 if (resp.code === 0) {
-                    callMessage(0, resp.msg);
-                    rootElem.querySelector('.non-search-result').classList.add('hidden-el');
-                    rootElem.querySelector('.has-search-result').classList.remove('hidden-el');
+                    callMessage(resp.code, resp.msg);
 
-                    let avatarElem = rootElem.querySelector('.has-search-result .friend-info .avatar');
-                    avatarElem.style.background = 'url(../images' + resp.data.avatarUrl + ' no-repeat';
-                    let friendNameElem = rootElem.querySelector('.has-search-result .friend-info .friend-name');
-                    friendNameElem.innerText = resp.data.nickname;
-                    let emailElem = rootElem.querySelector('.has-search-result .friend-info .app-content');
-                    // emailElem.innerText = resp.data.account + ' & ' + resp.data.email;
-                    emailElem.innerText = resp.data.email;
-                    let addBtnElem = rootElem.querySelector('.has-search-result .friend-info .add-btn');
-                    let aElem = document.createElement('a');
-                    // 为a标签设置自定义属性 gohref：发送的请求
-                    aElem.dataset.gohref = getProjectPath() + '/user/add-friend/' + resp.data.uid;
-                    aElem.classList.add('add-friend-btn');
-                    aElem.innerText = '点击添加好友';
+                    let friendInfoTempElems = hasResultElem.querySelectorAll('.friend-info');
+                    if (friendInfoTempElems)
+                        for (let i = 0; i < friendInfoTempElems.length; i++)
+                            friendInfoTempElems[i].remove();
 
-                    if (addBtnElem.hasChildNodes()) {
-                        addBtnElem.replaceChild(aElem, rootElem.querySelector('.has-search-result .friend-info .add-btn a'))
+                    // 可能会存在多个用户
+                    let findFriends = resp.data;
+                    if (findFriends.length > 0) {
+                        hasNonResultElem.classList.add('hidden-el');
+                        hasResultElem.classList.remove('hidden-el');
+
+                        for (let i = 0; i < findFriends.length; i++) {
+                            let findFriend = findFriends[i];
+
+                            let friendInfoElem = document.createElement('div');
+                            friendInfoElem.classList.add('friend-info');
+
+                            let avatarElem = document.createElement('div');
+                            avatarElem.classList.add('avatar');
+                            avatarElem.style.background = 'url(' + getProjectPath() + '/images' + findFriend.avatarUrl + ') no-repeat';
+
+                            let friendNameElem = document.createElement('div');
+                            friendNameElem.classList.add('friend-name', 'high-light');
+                            friendNameElem.innerText = findFriend.nickname + ", " + findFriend.account;
+
+                            let emailElem = document.createElement('div');
+                            emailElem.classList.add('app-content');
+                            // emailElem.innerText = resp.data.account + ' & ' + resp.data.email;
+                            emailElem.innerText = findFriend.email;
+
+                            let addBtnElem = document.createElement('div');
+                            addBtnElem.classList.add('add-btn');
+                            let aElem = document.createElement('a');
+                            // 为a标签设置自定义属性 gohref：发送的请求
+                            aElem.dataset.gohref = getProjectPath() + '/user/add-friend/' + findFriend.uId;
+                            aElem.classList.add('add-friend-btn');
+                            aElem.innerText = '点击添加好友';
+                            addBtnElem.appendChild(aElem);
+                            addBtnElem.addEventListener('click',  () => {
+                                doAddFriendBtnListener(evt, addBtnElem);    // 绑上监听点击事件（添加好友）
+                            });
+
+                            friendInfoElem.append(avatarElem, friendNameElem, emailElem, addBtnElem);
+                            hasResultElem.appendChild(friendInfoElem);
+                        }
+
                     } else {
-                        addBtnElem.appendChild(aElem)
+                        hasNonResultElem.classList.remove('hidden-el');
+                        hasResultElem.classList.add('hidden-el');
+                        rootElem.querySelector('p').innerText = resp.msg;
                     }
-
-                    if (typeof (successCallbackUrl) != "undefined" && successCallbackUrl)
-                        sleep(sleepTime).then(() => window.location.href = successCallbackUrl);
 
                 } else {
                     callMessage(resp.code, resp.msg);
-                    rootElem.querySelector('.non-search-result').classList.remove('hidden-el');
-                    rootElem.querySelector('.has-search-result').classList.add('hidden-el');
-
+                    hasNonResultElem.classList.remove('hidden-el');
+                    hasResultElem.classList.add('hidden-el');
                     rootElem.querySelector('p').innerText = resp.msg;
-                    if (typeof (failedCallbackUrl) != "undefined" && failedCallbackUrl)
-                        sleep(sleepTime).then(() => window.location.href = failedCallbackUrl);
                 }
             },
             error: function (resp) {
@@ -348,15 +379,12 @@ if (searchFriendBtn) {
         });
     });
 }
-// 监听 点击添加好友 的a(class: add-friend-btn)标签
-var addFriendBtnElem = document.querySelector('#add-friend .has-search-result .friend-info .add-btn');
-if (addFriendBtnElem) {
-    addFriendBtnElem.addEventListener('click', (evt) => {
-        evt.preventDefault();
-        let addFriendUrl = addFriendBtnElem.querySelector('a[class="add-friend-btn"]').dataset.gohref;   // /chatroom/user/add-friend/?
-        // console.log(addFriendUrl)
-        sendUrl(addFriendUrl, 'POST', null, getProjectPath() + '/main');
-    })
+// 为 点击添加好友 的a(class: add-friend-btn)标签绑上监听事件
+function doAddFriendBtnListener(evt, addFriendBtnElem) {
+    evt.preventDefault();
+    let addFriendUrl = addFriendBtnElem.querySelector('a[class="add-friend-btn"]').dataset.gohref;   // /chatroom/user/add-friend/?
+    // console.log(addFriendUrl)
+    sendUrl(addFriendUrl, 'POST', null, getProjectPath() + '/main');
 }
 
 // 监听 加入群聊（搜索群聊） 的button
@@ -456,15 +484,6 @@ if (createGroupBtn) {
     });
 }
 
-// 监听 意见反馈 的button
-var feedbackBtn = document.querySelector('#feedback button');
-if (feedbackBtn) {
-    feedbackBtn.addEventListener('click', function (evt) {
-        let feedbackElm = document.querySelector('#feedback #feedback-content');
-        sendMessageToUrl(feedbackElm);
-    });
-}
-
 // 封装单个 data 为Json数据
 function doSingleDataToJson(data) {
     let formData = {
@@ -487,7 +506,7 @@ function sendMessageToUrl(elem, url, successUrl, failedUrl) {
     sendUrl(url, 'POST', doSingleDataToJson(msgVal), successUrl, failedUrl);
 };
 
-// 监听 我的好友列表
+// 监听 我的好友列表（获取本人与对方的历史私聊消息）
 var myFriendListElem = document.querySelector('#menu-bar #my-friend-list');
 if (myFriendListElem) {
     let myFriends = myFriendListElem.querySelectorAll('a[class="my-friend"]');
@@ -569,30 +588,24 @@ function setMessageToPriMsgBoard(priMsg, friendId) {
     timeElem.classList.add('time');
 
     // 如果消息的发送者是对方（好友），渲染数据为 rece_msg（本人接收对方的消息）
-    // console.log(Number(priMsg.sendUser.uid), friendId, Number(priMsg.sendUser.uid) === friendId);
-    if (Number(priMsg.sendUser.uid) === Number(friendId)) {
+    // console.log(priMsg.sendUser.uId, friendId, Number(priMsg.sendUser.uId === Number(friendId));
+    if (Number(priMsg.sendUser.uId) === Number(friendId)) {
         msgElem.classList.add('rece_msg');
-
         uIdElem.classList.add('rece_uid');
-        uIdElem.innerText = priMsg.receiveUser.uid;
-
         avatarElem.classList.add('rece_avatar');
-        avatarElem.style.background = 'url(../images' + priMsg.receiveUser.avatarUrl +') no-repeat';
-
-        nameElem.innerText = priMsg.receiveUser.nickname;
 
     } else {
         // 消息发送者是本人，则渲染数据为 send_msg（对方接收本人发送的消息）
         msgElem.classList.add('send_msg');
-
         uIdElem.classList.add('send_uid');
-        uIdElem.innerText = priMsg.sendUser.uid;
-
         avatarElem.classList.add('send_avatar');
-        avatarElem.style.background = 'url(../images' + priMsg.sendUser.avatarUrl +') no-repeat';
-
-        nameElem.innerText = priMsg.sendUser.nickname;
     }
+
+    uIdElem.innerText = priMsg.sendUser.uId;
+
+    avatarElem.style.background = 'url(' + getProjectPath() + '/images' +  priMsg.sendUser.avatarUrl +') no-repeat';
+
+    nameElem.innerText = priMsg.sendUser.nickname;
 
     textElem.innerText = priMsg.content;
     let sendTime = new Date(priMsg.sendTime);
@@ -607,81 +620,225 @@ function setMessageToPriMsgBoard(priMsg, friendId) {
 
 // 删除好友
 function delFriend(friendId, nickname) {
-    if (confirm("请您确认是否需要删除uId为：" + friendId + "，昵称为：" + nickname + " 的好友信息？")) {
+    // 显示弹窗提醒
+    let pElem = document.createElement('p');
+    pElem.innerHTML = `请您确认是否需要删除uId为：` + friendId + `，昵称为：` + nickname + ` 的好友信息？<br />
+                <button class="opt-cancel" onclick="doFinalDelFriend(true)">容我再想想？</button>
+                <button onclick="doFinalDelFriend(false, ` + friendId + `)">确认删除</button>`;
+    showModal(pElem);
+}
+
+function doFinalDelFriend(isCancelled, friendId) {
+    hideModal();
+    if (!isCancelled) {
         sendUrl(getProjectPath() + '/user/del-friend/' + friendId, 'POST', null, getProjectPath() + "/main");
     } else {
-        callMessage(1, "已取消操作！");
+        callMessage(1, "已取消操作");
     }
 }
 
-/*// 监听 消息发送按钮
-var chatElem = document.querySelector('#chat-ipt #ipt-content');
-if (chatElem) {
-    let sendBtn = chatElem.querySelector('button[id="send"]');
-    sendBtn.addEventListener('click', (evt) => {
-        evt.preventDefault();
+// 监听 用户会话注销按钮
+var userExitBtn = document.querySelector('#user-exit button');
+if (userExitBtn) {
+    userExitBtn.addEventListener('click', () => {
+        sendUrl(getProjectPath() + '/user/logout', 'GET',
+            null, getProjectPath() + '/login', getProjectPath() + '/main')
+    })
+}
 
-        let content = chatElem.querySelector('textarea[id="content"]');
-        let contentVal = content.value;
-        if (contentVal === '' | contentVal.length === 0) {
-            callMessage(1, "发送内容不能为空！");
-            // return ;
+// 用户账号注销
+function logoutAccount() {
+    // 显示弹窗提醒
+    let pElem = document.createElement('p');
+    pElem.innerHTML = `请确认是否需要注销账号！<br />
+                <button class="opt-cancel" onclick="doFinalLogoutAccount(true)">容我再想想？</button>
+                <button onclick="doFinalLogoutAccount(false)">确认注销</button>`;
+    showModal(pElem);
+}
+function doFinalLogoutAccount(isCancelled) {
+    hideModal();
+    if (!isCancelled) {
+        sendUrl(getProjectPath() + '/user/logout-account', 'GET',
+            null, getProjectPath() + '/login', getProjectPath() + '/main');
+
+    } else {
+        callMessage(1, "操作已取消！");
+    }
+}
+
+// 监听右侧菜单栏下的 发布系统广播 标签（获取该管理员用户发布过的所有的系统广播信息，然后将其展示在左侧消息窗口中）
+// document.getElementById('all-broadcasts').addEventListener('click', (evt) => {
+function doGetAllBroadcasts() {
+    $.ajax({
+        url: getProjectPath() + '/entity/admin-published-broadcasts',
+        type: 'GET',
+        success: (resp) => {
+            console.log(resp);
+            let hasBroadcastElem = document.querySelector('#publish-system-broadcast .has-search-result');
+            let hasNonBroadcastElem = document.querySelector('#publish-system-broadcast .non-search-result');
+
+            if (resp.code === 0) {
+                let publishedBroadcasts = resp.data;
+                console.log(publishedBroadcasts);
+                let myPubBroadcastPreviewElem = document.querySelector('#publish-system-broadcast #broadcast-preview');
+                if (publishedBroadcasts.length === 0) {
+                    hasBroadcastElem.classList.add('hidden-el');
+                    hasNonBroadcastElem.classList.remove('hidden-el');
+                    hasNonBroadcastElem.firstElementChild.innerText = '您暂未发布任何系统公告！';
+
+                } else {
+                    hasBroadcastElem.classList.remove('hidden-el');
+                    hasNonBroadcastElem.classList.add('hidden-el');
+                    if (typeof (myPubBroadcastPreviewElem.dataset.hasGetted) === 'undefined') {
+                        for (let i = 0; i < publishedBroadcasts.length; i++) {
+                            // 展示到自己的广播内容列表下
+                            setContentToOwnPublishedBroadcast(publishedBroadcasts[i]);
+                        }
+                        myPubBroadcastPreviewElem.dataset.hasGetted = true;
+                    }
+                }
+            } else {
+                callMessage(resp.code, resp.msg)
+                hasBroadcastElem.classList.add('hidden-el');
+                hasNonBroadcastElem.classList.remove('hidden-el');
+                hasNonBroadcastElem.querySelector('#publish-system-broadcast .non-search-result p').innerText = `您暂未发布任何系统公告！`;
+            }
+        },
+        error: (resp) => {
+            console.log("Error: " + resp)
         }
+    })
+};
+// 将用户发表的广播内容展示出来
+function setContentToOwnPublishedBroadcast(publishedBroadcast) {
+    let myPublishedBroadcastElem = document.createElement('div');
+    myPublishedBroadcastElem.classList.add('my-pub-broadcast');
 
-        // 判断当前聊天框是私聊消息还是群聊消息
-        let chatTypeElem = document.querySelector('#chat-box #message div[class="exclusive-chat-box exclusive-chat-box-active"]');
-        let chatTypeElemId = chatTypeElem.getAttribute('id');
-        if (chatTypeElemId === 'private-message') {
-            // console.log('private');
+    let avatarElem = document.createElement('div');
+    avatarElem.classList.add('avatar');
+    avatarElem.style.background = 'url(' + getProjectPath() + '/images' + publishedBroadcast.user.avatarUrl + ') no-repeat';
 
-            let msgElem = document.createElement('div');
-            msgElem.classList.add('msg', 'send_msg');
+    let friendNameElem = document.createElement('div')
+    friendNameElem.classList.add('friend-name', 'high-light', 'ellipsis');
+    friendNameElem.innerText = publishedBroadcast.user.nickname;
 
-            let avatarElem = document.createElement('div');
-            avatarElem.classList.add('avatar', 'send_avatar');
-            avatarElem.style.background = 'url(../images/avatar/Member005) no-repeat';
+    let timeElem = document.createElement('div');
+    timeElem.classList.add('apply-time');
+    timeElem.innerText = FormatDate(publishedBroadcast.sendTime);
 
-            let nameElem = document.createElement('span');
-            nameElem.classList.add('name', 'ellipsis');
-            nameElem.innerText = 'Hello';
+    let broadcastContentElem = document.createElement('div');
+    broadcastContentElem.classList.add('broadcast-content');
+    broadcastContentElem.innerText = publishedBroadcast.content;
 
-            let sentenceElem = document.createElement('div');
-            sentenceElem.classList.add('sentence');
+    myPublishedBroadcastElem.append(avatarElem, friendNameElem, timeElem, broadcastContentElem);
+    let broadcastPreviewElem = document.querySelector('#publish-system-broadcast #broadcast-preview');
+    let hasFristElem = broadcastPreviewElem.firstElementChild;
+    if (hasFristElem) {
+        broadcastPreviewElem.insertBefore(myPublishedBroadcastElem, hasFristElem);
+    } else {
+        broadcastPreviewElem.appendChild(myPublishedBroadcastElem);
+    }
+}
 
-            let textElem = document.createElement('p');
-            textElem.classList.add('text');
-            textElem.innerText = contentVal;
+// 监听右侧菜单栏下的 意见反馈 标签（获取所有的意见反馈信息，然后将其展示在左侧消息窗口中）
+document.getElementById('all-feedbacks').addEventListener('click', (evt) => {
+    evt.preventDefault();
+    $.ajax({
+        url: getProjectPath() + '/entity/all-feedbacks',
+        type: 'GET',
+        success: (resp) => {
+            console.log(resp);
+            let feedbackList = resp;
+            let hasFeedback = document.querySelector('#feedback .has-search-result');
+            let hasNonFeedback = document.querySelector('#feedback .non-search-result');
+            let feedbackPreviewElem = document.querySelector('#all-feedback-list .feedback-preview');
+            if (feedbackList.length === 0) {
+                hasFeedback.classList.add('hidden-el');
+                hasNonFeedback.classList.remove('hidden-el');
+                hasNonFeedback.querySelector('#feedback .non-search-result p').innerText = `暂无更多反馈信息！`;
 
-            let triangleElem = document.createElement('div');
-            triangleElem.classList.add('triangle');
-
-            let timeElem = document.createElement('p');
-            timeElem.classList.add('time');
-            let sendTime = new Date();
-            timeElem.innerText = sendTime.getFullYear() + "年" + (sendTime.getMonth() + 1) + "月" + sendTime.getDate() + "日 "
-                + sendTime.getHours() + "时" + sendTime.getMinutes() + "分";
-
-            sentenceElem.append(textElem, triangleElem, timeElem);
-            msgElem.append(avatarElem, nameElem, sentenceElem);
-            chatTypeElem.appendChild(msgElem);
-
-        } else if (chatTypeElemId === 'public-message') {
-            // console.log('public');
-
-        } else {
-            alert('错误的消息框面板！');
-            return ;
+            } else {
+                hasFeedback.classList.remove('hidden-el');
+                hasNonFeedback.classList.add('hidden-el');
+                if (typeof (feedbackPreviewElem.dataset.hasGetted) === 'undefined') {
+                    for (let i = 0; i < feedbackList.length; i++) {
+                        setContentToFeedbackList(feedbackList[i]);
+                    }
+                    feedbackPreviewElem.dataset.hasGetted = true;
+                }
+            }
+        },
+        error: (resp) => {
+            console.log("Error: " + resp)
         }
+    })
+});
+// 插入内容至意见反馈栏（默认插入到行首）
+function setContentToFeedbackList(feedbackContent) {
+    let feedbackPreviewContentElem = document.createElement('div');
+    feedbackPreviewContentElem.classList.add('feedback-preview-content');
 
-        // 每次发送一条消息后消息栏置为空
-        chatElem.querySelector('textarea[id="content"]').value = '';
+    let avatarElem = document.createElement('div');
+    avatarElem.classList.add('avatar');
+    avatarElem.style.background = 'url(' + getProjectPath() + '/images' + feedbackContent.user.avatarUrl + ') no-repeat';
+
+    let friendNameElem = document.createElement('div')
+    friendNameElem.classList.add('friend-name', 'high-light', 'ellipsis');
+    friendNameElem.innerText = feedbackContent.user.nickname;
+
+    let timeElem = document.createElement('div');
+    timeElem.classList.add('apply-time');
+    timeElem.innerText = FormatDate(feedbackContent.publishTime);
+
+    let feedbackContentElem = document.createElement('div');
+    feedbackContentElem.classList.add('feedback-content');
+    feedbackContentElem.innerText = feedbackContent.fbContent;
+
+    feedbackPreviewContentElem.append(avatarElem, friendNameElem, timeElem, feedbackContentElem);
+    let feedbackPreviewElem = document.querySelector('#all-feedback-list .feedback-preview');
+    let hasFristElem = feedbackPreviewElem.firstElementChild;
+    if (hasFristElem) {
+        feedbackPreviewElem.insertBefore(feedbackPreviewContentElem, hasFristElem);
+    } else {
+        feedbackPreviewElem.appendChild(feedbackPreviewContentElem);
+    }
+}
+// 监听 意见反馈 栏的提交按钮
+var feedbackElem = document.querySelector('#feedback .feedback-opt');
+feedbackElem.querySelector('button[type="button"]').addEventListener('click', (evt) => {
+    let feedbackContent = feedbackElem.querySelector('textarea[id="feedback-content"]');
+    if (feedbackContent.value === '' || feedbackContent.value.length === 0) {
+        callMessage(1, "反馈内容不能为空！");
+        return ;
+    }
+
+    let data = {
+        'fbContent': feedbackContent.value,
+        'publishTime': getDateTime()
+    }
+    $.ajax({
+        url: getProjectPath() + "/entity/send-feedback",
+        type: 'POST',
+        data: JSON.parse(JSON.stringify(data)),
+        success: (resp) => {        // 意见反馈成功
+            if (resp.code === 0) {
+                callMessage(0, resp.msg);
+                feedbackContent.value = '';
+                // 写入至意见反馈中
+                setContentToFeedbackList(resp.data);
+            } else {
+                callMessage(resp.code, resp.msg);
+            }
+        },
+        error: (resp) => {
+            console.log(resp);
+            callMessage(-1, "***出错啦，请稍后再试！");
+        }
     });
-}*/
-
-/*document.querySelector('#chat-bg #chat-box #message div[class="exclusive-chat-box exclusive-chat-box-active"]').scroll(function () {
-    let top = this.screenTop();
-    this.css("top", 100 + top + "px");
-});*/
+    /*sendUrl(getProjectPath() + "/entity/send-feedback", 'POST', JSON.parse(JSON.stringify(data)),
+        getProjectPath() + "/main");
+    feedbackContent.value = '';*/
+});
 
 // 消息的右键菜单栏
 /*

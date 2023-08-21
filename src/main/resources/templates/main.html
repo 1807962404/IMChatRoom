@@ -11,12 +11,27 @@
   该css是引用 iconfont.cn 的一些字体图标。官方地址： https://www.iconfont.cn/ -->
     <link rel="stylesheet" href="http://at.alicdn.com/t/font_1117508_wxidm5ry7od.css">
     <link rel="stylesheet" th:href="@{/css/message.css }">
+    <link rel="stylesheet" th:href="@{/css/common.css }">
     <script th:src="@{/js/message.js }"></script>
-    <script th:src="@{/js/sign.js }"></script>
 
-    <script type="text/javascript" src="http://libs.baidu.com/jquery/2.1.4/jquery.min.js"></script>
+    <script src="http://libs.baidu.com/jquery/2.1.4/jquery.min.js"></script>
 </head>
 <body>
+<div id="customized-modal" class="modal">
+    <div class="modal-content">
+        <!--    默认模块显示内容-->
+        <div class="default-modal-content">
+            <span class="close" onclick="closeModal();">&times;</span>
+            <h2>温馨提醒您！</h2>
+            <p>此操作不可逆，请确认无误后再进行操作！</p>
+        </div>
+
+        <!--    用户自定义模块显示内容-->
+        <div class="custom-modal-content hidden-el">
+
+        </div>
+    </div>
+</div>
 <!--<img id="chat-bgi" th:src="@{/images/chat_bg.jpg }"/>-->
 <div id="chat-container">
     <div id="board">
@@ -33,7 +48,7 @@
 <!--                        正在和 <div class="show-name" class="ellipsis">Lucy</div> 聊天-->
                     </div>
                     <div id="user-exit">
-                        <a th:href="@{/user/logout }"><button>退出登录</button></a>
+                        <button>退出登录</button>
                     </div>
                     <div id="online-user-count">
                         当前用户在线总数量：<span id="count">0</span>
@@ -126,9 +141,23 @@
                                         <button type="button">点击发布</button>
                                     </div>
 
-                                    <!--                                我发布的广播内容-->
-                                    <div class="my-pub-broadcast">
+<!--                                有结果-->
+                                    <div class="has-search-result">
+                                        <h4>以往发布广播公告信息如下：</h4>
+                                        <div id="broadcast-preview">
+                                            <!--                                我发布的广播内容-->
+                                           <!-- <div class="my-pub-broadcast">
+                                                <div class="avatar"></div>
+                                                <div class="friend-name high-light ellipsis">Crushasdhasdasdabsdhbasasdhausd</div>
+                                                <div class="apply-time">2023-08-15 21:23:11</div>
+                                                <div class="broadcast-content">安徽的骄傲隧道巴士大家哈师大不能阿三大苏打啊实打实打算大苏打撒旦啊阿斯顿</div>
+                                            </div>-->
+                                        </div>
+                                    </div>
 
+<!--                                无结果-->
+                                    <div class="non-search-result hidden-el">
+                                        <p></p>
                                     </div>
                                 </div>
                             </div>
@@ -149,17 +178,11 @@
                                         <div class="app-content">tolatemylove203@gmail.com</div>
                                         <div class="add-btn"><a >点击添加好友</a></div>
                                     </div>-->
-                                    <div class="friend-info">
-                                        <div class="avatar"></div>
-                                        <div class="friend-name high-light ellipsis"></div>
-                                        <div class="app-content"></div>
-                                        <div class="add-btn"></div>
-                                    </div>
                                 </div>
 
 <!--                                无结果-->
                                 <div class="non-search-result hidden-el">
-                                    <p>无结果</p>
+                                    <p></p>
                                 </div>
                             </div>
 
@@ -227,7 +250,10 @@
                                             <li class="profile-item">邮箱地址：<span class="profile-item-val" th:text="${session.SIGNINED_USER.email }"></span></li>
                                             <li class="profile-item">账号激活时间：<span class="profile-item-val" th:text="${#dates.format(session.SIGNINED_USER.activeTime, 'yyyy-MM-dd HH:mm:ss') }"></span></li>
                                             <li class="profile-item">上次登录时间：<span class="profile-item-val" th:text="${#dates.format(session.SIGNINED_USER.lastSigninTime, 'yyyy-MM-dd HH:mm:ss')}"></span></li>
-                                            <li><button id="edit-profile-btn">保存更改</button></li>
+                                            <li>
+                                                <button id="edit-profile-btn">保存更改</button>
+                                                <button id="logout-account" onclick="logoutAccount()">注销账号</button>
+                                            </li>
                                         </ul>
                                     </div>
                                 </div>
@@ -242,28 +268,19 @@
                                 </div>
 
 <!--                                意见反馈列表-->
-                                <div id="all-feedbacks" class="has-search-result">
+                                <div id="all-feedback-list" class="has-search-result">
                                     <h4>意见反馈预览：</h4>
                                     <div class="feedback-preview">
-                                        <div class="feedback-preview-content">
-                                            <div class="avatar"></div>
-                                            <div class="friend-name high-light ellipsis">Crushasdhasdasdabsdhbasasdhausd</div>
-                                            <div class="apply-time">2023-08-15 21:23:11</div>
-                                            <div class="feedback-content">安徽的骄傲隧道巴士大家哈师大不能阿三大苏打啊实打实打算大苏打撒旦啊阿斯顿</div>
-                                        </div>
-                                        <div class="feedback-preview-content">
-                                            <div class="avatar"></div>
-                                            <div class="friend-name high-light ellipsis">Crushasdhasdasdabsdhbasasdhausd</div>
-                                            <div class="apply-time">2023-08-15 21:23:11</div>
-                                            <div class="feedback-content">安徽的骄傲隧道巴士大家哈师大不能阿三大苏打啊实打实打算大苏打撒旦啊阿斯顿</div>
-                                        </div>
-                                        <div class="feedback-preview-content">
+                                        <!--<div class="feedback-preview-content">
                                             <div class="avatar"></div>
                                             <div class="friend-name high-light ellipsis">Crushasdhasdasdabsdhbasasdhausd</div>
                                             <div class="apply-time">2023-08-15 21:23:11</div>
                                             <div class="feedback-content">安徽的骄傲隧道as巴士大家哈师大不能阿三大苏打啊实打实打算大苏打撒旦啊阿斯顿安徽的骄傲隧道as巴士大家哈师大不能阿三大苏打啊实打实打算大苏打撒旦啊阿斯顿</div>
-                                        </div>
+                                        </div>-->
                                     </div>
+                                </div>
+                                <div class="non-search-result hidden-el">
+                                    <p></p>
                                 </div>
                             </div>
                         </div>
@@ -276,7 +293,10 @@
                         <!--                    系统广播-->
                         <div id="system-message">
                             <p class="expand ellipsis">系统广播</p>
-                            <div id="system-message-show">
+                            <div id="system-message-show"
+                                 th:if="!${#lists.isEmpty(session.BROADCAST_MESSAGE) }"
+                                 th:each="broadcastMsg: ${session.BROADCAST_MESSAGE }">
+                                <p  class="info-all infos" th:text="${broadcastMsg.content }"></p>
 <!--                                <p class="info-all infos">请注意！现在是广播事件：啊是多久啊圣诞啊实打实大苏打梵蒂冈的节阿松大是南大四年冬季阿三大苏打爱上你的</p>-->
                             </div>
                         </div>
@@ -352,7 +372,7 @@
                                     <p><a class="unAllowedFunction">新朋友</a></p>
                                     <p><a class="unAllowedFunction">群通知</a></p>
                                     <div th:if="${session.SIGNINED_USER.role == session.ADMIN_USER_NAME}">
-                                        <p><a>发布系统广播</a></p>
+                                        <p id="all-broadcasts" onclick="doGetAllBroadcasts()"><a>发布系统广播</a></p>
 <!--                                    <p><a class="unAllowedFunction">发布系统广播</a></p>-->
                                     </div>
                                     <p><a>添加好友</a></p>
@@ -360,7 +380,7 @@
                                     <p><a class="unAllowedFunction">新建群聊</a></p>
                                     <p><a class="unAllowedFunction">朋友圈</a></p>
                                     <p><a>个人信息</a></p>
-                                    <p><a>意见反馈</a></p>
+                                    <p id="all-feedbacks"><a>意见反馈</a></p>
                                 </li>
                             </ul>
                         </div>
@@ -380,6 +400,7 @@
     </div>
 </div>
 
+<script th:src="@{/js/sign.js }"></script>
 <script th:src="@{/js/chat.js }"></script>
 <script th:src="@{/js/ws.js }"></script>
 </body>

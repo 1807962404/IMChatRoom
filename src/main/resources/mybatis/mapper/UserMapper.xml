@@ -69,6 +69,9 @@
             <if test="null != user.onlineStatus and '' != user.onlineStatus">
                 `online_status` = #{user.onlineStatus },
             </if>
+            <if test="null != user.accountStatus and '' != user.accountStatus">
+                `account_status` = #{user.accountStatus },
+            </if>
             <if test="null != user.lastSigninTime">
                 `last_signin_time` = #{user.lastSigninTime },
             </if>
@@ -96,4 +99,12 @@
             `modified_time` = #{activeUser.modifiedTime }
         WHERE `display_status` = '0' AND `active_code` = #{activeUser.activeCode }
     </update>
+
+<!--    List<User> selectUsersByFuzzyQuery(@Param("data") String data);-->
+    <select id="selectUsersByFuzzyQuery" resultMap="userResultMap">
+        <include refid="AllUsersResult" />
+        WHERE `display_status` = '0'
+        AND (`account` LIKE '%${data }%' OR `email` LIKE '%${data }%' OR `nickname` LIKE '%${data }%')
+            ORDER BY `active_time` DESC
+    </select>
 </mapper>

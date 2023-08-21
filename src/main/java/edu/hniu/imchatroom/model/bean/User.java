@@ -1,5 +1,6 @@
 package edu.hniu.imchatroom.model.bean;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,6 +19,7 @@ import java.util.Objects;
 public class User implements Serializable {
 
     private static final long serialVersionUID = 234783249212320L;
+    @JsonProperty("uId")
     private Integer uId;
     private String account;
     private String password;
@@ -38,6 +40,8 @@ public class User implements Serializable {
     private String displayStatus;
     // 用户的好友列表
     private List<Friend> myFriendList;
+    // 管理员发布的系统公告
+    private List<BroadcastMessage> myPublishedBroadcasts;
 
     /**
      * 若uid、account 以及 email 都相等则看作是同一个对象

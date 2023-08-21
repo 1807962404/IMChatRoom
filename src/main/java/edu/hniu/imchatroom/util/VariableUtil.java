@@ -15,6 +15,9 @@ public final class VariableUtil {
     // 建立WebSocket连接时用
     public static final String SIGNINED_USER_WS_CODE = "SIGNINED_USER_WS_CODE";
 
+    // 系统广播名称
+    public static final String BROADCAST_MESSAGE_NAME = "BROADCAST_MESSAGE";
+
     // 用作随机生成字符串的变量
     public static final String BASE_CODE = "0123456789ABCDEFGHIJKMLNOPQRSTUVWXYZabcdefghijkmlnopqrstuvwxyz";
     // 验证码变量
@@ -34,5 +37,5 @@ public final class VariableUtil {
     public static final String[] STATIC_RESOURCES_PATH = new String[] {"/css/**", "/js/**", "/images/**", "/favicon.ico"};
     // 需要排除拦截或过滤的请求资源路径
     public static final String[] EXCLUSIVE_REQUEST_PATH = new String[] {"/login", "/signin", "/user/login", "/user/signin",
-            "/user/signup", "/verifyCode/*", "/user/activeUserAccount/*", "/user/logout", "/error"};
+            "/user/signup", "/entity/verify-code/*", "/user/active-user-account/*", "/user/logout", "/error"};
 }

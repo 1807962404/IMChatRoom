@@ -1,8 +1,10 @@
 package edu.hniu.imchatroom.service.impl;
 
 import edu.hniu.imchatroom.mapper.MessageMapper;
+import edu.hniu.imchatroom.model.bean.BroadcastMessage;
 import edu.hniu.imchatroom.model.bean.Message;
 import edu.hniu.imchatroom.model.bean.PrivateMessage;
+import edu.hniu.imchatroom.model.bean.PublicMessage;
 import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
 import edu.hniu.imchatroom.service.ChatService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,6 +71,8 @@ public class ChatServiceImpl implements ChatService {
 
         } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
             // 发送系统消息
+            BroadcastMessage broadcastMessage = (BroadcastMessage) message;
+            return messageMapper.insertSystemMsg(broadcastMessage);
         }
 
         return 0;

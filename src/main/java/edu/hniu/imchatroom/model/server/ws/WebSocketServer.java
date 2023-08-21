@@ -3,6 +3,7 @@ package edu.hniu.imchatroom.model.server.ws;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import edu.hniu.imchatroom.controller.UserController;
+import edu.hniu.imchatroom.model.bean.BroadcastMessage;
 import edu.hniu.imchatroom.model.bean.Message;
 import edu.hniu.imchatroom.model.bean.PrivateMessage;
 import edu.hniu.imchatroom.model.bean.User;
@@ -57,7 +58,7 @@ public class WebSocketServer {
         webSocketServerSet.add(this);       // 添加至Set集合中
 
         try {
-            sendMessage("成功建立WebSocket连接！");
+            sendMessage("{\"msg\": \"成功建立WebSocket连接！\"}");
             /*log.info("开始监听：{}，用户名：{}，当前用户在线总数量为：{}",
                     uniqueUserCode, user.getNickname(), UserController.getOnlineCount());*/
         } catch (IOException e) {
@@ -103,14 +104,15 @@ public class WebSocketServer {
                     PrivateMessage messageToUse = JSON.parseObject(message, PrivateMessage.class);
                     if (curUser.equals(messageToUse.getSendUser()) || curUser.equals(messageToUse.getReceiveUser())) {
                         next.sendMessage(JSON.toJSONString(messageToUse));  // 推送消息
-//                        this.session.getAsyncRemote().sendText(message);  // 推送消息
                     }
 
                 } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
                     // 群聊消息
 
-                } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
+                } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
                     // 系统公告消息
+                    BroadcastMessage messageToUse = JSON.parseObject(message, BroadcastMessage.class);
+                    next.sendMessage(JSON.toJSONString(messageToUse));
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);

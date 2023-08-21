@@ -3,10 +3,14 @@
  * @type {Element}
  */
 
-const container = document.getElementsByClassName('container')[0];
-const signIn = document.getElementById('sign-in');
-const signUp = document.getElementById('sign-up');
-const verifyCode = document.getElementsByClassName('verifyCode');
+//获取当前项目的名称
+function getProjectPath() {
+    //获取主机地址之后的目录，如： cloudlibrary/admin/books.jsp
+    var pathName = window.document.location.pathname;
+    //获取带"/"的项目名，如：/cloudlibrary
+    var projectName = pathName.substring(0, pathName.substr(1).indexOf('/') + 1);
+    return projectName;
+}
 
 let sleepTime = 700;
 // 睡眠指定时间后执行程序
@@ -14,6 +18,39 @@ function sleep (time) {
     return new Promise((resolve) => setTimeout(resolve, time));
 }
 
+const modalElem = document.getElementById("customized-modal");
+const modalContentElem = modalElem.firstElementChild;             // modal-content element
+// 弹窗显示
+function showModal(elem) {
+    modalElem.style.display = "block";
+    // 自定义弹窗内容
+    let customModalContentElem = modalContentElem.lastElementChild;
+    customModalContentElem.classList.remove('hidden-el');
+    customModalContentElem.appendChild(elem);
+}
+// 弹窗隐藏
+function hideModal() {
+    modalElem.style.display = "none";
+    let customModalContentElem = modalContentElem.lastElementChild;
+    customModalContentElem.classList.add('hidden-el');
+    let children = customModalContentElem.children;
+    // console.log(children);
+    for (let i = 0; i < children.length; i++) {
+        // 每次关闭弹窗都需删除自定义模块下的所有内容
+        let child = children[i];
+        customModalContentElem.removeChild(child);
+    }
+}
+// 弹窗关闭
+function closeModal() {
+    hideModal();
+    callMessage(1, '已取消操作！');
+}
+
+const container = document.getElementsByClassName('container')[0];
+const signIn = document.getElementById('sign-in');
+const signUp = document.getElementById('sign-up');
+const verifyCode = document.getElementsByClassName('verifyCode');
 // 每次切换选项卡都需要更新验证码
 if (signUp)
     signUp.addEventListener('click', (evt) => {
@@ -26,19 +63,10 @@ if (signIn)
         changeCheckCode(verifyCode[1], true);
     });
 
-//获取当前项目的名称
-function getProjectPath() {
-    //获取主机地址之后的目录，如： cloudlibrary/admin/books.jsp
-    var pathName = window.document.location.pathname;
-    //获取带"/"的项目名，如：/cloudlibrary
-    var projectName = pathName.substring(0, pathName.substr(1).indexOf('/') + 1);
-    return projectName;
-}
-
 //验证码点击切换事件。注册：false；登陆：true
 function changeCheckCode(img, isSignIn) {
     const timestamp = new Date().getTime();
-    img.src = "verifyCode/" + timestamp;
+    img.src = "entity/verify-code/" + timestamp;
     console.log(img.src)
 
     // 用于验证 输入验证码的正确与否
@@ -53,6 +81,7 @@ function changeCheckCode(img, isSignIn) {
 function checkEmailVal(emailVal, isSignIn) {
 
     var email_form = /^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z0-9]{2,6}$/;
+    // var email_form = /^[0-9a-zA-Z_.-]+[@][0-9a-zA-Z_.-]+([.][a-zA-Z]+){1,2}$/;
     var error_email = document.getElementsByClassName('error_email');
     var emailValLength = emailVal.length;
 
@@ -130,7 +159,7 @@ function checkVerifyCodeVal(codeVal, isSignIn) {
 // 注册用户时，校验昵称
 function checkNicknameVal(nicknameVal) {
     var error_nickname = document.getElementsByClassName('error_nickname')[0];
-    if (nicknameVal === '' | nicknameVal.length < 3 | nicknameVal.length > 20) {
+    if (nicknameVal === '' | nicknameVal.length < 3 | nicknameVal.length > 15) {
         error_nickname.innerText = '·请检查昵称格式！';
         return false;
     } else {
@@ -247,11 +276,38 @@ function doSignIn() {
         return ;
 
     // 2、封装登陆表单的数据
-    var data = getFormData(true);
+    let data = getFormData(true);
 
     // 3、发送请求
-    sendUrl(getProjectPath() + '/user/signin', 'POST', data,
-        getProjectPath() + '/main');
+    /*sendUrl(getProjectPath() + '/user/signin', 'POST', data,
+        getProjectPath() + '/main');*/
+    $.ajax({
+        url: getProjectPath() + '/user/signin',
+        type: 'POST',
+        data: data,
+        success: function (resp) {
+            console.log(resp)
+            // 成功处理逻辑
+
+            if (resp.code === 0) {
+                // 登陆成功
+                callMessage(0, resp.msg);
+                sleep(sleepTime).then(()=> window.location.href = getProjectPath() + '/main');
+
+            } else {
+                callMessage(resp.code, resp.msg);
+                // 登陆失败需要切换验证码
+                changeCheckCode(verifyCode[1], true);
+            }
+        },
+        error: function (resp) {
+            console.log(resp)
+            // 发生错误时处理逻辑
+            callMessage(-1, "***哎呀出错啦，请稍后再试吧！");
+            // 登陆失败需要切换验证码
+            changeCheckCode(verifyCode[1], true);
+        }
+    });
 }
 
 // 用户注册
@@ -261,10 +317,50 @@ function doSignUp() {
     if (!checkVal(false))
         return ;
 
-    // 2、封装登陆表单的数据
-    var data = getFormData(false);
+    // 2、显示弹窗提醒
+    let pElem = document.createElement('p');
+    pElem.innerHTML = `请确认邮箱地址是否无误，错误的邮箱会可能使您无法找回账户！<br />
+                <button class="opt-cancel" onclick="doFinalSignUp(true)">容我再想想？</button>
+                <button onclick="doFinalSignUp(false)">确认注册</button>`;
+    showModal(pElem);
+}
+function doFinalSignUp(isCancelled) {
+    hideModal();
+    if (!isCancelled) {
+        // 3、封装登陆表单的数据
+        let data = getFormData(false);
+        // 4、发送请求
+        $.ajax({
+            url: getProjectPath() + '/user/signup',
+            type: 'POST',
+            data: data,
+            success: function (resp) {
+                console.log(resp)
+                // 成功处理逻辑
 
-    // 3、发送请求
-    sendUrl(getProjectPath() + '/user/signup', 'POST', data,
-        getProjectPath() + '/login');
+                if (resp.code === 0) {
+                    // 注册成功
+                    callMessage(0, resp.msg);
+                    sleep(sleepTime).then(()=> window.location.href = getProjectPath() + '/user/login');
+
+                } else {
+                    callMessage(resp.code, resp.msg);
+                    // 注册失败需要切换验证码
+                    changeCheckCode(verifyCode[0], false);
+                }
+            },
+            error: function (resp) {
+                console.log(resp)
+                // 发生错误时处理逻辑
+                callMessage(-1, "***哎呀出错啦，请稍后再试吧！");
+                // 注册失败需要切换验证码
+                changeCheckCode(verifyCode[0], false);
+                // sleep(sleepTime).then(()=> window.location.href = getProjectPath() + '/error');
+            }
+        });
+
+    } else {
+        callMessage(1, "已取消操作");
+        changeCheckCode(verifyCode[0], false);
+    }
 }

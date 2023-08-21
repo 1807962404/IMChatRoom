@@ -3,6 +3,7 @@ package edu.hniu.imchatroom.controller;
 import edu.hniu.imchatroom.model.bean.*;
 import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
 import edu.hniu.imchatroom.model.enums.ResponseCodeEnum;
+import edu.hniu.imchatroom.model.enums.RoleEnum;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.ChatService;
 import edu.hniu.imchatroom.service.FriendService;
@@ -68,6 +69,7 @@ public class ChatController {
 
         } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
             // 系统公告消息
+            return doChatToEveryone(message, thisUser);
 
         } else {
             resultVO.setCode(RESPONSE_FAILED_CODE);
@@ -110,6 +112,13 @@ public class ChatController {
         return messageToUse;
     }
 
+    /**
+     * 处理私聊消息
+     * @param message
+     * @param friendId
+     * @param thisUser
+     * @return
+     */
     private ResultVO<PrivateMessage> doChatToPersonal(Message message, String friendId, User thisUser) {
         ResultVO<PrivateMessage> resultVO = new ResultVO<>();
 
@@ -144,7 +153,6 @@ public class ChatController {
 
         // 5、本人发送消息给对方（好友）
         int result = chatService.doChat(privateMessage);
-//        int result = 1;
 
         if (1 == result) {
             resultVO.setCode(RESPONSE_SUCCESS_CODE);
@@ -161,55 +169,44 @@ public class ChatController {
         return resultVO;
     }
 
-    /*@ResponseBody
-    @PostMapping("/to-personal-chat/{friendId}")
-    public ResultVO<PrivateMessage> chatToPersonal(Message message,
-                                                   @PathVariable("friendId") String friendId,
-                                                   HttpServletRequest request
-    ) {
-        log.info("chatToPersonal's Message: {}", message);
+    /**
+     * 管理员用户发布系统广播信息
+     * @param message
+     * @param thisUser
+     * @return
+     */
+    public ResultVO<BroadcastMessage> doChatToEveryone(Message message, User thisUser) {
+        ResultVO<BroadcastMessage> resultVO = new ResultVO<>();
 
-        ResultVO<PrivateMessage> resultVO = new ResultVO<>();
-        String thisMsgType = MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG);
-        // 1、判断消息类型是否能够匹配
-        if (!message.getMessageType().equals(thisMsgType)) {
+        // 1、检查此用户是否为管理员
+        if (!thisUser.getRole().equals(RoleEnum.getRoleName(RoleEnum.ADMIN))) {
             resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("消息类型匹配不上：" + thisMsgType + " not equal to " + message.getMessageType() + "！");
-            log.warn("消息类型匹配不上：{} not equal to {}！", thisMsgType, message.getMessageType());
+            resultVO.setMsg("用户权限不够，无法发布系统广播信息！");
+            log.warn("用户权限不够，无法发布系统广播信息！");
             return resultVO;
         }
 
-        // 2、检查传入的好友id是否为空
-        if (StringUtil.isEmpty(friendId)) {
+        BroadcastMessage broadcastMessage = (BroadcastMessage) doDispatchMessage(message);
+        // 设置系统公告所有人
+        broadcastMessage.setUser(thisUser);
+
+        // 2、发布系统公告
+        int result = chatService.doChat(broadcastMessage);
+
+        if (1 == result) {
+            resultVO.setCode(RESPONSE_SUCCESS_CODE);
+            resultVO.setData(broadcastMessage);
+            resultVO.setMsg("系统公告发布成功！");
+            log.warn("系统公告发布成功！");
+
+        } else {
             resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("发送消息的对象不能为空！");
-            log.warn("发送消息的对象不能为空！");
-            return resultVO;
+            resultVO.setMsg("系统公告发布失败！");
+            log.warn("系统公告发布失败！");
         }
-
-        // 3、查找该用户id是否存在
-        User friendUser = userService.doGetUserById(Integer.valueOf(friendId));
-
-        // 4、检查本人与该用户id好友 的友谊状况（即双方是否处于好友阶段）
-        User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
-        FriendShip friendShip = friendService.doCheckIsFriend(thisUser, friendUser, StatusCodeEnum.getStatusCode(StatusCodeEnum.ISFRIEND));
-
-        if (null == friendShip) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("您已不是对方的好友，无法向对方发送消息！");
-            log.warn("您已不是id为：{} 用户 {} 的好友，无法向对方发送消息！", friendId, friendUser.getNickname());
-            return resultVO;
-        }
-
-        PrivateMessage privateMessage = (PrivateMessage) message;
-        // 设置消息发送者为本人
-        privateMessage.setSendUser(thisUser);
-        // 设置消息接收者为对方（好友）
-        privateMessage.setReceiveUser(friendUser);
-//        chatService.doChatToPersonal(privateMessage);
 
         return resultVO;
-    }*/
+    }
 
     /**
      * 获取本人与好友间的 历史私聊消息

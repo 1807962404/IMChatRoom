@@ -40,6 +40,16 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
+     * 模糊查询用户信息
+     * @param data
+     * @return
+     */
+    @Override
+    public List<User> doGetUsersByFuzzyQuery(String data) {
+        return userMapper.selectUsersByFuzzyQuery(data);
+    }
+
+    /**
      * 处理【根据账号状态】查询所有用户信息 的业务逻辑
      * @return
      */
@@ -92,7 +102,7 @@ public class UserServiceImpl implements UserService {
             mailUtil.sendEmail(user.getEmail(), content, CHATROOM_NAME + "激活邮件");
         } catch (MessagingException e) {
             System.out.println("发送邮件失败：" + e.getMessage());
-            return 1;
+            return 0;
         }
 
         // 5、新增用户
@@ -148,13 +158,14 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * 用户会话注销
+     * 更新账号信息
+     *  1、处理 用户会话注销 的业务逻辑
+     *  2、处理 注销用户账号 的业务逻辑
      * @param user
      * @return
      */
-    public Integer doLogout(User user) {
-        // 1、修改该用户为在线状态
-        user.setOnlineStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.OFFLINE));
+    public Integer doUpdateUser(User user) {
+
         // 2、设置账号修改时间
         user.setModifiedTime(new Date(System.currentTimeMillis()));
         // 3、不设置上次登陆时间

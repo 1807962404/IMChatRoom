@@ -35,4 +35,12 @@
             (#{privateMessage.sendUser.uId }, #{privateMessage.receiveUser.uId },
              #{privateMessage.content }, #{privateMessage.sendTime })
     </insert>
+
+<!--    Integer insertSystemMsg(@Param("broadcastMessage") BroadcastMessage broadcastMessage);-->
+    <insert id="insertSystemMsg" useGeneratedKeys="true" keyProperty="bId">
+        INSERT INTO `broadcast_message`
+            (`u_id`, `content`, `send_time`)
+        VALUES
+            (#{broadcastMessage.user.uId }, #{broadcastMessage.content }, #{broadcastMessage.sendTime })
+    </insert>
 </mapper>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="edu.hniu.imchatroom.mapper.EntityMapper">
+
+    <sql id="feedback_column">
+        `fb_id`, `u_id`, `fb_content`, `publish_time`
+    </sql>
+
+    <sql id="broadcast_column">
+        `b_id`, `u_id`, `content`, `send_time`
+    </sql>
+
+    <resultMap id="FeedbackResultMap" type="edu.hniu.imchatroom.model.bean.Feedback">
+        <id column="fb_id" property="fbId" />
+        <result column="fb_content" property="fbContent" />
+        <result column="publish_time" property="publishTime" />
+        <association column="u_id" property="user" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById"/>
+    </resultMap>
+    
+    <resultMap id="BroadcastResultMap" type="edu.hniu.imchatroom.model.bean.BroadcastMessage">
+        <id column="b_id" property="bId" />
+        <result column="content" property="content" />
+        <result column="send_time" property="sendTime" />
+        <association column="u_id" property="user" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById"/>
+    </resultMap>
+
+<!--    List<Feedback> selectAllFeedbacks(@Param("keyword") String keyword);-->
+    <select id="selectAllFeedbacks" resultMap="FeedbackResultMap">
+        SELECT
+            <include refid="feedback_column" />, `display_status`
+        FROM `feedback`
+        WHERE `display_status` = '0'
+        <if test="keyword != null and keyword != ''">
+            AND (`fb_content` LIKE '%${keyword }%' OR `publish_time` LIKE '%${keyword }%')
+        </if>
+    </select>
+
+<!--    Integer insertFeedback(@Param("feedback") Feedback feedback);-->
+    <insert id="insertFeedback" useGeneratedKeys="true" keyProperty="fbId">
+        INSERT INTO `feedback`
+            (`u_id`, `fb_content`, `publish_time`, `display_status`)
+        VALUES
+            (#{feedback.user.uId }, #{feedback.fbContent }, #{feedback.publishTime }, #{feedback.displayStatus })
+    </insert>
+
+<!--    Feedback selectFeedback(@Param("fbId") Integer fbId);-->
+    <select id="selectFeedback" resultMap="FeedbackResultMap">
+        SELECT
+        <include refid="feedback_column" />, `display_status`
+        FROM `feedback`
+        WHERE `display_status` = '0' AND `fb_id` = #{fbId }
+    </select>
+
+<!--    List<BroadcastMessage> selectBroadcasts(@Param("uId") Integer uId);-->
+    <select id="selectBroadcasts" resultMap="BroadcastResultMap">
+        SELECT
+            <include refid="broadcast_column" />, `display_status`
+        FROM `broadcast_message`
+        WHERE `display_status` = '0'
+        <if test="uId != null">
+            AND `u_id` = #{uId }
+        </if>
+    </select>
+</mapper>
