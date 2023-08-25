@@ -42,7 +42,8 @@
             <div id="chat-header">
                 <div id="info-show">
                     <div id="user-info">
-                        当前用户：<span class="show-name ellipsis" th:text="${session.SIGNINED_USER.nickname }">铭强</span>
+                        当前用户：<span th:attr="data-id=${session.SIGNINED_USER.getUId() }"
+                                       class="show-name ellipsis" th:text="${session.SIGNINED_USER.nickname }">铭强</span>
                     </div>
                     <div id="chat-obj">
 <!--                        正在和 <div class="show-name" class="ellipsis">Lucy</div> 聊天-->
@@ -72,20 +73,22 @@
 
 <!--                        群聊消息框-->
                         <div id="public-message" class="exclusive-chat-box">
-                            <div class="send_msg msg">
-                                <!--                                头像-->
-                                <div class="avatar send_avatar"></div>
-                                <span class="name ellipsis">我</span>
-                                <div class="inter-msg">
-                                    <div class="sentence">
-                                        <!--                                消息-->
-                                        <p class="text">你好啊！爱睡觉的八十大寿都怕为人父你说的四大皆空史蒂夫纳什的残存设计的那就是你的</p>
-                                        <!--    消息三角-->
-                                        <div class="triangle"></div>
-                                        <p class="time">2023-08-14 16:51:31</p>
+                            <!--<div class="corresponding">
+                                <div class="send_msg msg">
+                                    &lt;!&ndash;                                头像&ndash;&gt;
+                                    <div class="avatar send_avatar"></div>
+                                    <span class="name ellipsis">我</span>
+                                    <div class="inter-msg">
+                                        <div class="sentence">
+                                            &lt;!&ndash;                                消息&ndash;&gt;
+                                            <p class="text">你好啊！爱睡觉的八十大寿都怕为人父你说的四大皆空史蒂夫纳什的残存设计的那就是你的</p>
+                                            &lt;!&ndash;    消息三角&ndash;&gt;
+                                            <div class="triangle"></div>
+                                            <p class="time">2023-08-14 16:51:31</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            </div>-->
                         </div>
 
 <!--                        功能框-->
@@ -94,43 +97,51 @@
 <!--                            新朋友-->
                             <div id="new-friend" class="entity-li">
                                 <h3>好友通知</h3>
-                                <ul>
-                                    <li>
-                                        <div class="apply-friend">
-                                            <div class="avatar"></div>
-                                            <div class="friend-name high-light ellipsis">Crushasdhasdasdabsdhbasasdhausd</div>
-                                            <div class="apply-time">2023-08-15 21:23:11</div>
-                                            <div class="app-content">请求添加好友，<a class="agree">点击同意好友申请！</a></div>
-                                        </div>
-                                    </li>
-                                    <li>
-                                        <div class="apply-friend">
-                                            <div class="avatar"></div>
-                                            <div class="friend-name high-light ellipsis">Tom</div>
-                                            <div class="apply-time">2023-08-15 11:23:11</div>
-                                            <div class="app-content">请求添加好友，<a class="agree">已同意好友申请！</a></div>
-                                        </div>
-                                    </li>
-                                </ul>
+<!--                                <div class="has-search-result" style="display: block;!important;">-->
+                                <div class="has-search-result">
+                                    <!--<div class="apply-friend">
+                                        <div class="avatar"></div>
+                                        <div class="friend-name high-light ellipsis">Crushasdhasdasdabsdhbasasdhausd</div>
+                                        <div class="apply-time">2023-08-15 21:23:11</div>
+                                        <div class="app-content">请求添加好友，<a class="agree">点击同意好友申请！</a></div>
+                                    </div>-->
+                                </div>
+                                <div class="non-search-result hidden-el">
+                                    <p></p>
+                                </div>
                             </div>
 
 <!--                            群通知-->
-                            <div id="group-notification" class="entity-li">
+                            <div id="group-notifications" class="entity-li">
                                 <h3>群通知</h3>
-                                <ul>
-                                    <li>
-                                        <div class="apply-friend">
+                                <div id="group-notification">
+                                    <div class="has-search-result">
+                                        <!--<div class="apply-friend">
                                             <div class="avatar"></div>
                                             <div class="friend-name high-light">Twi</div>
                                             <div class="apply-time">2023-04-15 21:23:11</div>
                                             <div class="app-content">邀请您加入
                                                 <span class="high-light">向天乐</span> 群组
-                                                <a class="agree">点击同意！</a></div>
+                                                <a class="agree">点击同意！</a>
+                                            </div>
                                         </div>
-                                    </li>
-                                </ul>
+                                        <div class="apply-friend">
+                                            <div class="avatar"></div>
+                                            <div class="friend-name high-light">第三个的风格</div>
+                                            <div class="apply-time">2023-04-15 21:23:11</div>
+                                            <div class="app-content"><span class="high-light">向天乐</span>申请加入
+                                                <span class="high-light">齐天大圣</span> 群组
+                                                <a class="agree">点击同意！</a>
+                                            </div>
+                                        </div>-->
+                                    </div>
+                                    <div class="non-search-result hidden-el">
+                                        <p></p>
+                                    </div>
+                                </div>
                             </div>
 
+<!--                            系统广播-->
                             <div th:if="${session.SIGNINED_USER.role == session.ADMIN_USER_NAME}">
                                 <!--                            管理员：发布系统广播-->
                                 <div id="publish-system-broadcast" class="entity-li" th:if="${session.SIGNINED_USER.role == session.ADMIN_USER_NAME }">
@@ -195,19 +206,21 @@
                                 </div>
 
 <!--                                有结果-->
-                                <div class="has-search-result hidden-el">
+                                <div class="has-search-result">
                                     <h4>搜索结果如下：</h4>
-                                    <div class="group-info">
-                                        <div class="group-name high-light ellipsis">米奇GeiGei屋</div>
-                                        <div class="app-content">2023-03-11 23:32:11</div>
-                                        <div class="group-code">sjs298sshdjxncmvnkls</div>
-                                        <div class="add-btn"><a >点击加入群聊</a></div>
+                                    <div id="groups-info">
+                                        <!--<div class="group-info">
+                                            <div class="group-name">米奇GeiGei屋</div>
+                                            <div class="create-time">2023-03-11 23:32:11</div>
+                                            <div class="group-code">sjs298sshdjxncmvnkls</div>
+                                            <div class="add-btn"><a >点击加入群聊</a></div>
+                                        </div>-->
                                     </div>
                                 </div>
 
 <!--                                无结果-->
                                 <div class="non-search-result hidden-el">
-                                    <p>无结果</p>
+                                    <p></p>
                                 </div>
                             </div>
 
@@ -219,8 +232,52 @@
                                     <button type="button">点击创建</button>
                                 </div>
 <!--                                我创建的群聊-->
-                                <div class="my-group">
+                                <div id="my-created-groups">
+                                    <div class="has-search-result">
+                                        <h4>我创建的群聊</h4>
+                                        <div id="created-group">
+                                            <!--<div class="group">
+&lt;!&ndash;                                            群聊名称&ndash;&gt;
+                                                <p class="group-name">米奇geigei屋</p>
+&lt;!&ndash;                                            群聊群友&ndash;&gt;
+                                                <div class="my-group-members">
+                                                    <div class="apply-friend">
+                                                        <div class="avatar"></div>
+                                                        <div class="friend-name high-light ellipsis">Crushasdhasdasdabsdhbasasdhausd</div>
+                                                        <div class="app-content">tolatemylove203@gmail.com</div>
+                                                        <div class="apply-time">2023-08-15 21:23:11</div>
+                                                        <div class="drop-btn"><a>点击踢出群聊</a></div>
+                                                    </div>
+                                                    <div class="apply-friend">
+                                                        <div class="avatar"></div>
+                                                        <div class="friend-name high-light ellipsis">Crushasdhasdasdabsdhbasasdhausd</div>
+                                                        <div class="app-content">tolatemylove203@gmail.com</div>
+                                                        <div class="apply-time">2023-08-15 21:23:11</div>
+                                                        <div class="drop-btn"><a>点击踢出群聊</a></div>
+                                                    </div>
+                                                </div>
+                                            </div>
 
+                                            <div class="group">
+                                                &lt;!&ndash;                                            群聊名称&ndash;&gt;
+                                                <p class="group-name">黑白云</p>
+                                                &lt;!&ndash;                                            群聊群友&ndash;&gt;
+                                                <div class="my-group-members">
+                                                    <div class="apply-friend">
+                                                        <div class="avatar"></div>
+                                                        <div class="friend-name high-light ellipsis">dfgdfgdassa</div>
+                                                        <div class="app-content">tolatemylove203@gmail.com</div>
+                                                        <div class="apply-time">2023-08-15 21:23:11</div>
+                                                        <div class="drop-btn"><a>点击踢出群聊</a></div>
+                                                    </div>
+                                                </div>
+                                            </div>-->
+                                        </div>
+                                    </div>
+
+                                    <div class="non-search-result hidden-el">
+                                        <p>您尚未创建任意群组！</p>
+                                    </div>
                                 </div>
                             </div>
 
@@ -236,7 +293,7 @@
                                 <div id="profile">
 <!--                                    头像-->
                                     <div id="profile-avatar">
-                                        <img th:src="@{'/images' + ${session.SIGNINED_USER.avatarUrl }}" alt="用户头像" />
+                                        <img th:src="@{'/images' + ${session.SIGNINED_USER.avatarUrl }}" alt="用户头像，点击切换" />
                                     </div>
 <!--                                    简介-->
                                     <div id="profile-introduce">
@@ -248,10 +305,11 @@
                                                 <span class="profile-item-val" th:if="${session.SIGNINED_USER.role == session.COMMON_USER_NAME }">普通用户</span>
                                             </li>
                                             <li class="profile-item">邮箱地址：<span class="profile-item-val" th:text="${session.SIGNINED_USER.email }"></span></li>
+                                            <li class="profile-item">密码：<input class="profile-item-val" required/></li>
                                             <li class="profile-item">账号激活时间：<span class="profile-item-val" th:text="${#dates.format(session.SIGNINED_USER.activeTime, 'yyyy-MM-dd HH:mm:ss') }"></span></li>
                                             <li class="profile-item">上次登录时间：<span class="profile-item-val" th:text="${#dates.format(session.SIGNINED_USER.lastSigninTime, 'yyyy-MM-dd HH:mm:ss')}"></span></li>
                                             <li>
-                                                <button id="edit-profile-btn">保存更改</button>
+                                                <button onclick="editAccount()">保存更改</button>
                                                 <button id="logout-account" onclick="logoutAccount()">注销账号</button>
                                             </li>
                                         </ul>
@@ -294,9 +352,10 @@
                         <div id="system-message">
                             <p class="expand ellipsis">系统广播</p>
                             <div id="system-message-show"
-                                 th:if="!${#lists.isEmpty(session.BROADCAST_MESSAGE) }"
-                                 th:each="broadcastMsg: ${session.BROADCAST_MESSAGE }">
-                                <p  class="info-all infos" th:text="${broadcastMsg.content }"></p>
+                                 th:if="!${#lists.isEmpty(session.BROADCAST_MESSAGE) }">
+                                <div th:each="index: ${#numbers.sequence(session.BROADCAST_MESSAGE.size() - 1, 0, -1) }">
+                                    <p  class="info-all infos" th:text="${session.BROADCAST_MESSAGE[index].content }"></p>
+                                </div>
 <!--                                <p class="info-all infos">请注意！现在是广播事件：啊是多久啊圣诞啊实打实大苏打梵蒂冈的节阿松大是南大四年冬季阿三大苏打爱上你的</p>-->
                             </div>
                         </div>
@@ -305,7 +364,7 @@
                             <ul class="header">
                                 <li class="ellipsis active">优文摘要</li>
                                 <li class="ellipsis">好友列表</li>
-                                <li class="ellipsis unAllowedFunction">群聊列表</li>
+                                <li class="ellipsis">群聊列表</li>
                                 <li class="ellipsis">更多功能</li>
                             </ul>
                             <hr>
@@ -364,22 +423,52 @@
                                 </li>
 <!--                                群聊列表栏-->
                                 <li id="my-group-list">
-                                    <p><a>黑土白云聊天室</a></p>
-                                    <p><a>忠犬八公聊天室</a></p>
+                                    <div th:if="!${#lists.isEmpty(session.SIGNINED_USER.myEnteredGroups )}"
+                                         th:each="index: ${#numbers.sequence(session.SIGNINED_USER.myEnteredGroups.size() - 1, 0, -1) }">
+                                        <p>
+                                            <!--                                        显示群聊名称-->
+                                            <a class="my-entered-group"
+                                               th:attr="data-code=${session.SIGNINED_USER.myEnteredGroups[index].getGCode() }">
+                                                [[${session.SIGNINED_USER.myEnteredGroups[index].getGName() }]]
+                                            </a>
+<!--                                            如果该用户是群主，则可以操作：解散群聊-->
+                                            <button class="dissolve-group"
+                                                    th:if="${session.SIGNINED_USER.getUId() == session.SIGNINED_USER.myEnteredGroups[index].getHostUser().getUId() }"
+                                                    th:data-gName="${session.SIGNINED_USER.myEnteredGroups[index].gName }"
+                                                    th:data-gCode="${session.SIGNINED_USER.myEnteredGroups[index].gCode }"
+                                                    th:onclick="|doDissolveGroupBtnListener(this.getAttribute('data-gName'), this.getAttribute('data-gCode'))|">
+                                                解散群聊</button>
+<!--                                            如果该用户不是群主，则只能操作：退出群聊-->
+                                            <button class="exit-group"
+                                                    th:if="${session.SIGNINED_USER.getUId() != session.SIGNINED_USER.myEnteredGroups[index].getHostUser().getUId() }"
+                                                    th:data-gName="${session.SIGNINED_USER.myEnteredGroups[index].gName }"
+                                                    th:data-gCode="${session.SIGNINED_USER.myEnteredGroups[index].gCode }"
+                                                    th:onclick="|doExitGroupBtnListener(this.getAttribute('data-gName'), this.getAttribute('data-gCode'))|">
+                                                退出群聊</button>
+                                        </p>
+                                    </div>
+                                    <div th:if="${#lists.isEmpty(session.SIGNINED_USER.myEnteredGroups )}">
+                                        暂未加入任意群聊！
+                                    </div>
                                 </li>
 <!--                                更多功能栏-->
                                 <li>
-                                    <p><a class="unAllowedFunction">新朋友</a></p>
-                                    <p><a class="unAllowedFunction">群通知</a></p>
+<!--                                    点击“新朋友”会查询所有给该用户发送过好友申请的用户信息-->
+                                    <p><a onclick="findMyNewFriends()">新朋友</a></p>
+                                    <p><a onclick="findGroupNotifications()">群通知</a></p>
+<!--                                    只有管理员才可以发布系统广播-->
                                     <div th:if="${session.SIGNINED_USER.role == session.ADMIN_USER_NAME}">
                                         <p id="all-broadcasts" onclick="doGetAllBroadcasts()"><a>发布系统广播</a></p>
-<!--                                    <p><a class="unAllowedFunction">发布系统广播</a></p>-->
                                     </div>
+<!--                                    搜索好友，然后就能够进行添加好友的操作-->
                                     <p><a>添加好友</a></p>
-                                    <p><a class="unAllowedFunction">加入群聊</a></p>
-                                    <p><a class="unAllowedFunction">新建群聊</a></p>
+                                    <p><a>加入群聊</a></p>
+<!--                                    点击“新建群聊”的同时会查询该用户创建的所有群聊、以及这些群聊中所有的好友信息-->
+                                    <p><a onclick="fingMyCreatedGroups()">新建群聊</a></p>
                                     <p><a class="unAllowedFunction">朋友圈</a></p>
+<!--                                    罗列出用户的个人信息-->
                                     <p><a>个人信息</a></p>
+<!--                                    用户可以反馈意见，并同时查询出所有用户的意见反馈信息-->
                                     <p id="all-feedbacks"><a>意见反馈</a></p>
                                 </li>
                             </ul>

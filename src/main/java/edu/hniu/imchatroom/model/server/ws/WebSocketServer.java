@@ -3,10 +3,7 @@ package edu.hniu.imchatroom.model.server.ws;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import edu.hniu.imchatroom.controller.UserController;
-import edu.hniu.imchatroom.model.bean.BroadcastMessage;
-import edu.hniu.imchatroom.model.bean.Message;
-import edu.hniu.imchatroom.model.bean.PrivateMessage;
-import edu.hniu.imchatroom.model.bean.User;
+import edu.hniu.imchatroom.model.bean.*;
 import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
 import edu.hniu.imchatroom.util.StringUtil;
 import jakarta.websocket.*;
@@ -17,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -92,31 +90,27 @@ public class WebSocketServer {
         log.info("收到来自窗口：{}，用户：{} 的消息：{}", uniqueUserCode, user.getNickname(), messageJson.getContent());
         final String thisMsgType = messageJson.getMessageType();
 
-        // 群发消息
-        Iterator<WebSocketServer> iterator = webSocketServerSet.iterator();
-        while (iterator.hasNext()) {
+        // 匹配消息类型
+        if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {  // 私聊消息
+            PrivateMessage messageToUse = JSON.parseObject(message, PrivateMessage.class);
+            // 推送给指定用户消息
+            sendInfo(JSON.toJSONString(messageToUse), messageToUse.getSendUser());
+            sendInfo(JSON.toJSONString(messageToUse), messageToUse.getReceiveUser());
 
-            WebSocketServer next = iterator.next();
-            User curUser = next.user;
-            try {
-                // 匹配消息类型
-                if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {  // 私聊消息
-                    PrivateMessage messageToUse = JSON.parseObject(message, PrivateMessage.class);
-                    if (curUser.equals(messageToUse.getSendUser()) || curUser.equals(messageToUse.getReceiveUser())) {
-                        next.sendMessage(JSON.toJSONString(messageToUse));  // 推送消息
-                    }
-
-                } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
-                    // 群聊消息
-
-                } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
-                    // 系统公告消息
-                    BroadcastMessage messageToUse = JSON.parseObject(message, BroadcastMessage.class);
-                    next.sendMessage(JSON.toJSONString(messageToUse));
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG))) {
+            // 群聊消息
+            PublicMessage messageToUse = JSON.parseObject(message, PublicMessage.class);
+            // 将消息推送给所有在群组内的用户
+            List<GroupUser> groupUsers = messageToUse.getReceiveGroup().getMembers();
+            for (GroupUser groupUser : groupUsers) {
+                User reveiveUser = groupUser.getMember();
+                sendInfo(JSON.toJSONString(messageToUse), reveiveUser);
             }
+
+        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
+            // 系统公告消息
+            BroadcastMessage messageToUse = JSON.parseObject(message, BroadcastMessage.class);
+            sendInfo(JSON.toJSONString(messageToUse), null);        // 系统消息需要推送给所有在线用户
         }
     }
 
@@ -139,6 +133,34 @@ public class WebSocketServer {
     public void sendMessage(String message) throws IOException {
         log.info("服务器主动推送内容：{}", message);
         this.session.getBasicRemote().sendText(message);        // 会调用前端WebSocket连接的 onmessage()方法
+    }
+
+    /**
+     * 群发自定义消息
+     * @param message
+     * @param user
+     */
+    public static void sendInfo(String message, User user) {
+        if (null == user)
+            log.info("推送消息至所有窗口，推送内容为：{}", message);
+        else
+            log.info("推送消息至窗口：{}，推送内容为：{}", user, message);
+
+        Iterator<WebSocketServer> iterator = webSocketServerSet.iterator();
+        while (iterator.hasNext()) {
+            WebSocketServer next = iterator.next();
+            try {
+                // 此处可设定之推送给某哦个具体的user客户端，user为null则表示全部推送
+                if (null == user) {
+                    next.sendMessage(message);
+
+                } else if (next.user.equals(user)) {
+                    next.sendMessage(message);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /**

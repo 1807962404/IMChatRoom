@@ -43,4 +43,11 @@ public interface FriendService {
      * @return
      */
     Integer doDelMyFriend(FriendShip friendShip);
+
+    /**
+     * 根据uId获取其他用户给我发送过的好友请求
+     * @param uId
+     * @return
+     */
+    List<FriendShip> doGetOwnFriendship(Integer uId);
 }

@@ -35,7 +35,7 @@ public class ChatServiceImpl implements ChatService {
         // 根据消息类型进行分类处理
         String msgType = message.getMessageType();
         if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
-            // 私聊消息
+            // 私聊消息（会根据消息发送者id和消息接收者id进行查询）
             List<PrivateMessage> privateMessages = messageMapper.selectPrivateMessages((PrivateMessage) message);
             /*System.out.println("doGetChatMessage: ");
             privateMessages.forEach(privateMessage -> System.out.println(privateMessage));*/
@@ -43,7 +43,9 @@ public class ChatServiceImpl implements ChatService {
             return privateMessages;
 
         } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG))) {
-            // 群聊消息
+            // 群聊消息（会根据群gId进行查询）
+            List<PublicMessage> publicMessages = messageMapper.selectPublicMessage((PublicMessage) message);
+            return publicMessages;
 
         } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
             // 系统消息
@@ -68,6 +70,8 @@ public class ChatServiceImpl implements ChatService {
 
         } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG))) {
             // 发送群聊消息
+            PublicMessage publicMessage = (PublicMessage) message;
+            return messageMapper.insertPubMsg(publicMessage);
 
         } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
             // 发送系统消息
@@ -75,16 +79,6 @@ public class ChatServiceImpl implements ChatService {
             return messageMapper.insertSystemMsg(broadcastMessage);
         }
 
-        return 0;
+        return -1;
     }
-
-    /**
-     * 处理 查询私聊消息（会根据消息发送者id和消息接收者id进行查询）的业务逻辑
-     * @param privateMessage
-     * @return
-     */
-    /*@Override
-    public List<PrivateMessage> doGetPrivateMessages(PrivateMessage privateMessage) {
-        return messageMapper.selectPrivateMessages(privateMessage);
-    }*/
 }

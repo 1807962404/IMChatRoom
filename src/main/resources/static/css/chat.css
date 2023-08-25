@@ -227,6 +227,23 @@ a {
     color: #fff;
 }
 
+#my-group-list {
+    width: 280px;
+}
+
+#my-group-list p a {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+#my-group-list p button {
+    margin-top: -5px;
+    float: right;
+    padding: 5px;
+    background-color: #f00;
+    color: #fff;
+}
+
 #chat-bg #menu-bar #expand-function .box {
     position: relative;
 }
@@ -508,6 +525,107 @@ button:hover {
     margin-top: 15px;
 }
 
+#enter-group .has-search-result .group-info {
+    position: relative;
+    margin-left: 10px;
+}
+
+#enter-group .has-search-result .group-info .group-name:before{
+    content: "·";
+    font-size: 40px;
+    color: #26db6f;
+}
+
+#enter-group .has-search-result .group-info .group-name {
+    width: 240px;
+    color: #0e8ef2;
+    font-size: 20px;
+    font-weight: bold;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+#enter-group .has-search-result .group-info .create-time {
+    position: absolute;
+    top: 15px;
+    left: 250px;
+    font-size: 14px;
+    color: #999;
+}
+
+#enter-group .has-search-result .group-info .create-time:before {
+    content: "创建时间：";
+    font-size: 15px;
+    color: #888;
+}
+
+#enter-group .has-search-result .group-info .group-code:before {
+    content: "群码：";
+    font-size: 16px;
+    color: #666;
+}
+
+#enter-group .has-search-result .group-info .group-code {
+    margin-left: 10px;
+    font-size: 16px;
+    color: #666;
+}
+
+#enter-group .has-search-result .group-info .add-btn {
+    margin-top: 40px;
+}
+
+#my-created-groups .has-search-result h4 {
+    padding-bottom: 5px;
+    border-bottom: 1px solid #999;
+}
+
+#my-created-groups #created-group .group .group-name {
+    width: 240px;
+    margin: 10px;
+    color: #0e8ef2;
+    border-bottom: 2px solid #ccc;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#my-created-groups #created-group .group .group-name:before {
+    content: "·";
+    margin-right: 5px;
+    font-size: 30px;
+    color: #26db6f;
+}
+
+.my-group-members .drop-btn {
+    position: absolute;
+    top: 20px;
+    left: 280px;
+    padding: 5px;
+    background-color: #64b1d9;
+}
+
+.my-group-members .apply-time {
+    margin-top: 30px;
+}
+
+.my-group-members .drop-btn a {
+    color: #fff;
+}
+
+#my-created-groups #created-group .group {
+    margin-bottom: 10px;
+}
+
+#group-notifications #group-notification .apply-friend .high-light {
+    font-weight: bold;!important;
+}
+
+#group-notifications #group-notification .apply-friend .app-content a {
+    margin-left: 5px;
+}
+
 #chat-box #message #entity .entity-li .ellipsis {
     width: 100px;
 }
@@ -529,15 +647,17 @@ button:hover {
     background: url("../images/avatar/Member006.jpg") no-repeat;
 }
 
-#chat-box #message #entity .entity-li .friend-name {
-    position: absolute;
-    top: -5px;
-    left: 46px;
-    font-family: 黑体;
-}
-
 #chat-box #message #entity .entity-li .apply-friend {
     position: relative;
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+#chat-box #message #entity .entity-li .friend-name {
+    position: absolute;
+    top: 5px;
+    left: 60px;
+    font-family: 黑体;
 }
 
 #chat-box #message #entity .entity-li .apply-time {
@@ -549,8 +669,8 @@ button:hover {
 
 #chat-box #message #entity .entity-li .app-content {
     position: absolute;
-    top: 24px;
-    left: 46px;
+    top: 35px;
+    left: 60px;
     font-size: 14px;
 }
 
@@ -559,7 +679,7 @@ button:hover {
     font: 18px bold;
 }
 
-#chat-box #message #entity .entity-li .app-content .agree {
+#chat-box #message #entity .entity-li .app-content .agree, a {
     color: #64b1d9;
     font-weight: bold;
 }
@@ -584,7 +704,7 @@ button:hover {
     color: #000;
 }
 
-#publish-system-broadcast .my-pub-broadcast .friend-name {
+#publish-system-broadcast .my-pub-broadcast .apply-time {
     margin-top: 15px;
 }
 
@@ -605,7 +725,7 @@ button:hover {
     border-bottom: 1px solid #ccc;
 }
 
-#feedback #all-feedback-list .feedback-preview .feedback-preview-content .friend-name, .apply-time {
+#feedback #all-feedback-list .feedback-preview .feedback-preview-content .apply-time {
     margin-top: 15px;
 }
 

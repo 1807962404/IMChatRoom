@@ -31,7 +31,7 @@
         FROM `feedback`
         WHERE `display_status` = '0'
         <if test="keyword != null and keyword != ''">
-            AND (`fb_content` LIKE '%${keyword }%' OR `publish_time` LIKE '%${keyword }%')
+            AND (`fb_content` LIKE CONCAT('%', #{keyword }, '%') OR `publish_time` LIKE CONCAT('%', #{keyword }, '%'))
         </if>
     </select>
 

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="edu.hniu.imchatroom.mapper.GroupMapper">
+
+    <sql id="group_column">
+        `g_id`, `g_code`, `g_name`, `host_id`, `g_name`, `create_time`, `modified_time`
+    </sql>
+    <sql id="group_user_column">
+        `gu_id`, `g_id`, `member_id`, `gu_status`, `apply_time`, `join_time`
+    </sql>
+
+    <resultMap id="GroupsResultMap" type="edu.hniu.imchatroom.model.bean.Group">
+        <id column="g_id" property="gId" />
+        <result column="g_code" property="gCode" />
+        <result column="g_name" property="gName" />
+        <result column="create_time" property="createTime" />
+        <result column="modified_time" property="modifiedTime" />
+        <result column="display_status" property="displayStatus" />
+        <association column="host_id"
+                     property="hostUser"
+                     select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById" />
+    </resultMap>
+
+    <resultMap id="GroupUserResultMap" type="edu.hniu.imchatroom.model.bean.GroupUser">
+        <id column="gu_id" property="guId" />
+        <result column="gu_status" property="guStatus" />
+        <result column="apply_time" property="applyTime" />
+        <result column="join_time" property="joinTime" />
+        <result column="display_status" property="displayStatus" />
+        <association column="g_id"
+                     property="group"
+                     select="edu.hniu.imchatroom.mapper.GroupMapper.selectGroupById" />
+        <association column="member_id"
+                    property="member"
+                    select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById" />
+    </resultMap>
+
+    <sql id="AllGroups">
+        SELECT
+            <include refid="group_column" />, `display_status`
+        FROM `group`
+    </sql>
+    <sql id="AllGroupsUsers">
+        SELECT
+            <include refid="group_user_column" />, `display_status`
+        FROM `group_user`
+    </sql>
+
+<!--    List<Group> selectMyGroups(@Param("hostId") Integer hostId);-->
+    <select id="selectMyGroups" resultMap="GroupsResultMap">
+        <include refid="AllGroups" />
+        WHERE `display_status` = '0'
+            AND `host_id` = #{hostId }
+    </select>
+
+<!--    Group selectGroupById(@Param("gId") Integer gId);-->
+    <select id="selectGroupById" resultMap="GroupsResultMap">
+        <include refid="AllGroups" />
+        WHERE `display_status` = '0'
+            AND `display_status` = '0' AND `g_id` = #{gId }
+    </select>
+
+<!--    Integer insertGroup(@Param("newGroup") Group newGroup);-->
+    <insert id="insertGroup" useGeneratedKeys="true" keyProperty="gId">
+        INSERT INTO `group`
+            (`g_code`, `host_id`, `g_name`, `create_time`, `modified_time`, `display_status`)
+        VALUES
+            (#{newGroup.gCode }, #{newGroup.hostUser.uId }, #{newGroup.gName},
+             #{newGroup.createTime }, #{newGroup.modifiedTime }, #{newGroup.displayStatus })
+    </insert>
+
+<!--    Integer insertGroupUser(@Param("groupUser") GroupUser groupUser);-->
+    <insert id="insertGroupUser">
+        INSERT INTO `group_user`
+            (`g_id`, `member_id`, `gu_status`, `apply_time`, `display_status`, `join_time`)
+        VALUES
+            (#{groupUser.group.gId }, #{groupUser.member.uId }, #{groupUser.guStatus},
+             #{groupUser.applyTime }, #{groupUser.displayStatus },
+             <if test="null == groupUser.joinTime">null</if>
+             <if test="null != groupUser.joinTime">#{groupUser.joinTime }</if>)
+    </insert>
+
+<!--    List<Group> selectMyEnteredGroups(@Param("uId") Integer uId);-->
+    <select id="selectMyEnteredGroups" resultMap="GroupsResultMap">
+        <include refid="AllGroups" />
+        WHERE `display_status` = '0'
+            AND `g_id` IN (
+                SELECT
+                    `g_id`
+                FROM `group_user`
+                WHERE `display_status` = '0' AND
+                    `member_id` = #{uId } AND `gu_status` = '0'
+                ORDER BY `join_time` ASC
+            )
+    </select>
+
+<!--    List<Group> selectGroupsByFuzzyQuery(@Param("data") String data);-->
+    <select id="selectGroupsByFuzzyQuery" resultMap="GroupsResultMap">
+        <include refid="AllGroups" />
+        WHERE `display_status` = '0'
+            AND (`g_code` LIKE CONCAT('%', #{data }, '%') OR `g_name` LIKE CONCAT('%', #{data }, '%'))
+        ORDER BY `create_time` DESC
+    </select>
+
+<!--    Group selectGroupByGCode(@Param("gCode") String gCode);-->
+    <select id="selectGroupByGCode" resultMap="GroupsResultMap">
+        <include refid="AllGroups" />
+        WHERE `display_status` = '0'
+            AND `g_code` = #{gCode }
+    </select>
+
+<!--    GroupUser selectGroupsUsersById(@Param("gId") Integer gId, @Param("uId") Integer uId);-->
+    <select id="selectGroupsUsersById" resultMap="GroupUserResultMap">
+        <include refid="AllGroupsUsers" />
+        WHERE `display_status` = '0'
+            <if test="null != gId">AND `g_id` = #{gId }</if>
+            <if test="null != uId">AND `member_id` = #{uId }</if>
+    </select>
+
+<!--    Integer updateGroupUserStatus(@Param("groupUser") GroupUser groupUser);-->
+    <update id="updateGroupUserStatus">
+        UPDATE `group_user`
+        <trim prefix="SET" suffixOverrides=",">
+            `gu_status` = #{groupUser.guStatus },
+            <if test="groupUser.joinTime != null">
+                `join_time` = #{groupUser.joinTime },
+            </if>
+            `display_status` = #{groupUser.displayStatus }
+        </trim>
+        WHERE `gu_id` = #{groupUser.guId }
+    </update>
+
+<!--    Integer updateGroup(@Param("group") Group group);-->
+    <update id="updateGroup">
+        UPDATE `group`
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="group.gName != null and group.gName != ''">
+                `g_name` = #{group.gName },
+            </if>
+            <if test="group.modifiedTime != null">
+                `modified_time` = #{group.modifiedTime },
+            </if>
+            <if test="group.displayStatus != null and group.displayStatus != ''">
+                `display_status` = #{group.displayStatus }
+            </if>
+        </trim>
+        WHERE `g_code` = #{group.gCode }
+    </update>
+</mapper>

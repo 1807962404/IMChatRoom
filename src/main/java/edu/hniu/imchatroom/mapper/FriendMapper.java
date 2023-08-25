@@ -59,4 +59,6 @@ public interface FriendMapper {
      * @return
      */
     int updateFriend(@Param("friend") Friend friend);
+
+    List<FriendShip> selectOwnFriendship(@Param("uId") Integer uId);
 }

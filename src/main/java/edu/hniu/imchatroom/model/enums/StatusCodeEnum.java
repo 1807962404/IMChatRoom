@@ -6,10 +6,13 @@ public enum StatusCodeEnum {
     ONLINE('0'), OFFLINE('1'),
     // 用户账号状态：已激活、未激活、已注销
     ACTIVATED('0'), INACTIVE('1'), INVALID('2'),
-    // 好友关系状态：已是好友关系、好友关系确认中、非好友
-    ISFRIEND('0'), CONFRIMFRIEND('1'), NOTFRIEND('2'),
+    // 好友关系状态：已是好友关系、非好友
+    ISFRIEND('0'), NOTFRIEND('2'),
+    // 关系确认中
+    CONFIRMING('1'),
     // 展示状态。0：显示，1：隐藏
-    NORMAL('0'), ABNORMAL('1');
+    NORMAL('0'), ABNORMAL('1'),
+    INGROUP('0'), NOTINGROUP('2');
 
 
     private final char status;

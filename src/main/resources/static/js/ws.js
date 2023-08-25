@@ -79,12 +79,14 @@ ws.onmessage = (evt) => {
         }
 
     } else if (message.messageType === 'public-message') {
+        setMessageToPubMsgBoard(message, message.receiveGroup.gCode);
 
-
-    } else if (message.messageType === 'public-message') {
+    } else if (message.messageType === 'system-message') {
+        callMessage(0, "管理员：" + message.user.nickname + " 发布了一则系统公告！");
         setMessageToSystemInfoBoard(message);
         setContentToOwnPublishedBroadcast(message);
     }
+
 }
 
 // 关闭 WebSocket 连接
@@ -99,6 +101,10 @@ window.onbeforeunload = () => {
     closeWebSocket();
     // 同时发请求给服务端，注销此用户的本次会话实例
     // window.location.href = getProjectPath() + '/user/logout';
+}
+
+window.onunload = () => {
+    clearInterval(getOnlineCounts);     // 清除获取在线人数的间隔定时器
 }
 
 // 监听聊天输入框的回车键
@@ -158,16 +164,13 @@ function callSendMessage(evt) {
             data: sendMsgData,
             success: (resp) => {    // 消息发送成功
                 // console.log(resp);
-                if (0 == resp.code) {
-                    callMessage(0, resp.msg);
+                callMessage(resp.code, resp.msg);
 
+                if (0 == resp.code) {
                     // 封装发送
                     let priMsg = resp.data;
                     // console.log(priMsg)
                     ws.send(JSON.stringify(priMsg));    // 封装私聊消息
-
-                } else {    // 消息发送失败
-                    callMessage(resp.code, resp.msg);
                 }
             },
             error: (resp) => {
@@ -179,6 +182,31 @@ function callSendMessage(evt) {
 
     } else if (chatTypeElemId === 'public-message') {
         // console.log('public');
+        let gCode = document.querySelector('#my-group-list a[class="my-entered-group content-active"]').dataset.code;
+        // console.log(gCode)
+        let sendMsgData = doMessageJsonData(contentVal, chatTypeElemId);    // 封装需要发送的消息
+        // console.log(sendMsgData);
+
+        $.ajax({
+            url: getProjectPath() + '/user/chat/let-chat/' + gCode,
+            type: 'POST',
+            data: sendMsgData,
+            success: (resp) => {    // 消息发送成功
+                // console.log(resp);
+                callMessage(resp.code, resp.msg);
+
+                if (0 == resp.code) {
+                    // 封装发送
+                    let pubMsg = resp.data;
+                    // console.log(priMsg)
+                    ws.send(JSON.stringify(pubMsg));    // 封装私聊消息
+                }
+            },
+            error: (resp) => {
+                console.log(resp);
+                callMessage(-1, "***出错啦，请稍后再试！");
+            },
+        })
 
     } else {
         alert('错误的消息框面板！');
@@ -207,7 +235,7 @@ function setMessageToSystemInfoBoard(msg) {
     // <p className="info-all infos"></p>
     newSystemInfoElement.classList.add("info-all");
     newSystemInfoElement.classList.add("infos");
-    newSystemInfoElement.innerText = msg;
+    newSystemInfoElement.innerText = msg.content;
     // console.log(newSystemInfoElement)
 
     let hasFirstElem = systemInfoShow.firstElementChild;
@@ -228,8 +256,9 @@ if (broadcastBtn) {
             return;
         };
 
+        // console.log(doMessageJsonData(publishBroadcastVal, 'system-message'))
         $.ajax({
-            url: getProjectPath() + '/chat/let-chat/0',
+            url: getProjectPath() + '/user/chat/let-chat/0',
             type: 'POST',
             data: doMessageJsonData(publishBroadcastVal, 'system-message'),
             success: (resp) => {
@@ -237,51 +266,14 @@ if (broadcastBtn) {
                 if (resp.code === 0) {
                     let systemMsg = resp.data;
                     ws.send(JSON.stringify(systemMsg));     // 封装系统公告消息
+
                 }
             },
             error: (resp) => {
+                console.log(resp);
                 callMessage(-1, "***出错啦，请稍后再试！");
             }
-        })
+        });
+        publishBroadcastElem.value = '';
     });
 }
-
-/*// 监听 意见反馈 栏的提交按钮
-var feedbackElem = document.querySelector('#feedback .feedback-opt');
-feedbackElem.querySelector('button[type="button"]').addEventListener('click', (evt) => {
-    let feedbackContent = feedbackElem.querySelector('textarea[id="feedback-content"]');
-    if (feedbackContent.value === '' || feedbackContent.value.length === 0) {
-        callMessage(1, "反馈内容不能为空！");
-        return ;
-    }
-
-    let data = {
-        'fbContent': feedbackContent.value,
-        'publishTime': getDateTime()
-    }
-    $.ajax({
-        url: getProjectPath() + "/entity/send-feedback",
-        type: 'POST',
-        data: JSON.parse(JSON.stringify(data)),
-        success: (resp) => {        // 意见反馈成功
-            if (resp.code === 0) {
-                callMessage(0, resp.msg);
-                feedbackContent.value = '';
-
-                let newFeedbackContent = resp.data;
-                ws.send(doSingleDataToJson(newFeedbackContent));
-                // 写入至意见反馈中
-                setContentToFeedbackList(resp.data);
-            } else {
-                callMessage(resp.code, resp.msg);
-            }
-        },
-        error: (resp) => {
-            console.log(resp);
-            callMessage(-1, "出错啦，请稍后再试！");
-        }
-    });
-    /!*sendUrl(getProjectPath() + "/entity/send-feedback", 'POST', JSON.parse(JSON.stringify(data)),
-        getProjectPath() + "/main");
-    feedbackContent.value = '';*!/
-});*/

@@ -7,6 +7,7 @@ import edu.hniu.imchatroom.model.enums.RoleEnum;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.ChatService;
 import edu.hniu.imchatroom.service.FriendService;
+import edu.hniu.imchatroom.service.GroupService;
 import edu.hniu.imchatroom.service.UserService;
 import edu.hniu.imchatroom.util.StringUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +31,7 @@ public class ChatController {
     private UserService userService;
     private FriendService friendService;
     private ChatService chatService;
+    private GroupService groupService;
 
     @Autowired
     public void setUserService(UserService userService) {
@@ -42,6 +44,10 @@ public class ChatController {
     @Autowired
     public void setChatService(ChatService chatService) {
         this.chatService = chatService;
+    }
+    @Autowired
+    public void setGroupService(GroupService groupService) {
+        this.groupService = groupService;
     }
 
     @ResponseBody
@@ -64,20 +70,19 @@ public class ChatController {
 
             return doChatToPersonal(message, id, thisUser);
 
-        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
+        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG))) {
             // 群聊消息
+            return doChatToGroup(message, id, thisUser);
 
-        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
+        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
             // 系统公告消息
             return doChatToEveryone(message, thisUser);
 
-        } else {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("消息类型匹配不上：" + thisMsgType + " not equal to " + MessageTypeEnum.values() + "！");
-            log.warn("消息类型匹配不上：{} not equal to '{}'！", thisMsgType, MessageTypeEnum.values());
-            return resultVO;
         }
 
+        resultVO.setCode(RESPONSE_FAILED_CODE);
+        resultVO.setMsg("消息类型匹配不上：" + thisMsgType + " not equal to " + MessageTypeEnum.values() + "！");
+        log.warn("消息类型匹配不上：{} not equal to '{}'！", thisMsgType, MessageTypeEnum.values());
         return resultVO;
     }
 
@@ -88,18 +93,20 @@ public class ChatController {
      */
     private Message doDispatchMessage(Message message) {
 
-        Message messageToUse = new Message();
+        Message messageToUse;
         final String thisMsgType = message.getMessageType();
 
         // 1、判断消息类型是否能够匹配
         if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {  // 私聊消息
             messageToUse = new PrivateMessage();
 
-        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
+        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG))) {
             // 群聊消息
+            messageToUse = new PublicMessage();
 
-        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
+        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
             // 系统公告消息
+            messageToUse = new BroadcastMessage();
 
         } else {
             return null;
@@ -122,7 +129,7 @@ public class ChatController {
     private ResultVO<PrivateMessage> doChatToPersonal(Message message, String friendId, User thisUser) {
         ResultVO<PrivateMessage> resultVO = new ResultVO<>();
 
-        // 2、检查传入的好友id是否为空
+        // 1、检查传入的好友id是否为空
         if (StringUtil.isEmpty(friendId)) {
             resultVO.setCode(RESPONSE_FAILED_CODE);
             resultVO.setMsg("发送消息的对象不能为空！");
@@ -130,10 +137,16 @@ public class ChatController {
             return resultVO;
         }
 
-        // 3、查找该用户id是否存在
+        // 2、查找该用户id是否存在
         User friendUser = userService.doGetUserById(Integer.valueOf(friendId));
+        if (null == friendUser) {
+            resultVO.setCode(RESPONSE_FAILED_CODE);
+            resultVO.setMsg("发送消息的用户对象不存在！");
+            log.warn("发送消息的用户对象不存在！");
+            return resultVO;
+        }
 
-        // 4、检查本人与该用户id好友 的友谊状况（即双方是否处于好友阶段）
+        // 3、检查本人与该用户id好友 的友谊状况（即双方是否处于好友阶段）
         FriendShip friendShip = friendService.doCheckIsFriend(thisUser, friendUser, StatusCodeEnum.getStatusCode(StatusCodeEnum.ISFRIEND));
 
         if (null == friendShip) {
@@ -148,15 +161,80 @@ public class ChatController {
         privateMessage.setSendUser(thisUser);
         // 设置消息接收者为对方（好友）
         privateMessage.setReceiveUser(friendUser);
-        log.info("本次操作是 {} 给 {} 发送的私聊消息：{}", privateMessage.getSendUser().getNickname(),
-                privateMessage.getReceiveUser().getNickname(), privateMessage.getContent());
+        log.info("本次操作是：{} 给好友：{} 发送的私聊消息：{}",
+                thisUser.getNickname(), friendUser.getNickname(), message.getContent());
 
-        // 5、本人发送消息给对方（好友）
+        // 4、本人发送消息给对方（好友）
         int result = chatService.doChat(privateMessage);
 
         if (1 == result) {
             resultVO.setCode(RESPONSE_SUCCESS_CODE);
             resultVO.setData(privateMessage);
+            resultVO.setMsg("消息发送成功！");
+            log.warn("消息发送成功！");
+
+        } else {
+            resultVO.setCode(RESPONSE_FAILED_CODE);
+            resultVO.setMsg("消息发送失败！");
+            log.warn("消息发送失败！");
+        }
+
+        return resultVO;
+    }
+
+    /**
+     * 处理群聊消息
+     * @param message
+     * @param gCode
+     * @param thisUser
+     * @return
+     */
+    private ResultVO<PublicMessage> doChatToGroup(Message message, String gCode, User thisUser) {
+
+        ResultVO<PublicMessage> resultVO = new ResultVO<>();
+
+        // 1、检查传入的gCode是否为空
+        if (StringUtil.isEmpty(gCode)) {
+            resultVO.setCode(RESPONSE_FAILED_CODE);
+            resultVO.setMsg("发送消息的群组对象不能为空！");
+            log.warn("发送消息的群组对象不能为空！");
+            return resultVO;
+        }
+
+        // 2、查询出消息需要发送至哪个群组
+        Group receiveGroup = groupService.doGetGroupByGCode(gCode);
+        if (null == receiveGroup) {
+            resultVO.setCode(RESPONSE_FAILED_CODE);
+            resultVO.setMsg("发送消息的群组对象不存在！");
+            log.warn("发送消息的群组对象不存在！");
+            return resultVO;
+        }
+
+        // 3、检查此用户是否还在该群组中
+        GroupUser groupUser = groupService.doCheckUserIsInGroup(receiveGroup.getGId(), thisUser.getUId());
+        if (null == groupUser) {
+            resultVO.setCode(RESPONSE_FAILED_CODE);
+            resultVO.setMsg("您已不在群组：" + receiveGroup.getGName() + " 中了，无法发送消息！");
+            log.warn("您已不在群组：{} 中了，无法发送消息！", receiveGroup.getGName());
+            return resultVO;
+        }
+
+        PublicMessage publicMessage = (PublicMessage) doDispatchMessage(message);
+        // 设置消息发送者为本人
+        publicMessage.setSendUser(thisUser);
+        // 设置消息接收群组的所有群成员
+        receiveGroup.setMembers(groupService.doGetGroupsUsersById(receiveGroup.getGId(), null));
+        // 设置消息接收者为群组
+        publicMessage.setReceiveGroup(receiveGroup);
+        log.info("本次操作是：{} 向群组：{} 发送的群聊消息：{}",
+                thisUser.getNickname(), receiveGroup.getGName(), message.getContent());
+
+        // 4、本人发送消息给对方（好友）
+        int result = chatService.doChat(publicMessage);
+
+        if (1 == result) {
+            resultVO.setCode(RESPONSE_SUCCESS_CODE);
+            resultVO.setData(publicMessage);
             resultVO.setMsg("消息发送成功！");
             log.warn("消息发送成功！");
 
@@ -225,8 +303,8 @@ public class ChatController {
         // 1、判断用户Id是否为空，若为空则报错
         if (StringUtil.isEmpty(friendId)) {
             resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("需要查找的用户Id不能为空！");
-            log.warn("需要查找的用户Id不能为空！");
+            resultVO.setMsg("需要查找消息的用户Id不能为空！");
+            log.warn("需要查找消息的用户Id不能为空！");
             return resultVO;
         }
 
@@ -255,6 +333,46 @@ public class ChatController {
         resultVO.setCode(ResponseCodeEnum.getCode(ResponseCodeEnum.SUCCESS));
         resultVO.setData(privateMessages);
         log.info("已查询出本人：{} 与用户：{} 间的历史私聊消息！", thisUser.getNickname(), friendUser.getNickname());
+
+        return resultVO;
+    }
+
+    @ResponseBody
+    @GetMapping("/public-history-msg/{gCode}")
+    public ResultVO<List<? extends Message>> getPublicMessage(@PathVariable("gCode") String gCode) {
+        ResultVO<List<? extends Message>> resultVO = new ResultVO<>();
+        PublicMessage publicMessage = new PublicMessage();
+
+        // 1、判断群唯一码gCode是否为空，若为空则报错
+        if (StringUtil.isEmpty(gCode)) {
+            resultVO.setCode(RESPONSE_FAILED_CODE);
+            resultVO.setMsg("需要查找消息的唯一码gCode不能为空！");
+            log.warn("需要查找消息的唯一码gCode不能为空！");
+            return resultVO;
+        }
+
+        // 2、检查是否存在该gCode的群组
+        Group group = groupService.doGetGroupByGCode(gCode);
+        if (null == group) {
+            resultVO.setCode(RESPONSE_FAILED_CODE);
+            resultVO.setMsg("gCode为：" + gCode + " 的群组不存在，无法获取聊天信息！");
+            log.warn("gCode为：{} 的用户不存在，无法获取聊天信息！", gCode);
+            return resultVO;
+        }
+
+        // 3、设置消息接收者为该群组（对方）
+        publicMessage.setReceiveGroup(group);
+        // 4、设置消息类型为：public-message
+        publicMessage.setMessageType(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG));
+
+        // 5、查询指定群组的历史群聊消息
+        List<? extends Message> publicMessages = chatService.doGetChatMessage(publicMessage);
+        /*System.out.println("getPublicMessage: ");
+        publicMessages.forEach(message -> System.out.println(message));*/
+
+        resultVO.setCode(ResponseCodeEnum.getCode(ResponseCodeEnum.SUCCESS));
+        resultVO.setData(publicMessages);
+        log.info("已查询出群组：{} 的历史群聊消息！", group.getGName());
 
         return resultVO;
     }

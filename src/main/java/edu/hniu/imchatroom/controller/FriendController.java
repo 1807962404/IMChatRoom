@@ -1,5 +1,6 @@
 package edu.hniu.imchatroom.controller;
 
+import edu.hniu.imchatroom.model.bean.Friend;
 import edu.hniu.imchatroom.model.bean.FriendShip;
 import edu.hniu.imchatroom.model.bean.ResultVO;
 import edu.hniu.imchatroom.model.bean.User;
@@ -45,13 +46,12 @@ public class FriendController {
     public ResultVO<List<User>> findFriends(String data) {
         ResultVO<List<User>> resultVO = new ResultVO<>();
 
-        log.info("查找用户的data为: {}", data);
+        log.info("搜索用户的data为: {}", data);
         // 1、检查传入的数据是否为空
         if (StringUtil.isEmpty(data)) {
             resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("输入内容异常：'" + data + "'，请检查输入！");
-
-            log.warn("输入内容异常：'{}'，请检查输入！", data);
+            resultVO.setMsg("搜索的用户内容不能为空！");
+            log.warn("搜索的用户内容不能为空！", data);
             return resultVO;
         }
 
@@ -78,7 +78,6 @@ public class FriendController {
         resultVO.setData(userToUse);
         resultVO.setMsg("已查找出账号信息大致为：" + data + " 的用户信息！");
         log.info("已查找出账号信息大致为：{} 的用户信息 {}！", data, userToUse);
-
         return resultVO;
     }
 
@@ -89,8 +88,8 @@ public class FriendController {
      */
     @ResponseBody
     @PostMapping("/add-friend/{uId}")
-    public ResultVO addFriend(@PathVariable("uId") String uId, HttpServletRequest request) {
-        ResultVO resultVO = new ResultVO();
+    public ResultVO<FriendShip> addFriend(@PathVariable("uId") String uId, HttpServletRequest request) {
+        ResultVO<FriendShip> resultVO = new ResultVO<>();
         log.info("添加好友的uId为：{}", uId);
 
         // 1、判断用户Id是否为空，若为空则报错
@@ -139,7 +138,7 @@ public class FriendController {
                 log.warn("添加好友失败，uId为：{} 的用户 {} 已经是您的朋友了！", uId, friendUser.getNickname());
                 return resultVO;
 
-            } else if (friendShip.getFsStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.CONFRIMFRIEND))) {
+            } else if (friendShip.getFsStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.CONFIRMING))) {
                 // 如果好友关系正在确认中，则判断 对方是否给我发送过好友申请。如果有则将两人的关系直接升为好友，否则提示错误信息
                 if (friendUser.getUId() == friendShip.getHostUser().getUId()) {
                     log.info("对方已给我发送过好友请求，所以我们可以直接成为朋友！");
@@ -156,6 +155,8 @@ public class FriendController {
                     }
 
                     resultVO.setCode(RESPONSE_SUCCESS_CODE);
+                    // 设置二者友谊状况为：已是好友关系
+                    resultVO.setData(friendService.doCheckIsFriend(thisUser, friendUser, StatusCodeEnum.getStatusCode(StatusCodeEnum.ISFRIEND)));
                     resultVO.setMsg("已成功与用户：" + friendUser.getNickname() + " 成为好友！");
                     log.warn("已成功与用户：{} 成为好友！", friendUser.getNickname());
 
@@ -177,12 +178,13 @@ public class FriendController {
             }
         }
 
-        //
-
+        // 二者间没有关系：
         // 3、发送好友请求
         int result = friendService.doAddFriendShip(thisUser, friendUser);
         if (1 == result) {
             resultVO.setCode(RESPONSE_SUCCESS_CODE);
+            // 设置二者友谊状况为：正在验证确认中
+            resultVO.setData(friendService.doCheckIsFriend(thisUser, friendUser, StatusCodeEnum.getStatusCode(StatusCodeEnum.CONFIRMING)));
             resultVO.setMsg("已成功向用户 " + friendUser.getNickname() + " 发送好友请求，请敬候佳音！");
             log.info("已成功向用户 {} 发送好友请求，请敬候佳音！", friendUser.getNickname());
 
@@ -260,5 +262,20 @@ public class FriendController {
         log.warn("已成功删除用户id为：{} 的好友：{}！", friendId, friendUser.getNickname());
 
         return resultVO;
+    }
+
+    /**
+     * 查询本人尚未同意好友申请的用户信息（新好友通知）
+     * @return
+     */
+    @ResponseBody
+    @GetMapping("/find-new-friends")
+    public List<FriendShip> findMyNewFriends(HttpServletRequest request) {
+
+        final User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
+        // 获取其他用户给我发送过的好友请求
+        List<FriendShip> ownFriendship = friendService.doGetOwnFriendship(thisUser.getUId());
+        log.info("其他用户给我发送过的好友请求：{}", ownFriendship);
+        return ownFriendship;
     }
 }

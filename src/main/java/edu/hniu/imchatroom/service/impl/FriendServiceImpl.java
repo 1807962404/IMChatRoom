@@ -52,8 +52,8 @@ public class FriendServiceImpl implements FriendService {
         friendShip.setHostUser(hostUser);
         // 设置朋友
         friendShip.setFriendUser(friendUser);
-        // 设置好友关系状态为：正在确认中
-        friendShip.setFsStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.CONFRIMFRIEND));
+        // 设置好友关系状态为：正待确认中
+        friendShip.setFsStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.CONFIRMING));
         // 设置申请时间
         friendShip.setApplyTime(new Date(System.currentTimeMillis()));
         // 设置展示状态
@@ -125,5 +125,14 @@ public class FriendServiceImpl implements FriendService {
         result += friendMapper.updateFriend(delFriend);
 
         return result;
+    }
+
+    /**
+     * 根据uId获取其他用户给我发送过的好友请求
+     * @param uId
+     * @return
+     */
+    public List<FriendShip> doGetOwnFriendship(Integer uId) {
+        return friendMapper.selectOwnFriendship(uId);
     }
 }

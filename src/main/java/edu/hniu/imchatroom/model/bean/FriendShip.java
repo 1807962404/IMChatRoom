@@ -1,5 +1,6 @@
 package edu.hniu.imchatroom.model.bean;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,6 +16,7 @@ import java.util.Date;
 public class FriendShip {
 
     private static final long serialVersionUID = 5362452342353454L;
+    @JsonProperty("fsId")
     private Integer fsId;
     /*private Integer hostId;
     private Integer friendId;*/

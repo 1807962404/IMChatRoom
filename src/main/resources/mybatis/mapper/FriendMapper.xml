@@ -122,4 +122,10 @@
         WHERE `display_status` = '0' AND
         `fs_id` = #{friend.friendShip.fsId }
     </update>
+
+<!--    List<FriendShip> selectOwnFriendship(@Param("uId") Integer uId);-->
+    <select id="selectOwnFriendship" resultMap="FriendShipResultMap">
+        <include refid="AllFriendShipResult" />
+        WHERE `display_status` = '0' AND `friend_id` = #{uId }
+    </select>
 </mapper>

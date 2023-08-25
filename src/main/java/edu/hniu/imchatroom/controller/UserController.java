@@ -5,6 +5,7 @@ import edu.hniu.imchatroom.model.enums.RoleEnum;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.EntityService;
 import edu.hniu.imchatroom.service.FriendService;
+import edu.hniu.imchatroom.service.GroupService;
 import edu.hniu.imchatroom.service.UserService;
 import edu.hniu.imchatroom.util.Md5Util;
 import edu.hniu.imchatroom.util.StringUtil;
@@ -36,6 +37,7 @@ public class UserController {
     private UserService userService;
     private FriendService friendService;
     private EntityService entityService;
+    private GroupService groupService;
 
     // 记录所有用户
     private final Set<User> users = new CopyOnWriteArraySet<>();
@@ -55,6 +57,10 @@ public class UserController {
     @Autowired
     public void setEntityService(EntityService entityService) {
         this.entityService = entityService;
+    }
+    @Autowired
+    public void setGroupService(GroupService groupService) {
+        this.groupService = groupService;
     }
 
     /**
@@ -233,35 +239,40 @@ public class UserController {
         // 4、用户登陆
         userByIdentified = userService.doSignIn(user);
 
-        // 5、设置登陆用户的好友列表信息
+        // 5、用户登陆之后初始化资源操作
+        doLoginInitResources(request, userByIdentified);
+
+        resultVO.setCode(RESPONSE_SUCCESS_CODE);
+        resultVO.setMsg("登陆成功，欢迎回来：" + userByIdentified.getNickname() + "！");
+        log.info("登陆成功！");
+        return resultVO;
+    }
+
+    private void doLoginInitResources(HttpServletRequest request, User userByIdentified) {
+        // 1、设置登陆用户的好友列表信息
         userByIdentified.setMyFriendList(friendService.doGetFriendsByUId(userByIdentified.getUId()));
+
+        // 2、设置登陆用户加入的所有群组信息
+        userByIdentified.setMyEnteredGroups(groupService.doGetMyEnteredGroups(userByIdentified.getUId()));
 
         log.info("用户信息：{}", userByIdentified);
 
-        // 6、设置资源-->
+        // 3、设置资源-->
         HttpSession session = request.getSession();
 
-        // 设置系统通告
+        // 3.1、设置系统通告供所有用户查看
         List<BroadcastMessage> broadcastMessages = entityService.doGetBroadcasts(null);
         session.setAttribute(BROADCAST_MESSAGE_NAME, broadcastMessages);
-        // 如果是管理员，则还需设置该管理员所发布的系统公告
-        /*List<BroadcastMessage> myPublishedBroadcasts = new ArrayList<>();
-        for (BroadcastMessage broadcastMessage : broadcastMessages) {
-            if (broadcastMessage.getUser().getRole().equals(RoleEnum.getRoleName(RoleEnum.ADMIN)) &&
-                    broadcastMessage.getUser().equals(userByIdentified))
-                // 如果是管理员并且是登陆的用户本人则为其设置：其发布的系统公告
-                myPublishedBroadcasts.add(broadcastMessage);
-        }
-        userByIdentified.setMyPublishedBroadcasts(myPublishedBroadcasts);*/
 
-        // 将登陆的用户信息存入至session中，以及存入在线人数中
-        session.setAttribute(SIGNINED_USER, userByIdentified);
-
-        // 建立WebSocket连接时需要使用
+        // 3.2、设置用户唯一标识码：建立WebSocket连接时需要使用
         String uniqueUserCode = StringUtil.getRandomCode(false);
         log.info("doSignin() uniqueUserCode: {}", uniqueUserCode);
         session.setAttribute(SIGNINED_USER_WS_CODE, uniqueUserCode);       // 用户的唯一标识码
         setUserToUse(userByIdentified, uniqueUserCode);     // 给本次登陆的用户设置唯一标识码
+
+        // 3.3、将登陆的用户信息存入至session中，以及存入在线人数中
+        session.setAttribute(SIGNINED_USER, userByIdentified);
+
         addOnlineCount();       // 在线人数 +1
         log.info("当前在线总人数为：{}", getOnlineCount());
 
@@ -272,11 +283,6 @@ public class UserController {
         if (null == session.getAttribute(COMMON_USER_NAME)) {
             session.setAttribute("COMMON_USER_NAME", COMMON_USER_NAME);
         }
-
-        resultVO.setCode(RESPONSE_SUCCESS_CODE);
-        resultVO.setMsg("登陆成功，欢迎回来：" + userByIdentified.getNickname() + "！");
-        log.info("登陆成功！");
-        return resultVO;
     }
 
     /**

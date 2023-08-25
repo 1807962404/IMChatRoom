@@ -163,7 +163,7 @@ public class EntityController {
         List<BroadcastMessage> myPublishedBroadcasts = entityService.doGetBroadcasts(thisUser.getUId());
         resultVO.setCode(RESPONSE_SUCCESS_CODE);
         resultVO.setData(myPublishedBroadcasts);
-        log.warn("已查询出管理员用户：{} 发布过的所有广播信息！", thisUser.getNickname());
+        log.info("已查询出管理员用户：{} 发布过的所有广播信息！", thisUser.getNickname());
 
         return resultVO;
     }

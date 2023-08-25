@@ -40,6 +40,8 @@ public class User implements Serializable {
     private String displayStatus;
     // 用户的好友列表
     private List<Friend> myFriendList;
+    // 用户加入的所有群聊列表
+    private List<Group> myEnteredGroups;
     // 管理员发布的系统公告
     private List<BroadcastMessage> myPublishedBroadcasts;
 

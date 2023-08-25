@@ -23,6 +23,13 @@ public interface MessageMapper {
     List<PrivateMessage> selectPrivateMessages(@Param("privateMessage") PrivateMessage privateMessage);
 
     /**
+     * 查询群聊消息（会根据群gId进行查询）
+     * @param publicMessage
+     * @return
+     */
+    List<PublicMessage> selectPublicMessage(@Param("publicMessage") PublicMessage publicMessage);
+
+    /**
      * 插入私聊消息
      * @param privateMessage
      * @return
@@ -37,9 +44,9 @@ public interface MessageMapper {
     Integer insertSystemMsg(@Param("broadcastMessage") BroadcastMessage broadcastMessage);
 
     /**
-     * 查询私聊消息（会根据消息发送者id和消息接收者id进行查询）
-     * @param message
+     * 插入群聊消息
+     * @param publicMessage
      * @return
      */
-//    List<Message> selectMessages(@Param("message") Message message);
+    Integer insertPubMsg(@Param("publicMessage") PublicMessage publicMessage);
 }

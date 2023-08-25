@@ -5,6 +5,9 @@
     <sql id="private_message_column">
         `pr_id`, `send_id`, `receive_id`, `content`, `send_time`
     </sql>
+    <sql id="public_message_column">
+        `pu_id`, `send_id`, `g_id`, `content`, `send_time`
+    </sql>
 
     <resultMap id="PrivateMessageResultMap" type="edu.hniu.imchatroom.model.bean.PrivateMessage">
         <id column="pr_id" property="prId" />
@@ -12,6 +15,13 @@
         <result column="send_time" property="sendTime" />
         <association property="sendUser" column="send_id" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById" />
         <association property="receiveUser" column="receive_id" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById" />
+    </resultMap>
+    <resultMap id="PublicMessageResultMap" type="edu.hniu.imchatroom.model.bean.PublicMessage">
+        <id column="pu_id" property="puId" />
+        <result column="content" property="content" />
+        <result column="send_time" property="sendTime" />
+        <association property="sendUser" column="send_id" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById" />
+        <association property="receiveGroup" column="g_id" select="edu.hniu.imchatroom.mapper.GroupMapper.selectGroupById" />
     </resultMap>
 
 <!--    List<PrivateMessage> selectPrivateMessages(@Param("privateMessage") PrivateMessage privateMessage);-->
@@ -27,6 +37,15 @@
         ORDER BY `send_time` ASC
     </select>
 
+<!--    List<PublicMessage> selectPublicMessage(@Param("publicMessage") PublicMessage publicMessage);-->
+    <select id="selectPublicMessage" resultMap="PublicMessageResultMap">
+        SELECT
+            <include refid="public_message_column" />, `display_status`
+        FROM `public_message`
+        WHERE `display_status` = '0' AND `g_id` = #{publicMessage.receiveGroup.gId }
+        ORDER BY `send_time` ASC
+    </select>
+
 <!--    Integer insertPriMsg(@Param("privateMessage") PrivateMessage privateMessage);-->
     <insert id="insertPriMsg" useGeneratedKeys="true" keyProperty="prId">
         INSERT INTO `private_message`
@@ -34,6 +53,15 @@
         VALUES
             (#{privateMessage.sendUser.uId }, #{privateMessage.receiveUser.uId },
              #{privateMessage.content }, #{privateMessage.sendTime })
+    </insert>
+
+<!--    Integer insertPubMsg(@Param("publicMessage") PublicMessage publicMessage);-->
+    <insert id="insertPubMsg" useGeneratedKeys="true" keyProperty="puId">
+        INSERT INTO `public_message`
+            (`send_id`, `g_id`, `content`, `send_time`)
+        VALUES
+            (#{publicMessage.sendUser.uId }, #{publicMessage.receiveGroup.gId },
+             #{publicMessage.content }, #{publicMessage.sendTime })
     </insert>
 
 <!--    Integer insertSystemMsg(@Param("broadcastMessage") BroadcastMessage broadcastMessage);-->

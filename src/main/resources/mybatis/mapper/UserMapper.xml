@@ -104,7 +104,9 @@
     <select id="selectUsersByFuzzyQuery" resultMap="userResultMap">
         <include refid="AllUsersResult" />
         WHERE `display_status` = '0'
-        AND (`account` LIKE '%${data }%' OR `email` LIKE '%${data }%' OR `nickname` LIKE '%${data }%')
+        AND (`account` LIKE CONCAT('%', #{data }, '%') OR
+            `email` LIKE CONCAT('%', #{data }, '%') OR
+            `nickname` LIKE CONCAT('%', #{data }, '%'))
             ORDER BY `active_time` DESC
     </select>
 </mapper>

@@ -207,23 +207,23 @@ function checkVal(isSignIn) {
 
 // 获取表单数据
 function getFormData(isSignIn) {
-    var emailVal = isSignIn ?
+    let emailVal = isSignIn ?
         document.querySelector('#signin input[name="email"]').value :
         document.querySelector('#signup input[name="email"]').value;
 
-    var passwordVal = isSignIn ?
+    let passwordVal = isSignIn ?
         document.querySelector('#signin input[name="password"]').value :
         document.querySelector('#signup input[name="password"]').value;
 
-    var verifyCodeVal = isSignIn ?
+    let verifyCodeVal = isSignIn ?
         document.querySelector('#signin input[name="verifyCode"]').value :
         document.querySelector('#signup input[name="verifyCode"]').value;
 
-    var identifyVal = isSignIn ?
+    let identifyVal = isSignIn ?
         document.querySelector('#signin input[name="identify"]').value :
         document.querySelector('#signup input[name="identify"]').value;
 
-    var formData = {
+    let formData = {
         'email': emailVal,
         'password': passwordVal,
         'verifyCode': verifyCodeVal,
@@ -245,16 +245,15 @@ function sendUrl(url, type, data, successCallbackUrl, failedCallbackUrl) {
         type: type,
         data: data,
         success: function (resp) {
-            console.log(resp)
+            console.log(resp);
+            callMessage(resp.code, resp.msg);
             // 成功处理逻辑
 
             if (resp.code === 0) {
-                callMessage(0, resp.msg);
                 if (typeof (successCallbackUrl) != "undefined" && successCallbackUrl)
                     sleep(sleepTime).then(()=> window.location.href = successCallbackUrl);
 
             } else {
-                callMessage(resp.code, resp.msg);
                 if (typeof (failedCallbackUrl) != "undefined" && failedCallbackUrl)
                     sleep(sleepTime).then(() => window.location.href = failedCallbackUrl);
             }
@@ -289,6 +288,7 @@ function doSignIn() {
             console.log(resp)
             // 成功处理逻辑
 
+            let verifyCodeElem = document.querySelector('#signin input[name="verifyCode"]');
             if (resp.code === 0) {
                 // 登陆成功
                 callMessage(0, resp.msg);
@@ -299,6 +299,7 @@ function doSignIn() {
                 // 登陆失败需要切换验证码
                 changeCheckCode(verifyCode[1], true);
             }
+            verifyCodeElem.value = '';
         },
         error: function (resp) {
             console.log(resp)
@@ -337,17 +338,19 @@ function doFinalSignUp(isCancelled) {
             success: function (resp) {
                 console.log(resp)
                 // 成功处理逻辑
+                let verifyCodeElem = document.querySelector('#signup input[name="verifyCode"]');
 
                 if (resp.code === 0) {
                     // 注册成功
                     callMessage(0, resp.msg);
-                    sleep(sleepTime).then(()=> window.location.href = getProjectPath() + '/user/login');
+                    sleep(sleepTime).then(()=> window.location.href = getProjectPath() + '/login');
 
                 } else {
                     callMessage(resp.code, resp.msg);
                     // 注册失败需要切换验证码
                     changeCheckCode(verifyCode[0], false);
                 }
+                verifyCodeElem.value = '';
             },
             error: function (resp) {
                 console.log(resp)
