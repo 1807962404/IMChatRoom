@@ -46,7 +46,7 @@
                                        class="show-name ellipsis" th:text="${session.SIGNINED_USER.nickname }">铭强</span>
                     </div>
                     <div id="chat-obj">
-<!--                        正在和 <div class="show-name" class="ellipsis">Lucy</div> 聊天-->
+                        <!--                        正在和 <div class="show-name" class="ellipsis">Lucy</div> 聊天-->
                     </div>
                     <div id="user-exit">
                         <button>退出登录</button>
@@ -63,15 +63,15 @@
                 <div id="chat-box">
                     <div id="message">
 
-<!--                        默认框-->
+                        <!--                        默认框-->
                         <div id="default-message" class="exclusive-chat-box exclusive-chat-box-active">
                             <h2>现在与朋友开始畅快的聊天吧！</h2>
                         </div>
 
-<!--                        私聊消息框-->
+                        <!--                        私聊消息框-->
                         <div id="private-message" class="exclusive-chat-box"></div>
 
-<!--                        群聊消息框-->
+                        <!--                        群聊消息框-->
                         <div id="public-message" class="exclusive-chat-box">
                             <!--<div class="corresponding">
                                 <div class="send_msg msg">
@@ -91,13 +91,13 @@
                             </div>-->
                         </div>
 
-<!--                        功能框-->
+                        <!--                        功能框-->
                         <div id="entity" class="exclusive-chat-box">
 
-<!--                            新朋友-->
+                            <!--                            新朋友-->
                             <div id="new-friend" class="entity-li">
                                 <h3>好友通知</h3>
-<!--                                <div class="has-search-result" style="display: block;!important;">-->
+                                <!--                                <div class="has-search-result" style="display: block;!important;">-->
                                 <div class="has-search-result">
                                     <!--<div class="apply-friend">
                                         <div class="avatar"></div>
@@ -111,7 +111,7 @@
                                 </div>
                             </div>
 
-<!--                            群通知-->
+                            <!--                            群通知-->
                             <div id="group-notifications" class="entity-li">
                                 <h3>群通知</h3>
                                 <div id="group-notification">
@@ -141,7 +141,7 @@
                                 </div>
                             </div>
 
-<!--                            系统广播-->
+                            <!--                            系统广播-->
                             <div th:if="${session.SIGNINED_USER.role == session.ADMIN_USER_NAME}">
                                 <!--                            管理员：发布系统广播-->
                                 <div id="publish-system-broadcast" class="entity-li" th:if="${session.SIGNINED_USER.role == session.ADMIN_USER_NAME }">
@@ -152,35 +152,66 @@
                                         <button type="button">点击发布</button>
                                     </div>
 
-<!--                                有结果-->
+                                    <!--                                有结果-->
                                     <div class="has-search-result">
                                         <h4>以往发布广播公告信息如下：</h4>
                                         <div id="broadcast-preview">
                                             <!--                                我发布的广播内容-->
-                                           <!-- <div class="my-pub-broadcast">
-                                                <div class="avatar"></div>
-                                                <div class="friend-name high-light ellipsis">Crushasdhasdasdabsdhbasasdhausd</div>
-                                                <div class="apply-time">2023-08-15 21:23:11</div>
-                                                <div class="broadcast-content">安徽的骄傲隧道巴士大家哈师大不能阿三大苏打啊实打实打算大苏打撒旦啊阿斯顿</div>
-                                            </div>-->
+                                            <!-- <div class="my-pub-broadcast">
+                                                 <div class="avatar"></div>
+                                                 <div class="friend-name high-light ellipsis">Crushasdhasdasdabsdhbasasdhausd</div>
+                                                 <div class="apply-time">2023-08-15 21:23:11</div>
+                                                 <div class="broadcast-content">安徽的骄傲隧道巴士大家哈师大不能阿三大苏打啊实打实打算大苏打撒旦啊阿斯顿</div>
+                                             </div>-->
                                         </div>
                                     </div>
 
-<!--                                无结果-->
+                                    <!--                                无结果-->
                                     <div class="non-search-result hidden-el">
                                         <p></p>
                                     </div>
                                 </div>
                             </div>
 
-<!--                            添加好友-->
+                            <!--                            优文摘要-->
+                            <div th:if="${session.SIGNINED_USER.role == session.ADMIN_USER_NAME}">
+                                <!--                            管理员：发布优文摘要-->
+                                <div id="publish-excellent-abstract" class="entity-li" th:if="${session.SIGNINED_USER.role == session.ADMIN_USER_NAME }">
+                                    <!--                            <div id="publish-system-broadcast" class="entity-li">-->
+                                    <div class="pub-abstract-opt">
+                                        <h3>发布优文摘要</h3>
+                                        <textarea id="publish-abstract" class="entity-textarea" placeholder="请填写优文摘要内容..." required></textarea>
+                                        <button type="button">点击发布</button>
+                                    </div>
+
+                                    <!--                                有结果-->
+                                    <div class="has-search-result">
+                                        <h4>以往发布优文摘要信息如下：</h4>
+                                        <div id="article-preview">
+                                            <!--                                我发布的优文摘要-->
+                                             <!--<div class="my-pub-article">
+                                                 <div class="avatar"></div>
+                                                 <div class="friend-name high-light ellipsis">Crushasdhasdasdabsdhbasasdhausd</div>
+                                                 <div class="apply-time">2023-08-15 21:23:11</div>
+                                                 <div class="article-content">安徽的骄傲隧道巴士大家哈师大不能阿三大苏打啊实打实打算大苏打撒旦啊阿斯顿</div>
+                                             </div>-->
+                                        </div>
+                                    </div>
+                                    <!--                                无结果-->
+                                    <div class="non-search-result hidden-el">
+                                        <p></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!--                            添加好友-->
                             <div id="add-friend" class="entity-li">
                                 <div class="search">
                                     <h3>输入朋友的账号或邮箱地址以结交好友！</h3>
                                     <input type="text" placeholder="请输入账号或者邮箱地址..." required/>
                                     <button type="button">搜索好友</button>
                                 </div>
-<!--                                有结果-->
+                                <!--                                有结果-->
                                 <div class="has-search-result hidden-el">
                                     <h4>搜索结果如下：</h4>
                                     <!--<div class="apply-friend">
@@ -191,47 +222,20 @@
                                     </div>-->
                                 </div>
 
-<!--                                无结果-->
+                                <!--                                无结果-->
                                 <div class="non-search-result hidden-el">
                                     <p></p>
                                 </div>
                             </div>
 
-<!--                            加入群聊-->
-                            <div id="enter-group" class="entity-li">
-                                <div class="search">
-                                    <h3>输入群聊号以加入群组！</h3>
-                                    <input type="text" placeholder="请输入群聊号..." required />
-                                    <button type="button">搜索群聊</button>
-                                </div>
-
-<!--                                有结果-->
-                                <div class="has-search-result">
-                                    <h4>搜索结果如下：</h4>
-                                    <div id="groups-info">
-                                        <!--<div class="group-info">
-                                            <div class="group-name">米奇GeiGei屋</div>
-                                            <div class="create-time">2023-03-11 23:32:11</div>
-                                            <div class="group-code">sjs298sshdjxncmvnkls</div>
-                                            <div class="add-btn"><a >点击加入群聊</a></div>
-                                        </div>-->
-                                    </div>
-                                </div>
-
-<!--                                无结果-->
-                                <div class="non-search-result hidden-el">
-                                    <p></p>
-                                </div>
-                            </div>
-
-<!--                            新建群聊-->
+                            <!--                            新建群聊-->
                             <div id="add-group" class="entity-li">
                                 <div class="add-group-opt">
                                     <h3>新建群聊！</h3>
                                     <input type="text" placeholder="请输入群聊名称..." required />
                                     <button type="button">点击创建</button>
                                 </div>
-<!--                                我创建的群聊-->
+                                <!--                                我创建的群聊-->
                                 <div id="my-created-groups">
                                     <div class="has-search-result">
                                         <h4>我创建的群聊</h4>
@@ -281,43 +285,34 @@
                                 </div>
                             </div>
 
-<!--                            朋友圈-->
-                            <div id="circle-of-friend" class="entity-li">
-                                <h3>朋友圈<span class="not-open" style="color: #f00; font-weight: bold"> 功能尚未开放，敬请期待！</span></h3>
-                                <div id="circle-content"></div>
-                            </div>
+                            <!--                            加入群聊-->
+                            <div id="enter-group" class="entity-li">
+                                <div class="search">
+                                    <h3>输入群聊号以加入群组！</h3>
+                                    <input type="text" placeholder="请输入群聊号..." required />
+                                    <button type="button">搜索群聊</button>
+                                </div>
 
-<!--                            个人信息-->
-                            <div id="personal-profile" class="entity-li">
-                                <h3>个人信息</h3>
-                                <div id="profile">
-<!--                                    头像-->
-                                    <div id="profile-avatar">
-                                        <img th:src="@{'/images' + ${session.SIGNINED_USER.avatarUrl }}" alt="用户头像，点击切换" />
+                                <!--                                有结果-->
+                                <div class="has-search-result">
+                                    <h4>搜索结果如下：</h4>
+                                    <div id="groups-info">
+                                        <!--<div class="group-info">
+                                            <div class="group-name">米奇GeiGei屋</div>
+                                            <div class="create-time">2023-03-11 23:32:11</div>
+                                            <div class="group-code">sjs298sshdjxncmvnkls</div>
+                                            <div class="add-btn"><a >点击加入群聊</a></div>
+                                        </div>-->
                                     </div>
-<!--                                    简介-->
-                                    <div id="profile-introduce">
-                                        <ul>
-                                            <li class="profile-item">昵称：<input class="profile-item-val" th:value="${session.SIGNINED_USER.nickname }" required/></li>
-                                            <li class="profile-item">账号：<span class="profile-item-val" th:text="${session.SIGNINED_USER.account }"></span></li>
-                                            <li class="profile-item">用户身份：
-                                                <span class="profile-item-val" th:if="${session.SIGNINED_USER.role == session.ADMIN_USER_NAME }">管理员</span>
-                                                <span class="profile-item-val" th:if="${session.SIGNINED_USER.role == session.COMMON_USER_NAME }">普通用户</span>
-                                            </li>
-                                            <li class="profile-item">邮箱地址：<span class="profile-item-val" th:text="${session.SIGNINED_USER.email }"></span></li>
-                                            <li class="profile-item">密码：<input class="profile-item-val" required/></li>
-                                            <li class="profile-item">账号激活时间：<span class="profile-item-val" th:text="${#dates.format(session.SIGNINED_USER.activeTime, 'yyyy-MM-dd HH:mm:ss') }"></span></li>
-                                            <li class="profile-item">上次登录时间：<span class="profile-item-val" th:text="${#dates.format(session.SIGNINED_USER.lastSigninTime, 'yyyy-MM-dd HH:mm:ss')}"></span></li>
-                                            <li>
-                                                <button onclick="editAccount()">保存更改</button>
-                                                <button id="logout-account" onclick="logoutAccount()">注销账号</button>
-                                            </li>
-                                        </ul>
-                                    </div>
+                                </div>
+
+                                <!--                                无结果-->
+                                <div class="non-search-result hidden-el">
+                                    <p></p>
                                 </div>
                             </div>
 
-<!--                            意见反馈-->
+                            <!--                            意见反馈-->
                             <div id="feedback" class="entity-li">
                                 <div class="feedback-opt">
                                     <h3>请在以下文本框内填写您宝贵的意见！</h3>
@@ -325,7 +320,7 @@
                                     <button type="button">点击提交</button>
                                 </div>
 
-<!--                                意见反馈列表-->
+                                <!--                                意见反馈列表-->
                                 <div id="all-feedback-list" class="has-search-result">
                                     <h4>意见反馈预览：</h4>
                                     <div class="feedback-preview">
@@ -341,6 +336,42 @@
                                     <p></p>
                                 </div>
                             </div>
+
+                            <!--                            个人信息-->
+                            <div id="personal-profile" class="entity-li">
+                                <h3>个人信息</h3>
+                                <div id="profile">
+                                    <!--                                    头像-->
+                                    <div id="profile-avatar">
+                                        <img th:src="@{'/images' + ${session.SIGNINED_USER.avatarUrl }}" alt="用户头像，点击切换" />
+                                    </div>
+                                    <!--                                    简介-->
+                                    <div id="profile-introduce">
+                                        <ul>
+                                            <li class="profile-item">昵称：<input type="text" class="profile-item-val" th:value="${session.SIGNINED_USER.nickname }" required/></li>
+                                            <li class="profile-item">账号：<span class="profile-item-val" th:text="${session.SIGNINED_USER.account }"></span></li>
+                                            <li class="profile-item">用户身份：
+                                                <span class="profile-item-val" th:if="${session.SIGNINED_USER.role == session.ADMIN_USER_NAME }">管理员</span>
+                                                <span class="profile-item-val" th:if="${session.SIGNINED_USER.role == session.COMMON_USER_NAME }">普通用户</span>
+                                            </li>
+                                            <li class="profile-item">邮箱地址：<span class="profile-item-val" th:text="${session.SIGNINED_USER.email }"></span></li>
+                                            <li class="profile-item">密码：<input type="password" class="profile-item-val" required/></li>
+                                            <li class="profile-item">账号激活时间：<span class="profile-item-val" th:text="${#dates.format(session.SIGNINED_USER.activeTime, 'yyyy-MM-dd HH:mm:ss') }"></span></li>
+                                            <li class="profile-item">上次登录时间：<span class="profile-item-val" th:text="${#dates.format(session.SIGNINED_USER.lastSigninTime, 'yyyy-MM-dd HH:mm:ss')}"></span></li>
+                                            <li>
+                                                <button onclick="editProfile()">保存更改</button>
+                                                <button id="logout-account" onclick="logoutAccount()">注销账号</button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!--                            朋友圈-->
+                            <div id="circle-of-friend" class="entity-li">
+                                <h3>朋友圈<span class="not-open" style="color: #f00; font-weight: bold"> 功能尚未开放，敬请期待！</span></h3>
+                                <div id="circle-content"></div>
+                            </div>
                         </div>
 
                     </div>
@@ -354,24 +385,36 @@
                             <div id="system-message-show"
                                  th:if="!${#lists.isEmpty(session.BROADCAST_MESSAGE) }">
                                 <div th:each="index: ${#numbers.sequence(session.BROADCAST_MESSAGE.size() - 1, 0, -1) }">
-                                    <p  class="info-all infos" th:text="${session.BROADCAST_MESSAGE[index].content }"></p>
+                                    <p class="info-all infos" th:text="${session.BROADCAST_MESSAGE[index].content }"></p>
                                 </div>
-<!--                                <p class="info-all infos">请注意！现在是广播事件：啊是多久啊圣诞啊实打实大苏打梵蒂冈的节阿松大是南大四年冬季阿三大苏打爱上你的</p>-->
+                            </div>
+                            <div th:if="${#lists.isEmpty(session.BROADCAST_MESSAGE) }">
+                                暂未发布更多系统公告！
                             </div>
                         </div>
                         <!--                    拓展功能：好友、群组-->
                         <div id="expand-function">
                             <ul class="header">
                                 <li class="ellipsis active">优文摘要</li>
-                                <li class="ellipsis">好友列表</li>
-                                <li class="ellipsis">群聊列表</li>
+                                <li class="ellipsis" onclick="getMyFriends()" >好友列表</li>
+                                <li class="ellipsis" onclick="getMyGroups()" >群聊列表</li>
                                 <li class="ellipsis">更多功能</li>
                             </ul>
                             <hr>
+<!--                            右侧导航菜单栏-->
                             <ul class="box">
-<!--                                优文摘要栏-->
+                                <!--                                优文摘要栏-->
                                 <li id="article-list" class="active">
-                                    <p class="default-msg-p">窗外的麻雀</p>
+                                    <div id="article-message-show"
+                                        th:if="!${#lists.isEmpty(session.ARTICLE_MESSAGE) }">
+                                        <div th:each="index: ${#numbers.sequence(session.ARTICLE_MESSAGE.size() - 1, 0, -1)}">
+                                            <p class="default-msg-p" th:text="${session.ARTICLE_MESSAGE[index].content }"></p>
+                                        </div>
+                                    </div>
+                                    <div th:if="${#lists.isEmpty(session.ARTICLE_MESSAGE) }">
+                                        暂未发布更多优文摘要！
+                                    </div>
+                                    <!--<p class="default-msg-p">窗外的麻雀</p>
                                     <p class="default-msg-p">在电线杆上多嘴</p>
                                     <p class="default-msg-p">你说这一句</p>
                                     <p class="default-msg-p">很有夏天的感觉</p>
@@ -390,86 +433,59 @@
                                     <p class="default-msg-p">跟我的思念厚厚一叠</p>
                                     <p class="default-msg-p">几句是非</p>
                                     <p class="default-msg-p">也无法让我的热情冷却</p>
-                                    <p class="default-msg-p">你是我唯一想要的了解</p>
+                                    <p class="default-msg-p">你是我唯一想要的了解</p>-->
                                 </li>
-<!--                                好友列表栏-->
+                                <!--                                好友列表栏-->
                                 <li id="my-friend-list">
-                                    <div th:if="!${#lists.isEmpty(session.SIGNINED_USER.myFriendList )}"
-                                         th:each="friendUser: ${session.SIGNINED_USER.myFriendList }">
-                                        <!--                                    <p><a class="unAllowedFunction" th:href="@{/# }">Lucy</a></p>-->
-                                        <p>
-                                            <!--                                        显示好友名称-->
-                                            <!--                                        如果我是好友关系申请人：显示对方的id和名称-->
-                                            <a class="my-friend" th:if="${session.SIGNINED_USER.getUId() == friendUser.friendShip.hostUser.getUId() }"
-                                               th:attr="data-id=${friendUser.friendShip.friendUser.getUId() }">
-                                                [[${friendUser.friendShip.friendUser.getNickname() }]]
-                                            </a>
-                                            <!--                                        如果我是好友关系的被申请人，则显示申请人的id和名称-->
-                                            <a class="my-friend" th:if="${session.SIGNINED_USER.getUId() == friendUser.friendShip.friendUser.getUId() }"
-                                               th:attr="data-id=${friendUser.friendShip.hostUser.getUId() }">
-                                                [[${friendUser.friendShip.hostUser.getNickname() }]]
-                                            </a>
-                                            <button class="del-user" th:if="${session.SIGNINED_USER.getUId() == friendUser.friendShip.hostUser.getUId() }"
-                                                    th:data="${friendUser.friendShip.friendUser.getNickname() }"
-                                                    th:onclick="|delFriend(${friendUser.friendShip.friendUser.getUId() }, this.getAttribute('data'))|">删除好友</button>
-                                            <button class="del-user" th:if="${session.SIGNINED_USER.getUId() == friendUser.friendShip.friendUser.getUId() }"
-                                                    th:data="${friendUser.friendShip.hostUser.getNickname() }"
-                                                    th:onclick="|delFriend(${friendUser.friendShip.hostUser.getUId() }, this.getAttribute('data'))|">删除好友</button>
-                                        </p>
+                                    <div class="has-search-result hidden-el">
+                                        <div id="my-friends">
+                                            <!--<p>
+                                                <a class="my-friend">Lucy</a>
+                                                <button class="del-user">删除好友</button>
+                                            </p>-->
+                                        </div>
                                     </div>
-                                    <div th:if="${#lists.isEmpty(session.SIGNINED_USER.myFriendList )}">
-                                        暂无任何好友信息！
+                                    <div class="non-search-result hidden-el">
+                                        <p></p>
                                     </div>
                                 </li>
-<!--                                群聊列表栏-->
+                                <!--                                群聊列表栏-->
                                 <li id="my-group-list">
-                                    <div th:if="!${#lists.isEmpty(session.SIGNINED_USER.myEnteredGroups )}"
-                                         th:each="index: ${#numbers.sequence(session.SIGNINED_USER.myEnteredGroups.size() - 1, 0, -1) }">
-                                        <p>
-                                            <!--                                        显示群聊名称-->
-                                            <a class="my-entered-group"
-                                               th:attr="data-code=${session.SIGNINED_USER.myEnteredGroups[index].getGCode() }">
-                                                [[${session.SIGNINED_USER.myEnteredGroups[index].getGName() }]]
-                                            </a>
-<!--                                            如果该用户是群主，则可以操作：解散群聊-->
-                                            <button class="dissolve-group"
-                                                    th:if="${session.SIGNINED_USER.getUId() == session.SIGNINED_USER.myEnteredGroups[index].getHostUser().getUId() }"
-                                                    th:data-gName="${session.SIGNINED_USER.myEnteredGroups[index].gName }"
-                                                    th:data-gCode="${session.SIGNINED_USER.myEnteredGroups[index].gCode }"
-                                                    th:onclick="|doDissolveGroupBtnListener(this.getAttribute('data-gName'), this.getAttribute('data-gCode'))|">
-                                                解散群聊</button>
-<!--                                            如果该用户不是群主，则只能操作：退出群聊-->
-                                            <button class="exit-group"
-                                                    th:if="${session.SIGNINED_USER.getUId() != session.SIGNINED_USER.myEnteredGroups[index].getHostUser().getUId() }"
-                                                    th:data-gName="${session.SIGNINED_USER.myEnteredGroups[index].gName }"
-                                                    th:data-gCode="${session.SIGNINED_USER.myEnteredGroups[index].gCode }"
-                                                    th:onclick="|doExitGroupBtnListener(this.getAttribute('data-gName'), this.getAttribute('data-gCode'))|">
-                                                退出群聊</button>
-                                        </p>
+                                    <div class="has-search-result hidden-el">
+                                        <div id="my-groups">
+                                            <!--<p>
+                                                <a class="my-group">Lucy</a>
+&lt;!&ndash;                                                <button class="exit-group">退出群聊</button>&ndash;&gt;
+                                                <button class="dissolve-group">解散群聊</button>
+                                            </p>-->
+                                        </div>
                                     </div>
-                                    <div th:if="${#lists.isEmpty(session.SIGNINED_USER.myEnteredGroups )}">
-                                        暂未加入任意群聊！
+                                    <div class="non-search-result hidden-el">
+                                        <p></p>
                                     </div>
                                 </li>
-<!--                                更多功能栏-->
+                                <!--                                更多功能栏-->
                                 <li>
-<!--                                    点击“新朋友”会查询所有给该用户发送过好友申请的用户信息-->
+                                    <!--                                    点击“新朋友”会查询所有给该用户发送过好友申请的用户信息-->
                                     <p><a onclick="findMyNewFriends()">新朋友</a></p>
                                     <p><a onclick="findGroupNotifications()">群通知</a></p>
-<!--                                    只有管理员才可以发布系统广播-->
+                                    <!--                                    只有管理员才可以发布系统广播-->
                                     <div th:if="${session.SIGNINED_USER.role == session.ADMIN_USER_NAME}">
-                                        <p id="all-broadcasts" onclick="doGetAllBroadcasts()"><a>发布系统广播</a></p>
+                                        <p id="all-broadcasts" onclick="doGetMyBroadcasts()"><a>发布系统广播</a></p>
                                     </div>
-<!--                                    搜索好友，然后就能够进行添加好友的操作-->
+                                    <div th:if="${session.SIGNINED_USER.role == session.ADMIN_USER_NAME}">
+                                        <p onclick="doGetMyArticles()"><a>发布优文摘要</a></p>
+                                    </div>
+                                    <!--                                    搜索好友，然后就能够进行添加好友的操作-->
                                     <p><a>添加好友</a></p>
-                                    <p><a>加入群聊</a></p>
-<!--                                    点击“新建群聊”的同时会查询该用户创建的所有群聊、以及这些群聊中所有的好友信息-->
+                                    <!--                                    点击“新建群聊”的同时会查询该用户创建的所有群聊、以及这些群聊中所有的好友信息-->
                                     <p><a onclick="fingMyCreatedGroups()">新建群聊</a></p>
-                                    <p><a class="unAllowedFunction">朋友圈</a></p>
-<!--                                    罗列出用户的个人信息-->
-                                    <p><a>个人信息</a></p>
-<!--                                    用户可以反馈意见，并同时查询出所有用户的意见反馈信息-->
+                                    <p><a>加入群聊</a></p>
+                                    <!--                                    用户可以反馈意见，并同时查询出所有用户的意见反馈信息-->
                                     <p id="all-feedbacks"><a>意见反馈</a></p>
+                                    <!--                                    罗列出用户的个人信息-->
+                                    <p><a>个人信息</a></p>
+                                    <p><a class="unAllowedFunction">朋友圈</a></p>
                                 </li>
                             </ul>
                         </div>

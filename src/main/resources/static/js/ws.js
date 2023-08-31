@@ -22,11 +22,6 @@ function createWebSocketClient(uniqueUserCode) {
     }
 }
 
-window.onload = (evt) => {
-    // setMessageToSystemInfoBoard('请注意！现在是广播事件：啊是多久啊圣诞啊实打实大苏打梵蒂冈的节阿松大是南大四年冬季阿三大苏打爱上你的')
-    // console.log(document.getElementById('signined-user'))
-}
-
 const user = document.getElementById('unique-user-code').value;   // onlineUser
 createWebSocketClient(user);
 
@@ -53,10 +48,8 @@ ws.onerror = (evt) => {
     // setMessageToSystemInfoBoard('请注意！现在是广播事件：啊是多久啊圣诞啊实打实大苏打梵蒂冈的节阿松大是南大四年冬季阿三大苏打爱上你的')
     callMessage(-1, "WebSocket服务连接失败，请稍后重试！");
     console.log('WebSocket服务连接失败，请稍后重试！');
-    console.log(evt)
+    console.log(evt);
 }
-
-var priFriendId = 0;
 
 // websocket 接收到消息时执行的回调函数
 ws.onmessage = (evt) => {
@@ -68,10 +61,7 @@ ws.onmessage = (evt) => {
     // console.log(evt);
     let message = JSON.parse(evt.data);
     if (message.messageType === 'private-message') {
-        // let friendId = document.querySelector('#my-friend-list a[class="my-friend content-active"]').dataset.id;
-        /*console.log('friendId: ' + friendId);
-        console.log(message.sendUser, message.sendUser.uId);
-        console.log(message.receiveUser, message.receiveUser.uId);*/
+        let priFriendId = document.querySelector('#my-friend-list a[class="my-friend content-active"]').dataset.id;
         if (Number(priFriendId) != Number(message.receiveUser.uId)) {   // 若好友Id不等于消息接收者id
             setMessageToPriMsgBoard(message, message.sendUser.uId);     // 则将消息记录设置到发送者id中
         } else {
@@ -82,9 +72,14 @@ ws.onmessage = (evt) => {
         setMessageToPubMsgBoard(message, message.receiveGroup.gCode);
 
     } else if (message.messageType === 'system-message') {
-        callMessage(0, "管理员：" + message.user.nickname + " 发布了一则系统公告！");
+        callMessage(0, "管理员：" + message.publisher.nickname + " 发布了一则系统公告！");
         setMessageToSystemInfoBoard(message);
         setContentToOwnPublishedBroadcast(message);
+
+    } else if (message.messageType === 'abstract-message') {
+        callMessage(0, "管理员：" + message.publisher.nickname + " 发表了一部优文摘要文摘！");
+        setMessageToArticleBoard(message);
+        setContentToOwnPublishedArticle(message);
     }
 
 }
@@ -153,7 +148,7 @@ function callSendMessage(evt) {
     if (chatTypeElemId === 'private-message') {
         // console.log('private');
 
-        priFriendId = document.querySelector('#my-friend-list a[class="my-friend content-active"]').dataset.id;
+        let priFriendId = document.querySelector('#my-friend-list a[class="my-friend content-active"]').dataset.id;
         // console.log(friendId)
         let sendMsgData = doMessageJsonData(contentVal, chatTypeElemId);    // 封装需要发送的消息
         // console.log(sendMsgData);
@@ -214,29 +209,16 @@ function callSendMessage(evt) {
     }
 
     // 每次发送一条消息后消息栏置为空
-    chatElem.querySelector('textarea[id="content"]').value = '';
+    content.value = '';
 }
-
-/*// 发送消息
-function sendMsg(msg) {
-    const data = {
-        // "messageType":
-        "msg": msg
-    };
-    ws.send(JSON.parse(JSON.stringify(data)));
-    // 同时将此消息插入至相应的消息框中（私聊消息、群聊消息、系统公告通知消息）
-}*/
-
 
 // 将系统公告消息添加至 系统广播板块上
 function setMessageToSystemInfoBoard(msg) {
     let systemInfoShow = document.getElementById('system-message-show');
     let newSystemInfoElement = document.createElement('p');
-    // <p className="info-all infos"></p>
-    newSystemInfoElement.classList.add("info-all");
-    newSystemInfoElement.classList.add("infos");
+    newSystemInfoElement.classList.add("info-all", "infos");
     newSystemInfoElement.innerText = msg.content;
-    // console.log(newSystemInfoElement)
+    // console.log(newSystemInfoElement);
 
     let hasFirstElem = systemInfoShow.firstElementChild;
     if (hasFirstElem) {
@@ -275,5 +257,51 @@ if (broadcastBtn) {
             }
         });
         publishBroadcastElem.value = '';
+    });
+}
+
+// 将优文摘要消息添加至 优文摘要板块上
+function setMessageToArticleBoard(msg) {
+    let articleInfoShow = document.getElementById('article-message-show');
+    let newArticleInfoElem = document.createElement('p');
+    newArticleInfoElem.classList.add("default-msg-p");
+    newArticleInfoElem.innerText = msg.content;
+    // console.log(newArticleInfoElem)
+
+    let hasFirstElem = articleInfoShow.firstElementChild;
+    if (hasFirstElem) {
+        articleInfoShow.insertBefore(newArticleInfoElem, hasFirstElem);
+    } else {
+        articleInfoShow.appendChild(newArticleInfoElem);
+    }
+}
+// 监听 发布优文摘要 的button
+var articleBtn = document.querySelector('#publish-excellent-abstract button[type="button"]');
+if (articleBtn) {
+    articleBtn.addEventListener('click', function (evt) {
+        let publishArticleElem = document.getElementById('publish-abstract');
+        let publishArticleVal = publishArticleElem.value;
+        if (publishArticleVal === '' | publishArticleVal.length === 0) {
+            callMessage(1, "发表优文摘要文章内容不能为空！");
+            return;
+        };
+
+        $.ajax({
+            url: getProjectPath() + '/user/chat/let-chat/0',
+            type: 'POST',
+            data: doMessageJsonData(publishArticleVal, 'abstract-message'),
+            success: (resp) => {
+                callMessage(resp.code, resp.msg);
+                if (resp.code === 0) {
+                    let articleMsg = resp.data;
+                    ws.send(JSON.stringify(articleMsg));     // 封装优文摘要消息
+                }
+            },
+            error: (resp) => {
+                console.log(resp);
+                callMessage(-1, "***出错啦，请稍后再试！");
+            }
+        });
+        publishArticleElem.value = '';
     });
 }

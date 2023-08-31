@@ -1,19 +1,16 @@
 package edu.hniu.imchatroom.service.impl;
 
 import edu.hniu.imchatroom.mapper.MessageMapper;
-import edu.hniu.imchatroom.model.bean.BroadcastMessage;
-import edu.hniu.imchatroom.model.bean.Message;
-import edu.hniu.imchatroom.model.bean.PrivateMessage;
-import edu.hniu.imchatroom.model.bean.PublicMessage;
+import edu.hniu.imchatroom.model.bean.*;
 import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
-import edu.hniu.imchatroom.service.ChatService;
+import edu.hniu.imchatroom.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-public class ChatServiceImpl implements ChatService {
+public class MessageServiceImpl implements MessageService {
 
     private MessageMapper messageMapper;
 
@@ -37,9 +34,6 @@ public class ChatServiceImpl implements ChatService {
         if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
             // 私聊消息（会根据消息发送者id和消息接收者id进行查询）
             List<PrivateMessage> privateMessages = messageMapper.selectPrivateMessages((PrivateMessage) message);
-            /*System.out.println("doGetChatMessage: ");
-            privateMessages.forEach(privateMessage -> System.out.println(privateMessage));*/
-
             return privateMessages;
 
         } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG))) {
@@ -77,8 +71,39 @@ public class ChatServiceImpl implements ChatService {
             // 发送系统消息
             BroadcastMessage broadcastMessage = (BroadcastMessage) message;
             return messageMapper.insertSystemMsg(broadcastMessage);
+
+        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
+            // 发送优文摘要消息
+            ArticleMessage articleMessage = (ArticleMessage) message;
+            return messageMapper.insertArticleMsg(articleMessage);
         }
 
         return -1;
+    }
+
+    /**
+     * 销毁消息
+     * @param msgType
+     * @param messages
+     * @return
+     */
+    @Override
+    public Integer doDestroyMessage(String msgType, List<? extends Message> messages) {
+
+        int result = 0;
+        // 根据消息类型进行分类处理
+        if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
+            // 私聊消息
+            List<PrivateMessage> privateMessages = (List<PrivateMessage>) messages;
+            result += messageMapper.deletePriMsg(privateMessages);
+
+        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG))) {
+            // 群聊消息
+
+        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
+            // 系统消息
+        }
+
+        return result;
     }
 }

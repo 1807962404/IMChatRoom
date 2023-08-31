@@ -11,8 +11,8 @@ server:
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/chatroom
-#    url: jdbc:mysql://8.130.104.52:3306/chatroom
+    url: jdbc:mysql://localhost:3306/chatroom?allowMultiQueries=true
+#    url: jdbc:mysql://8.130.104.52:3306/chatroom?allowMultiQueries=true
     username: root
     password: xmq154656
 

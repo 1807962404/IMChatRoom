@@ -70,7 +70,9 @@
                 (`host_id` = #{uId } OR `friend_id` = #{uId })
             )
         AS `result` USING(`fs_id`)
-        WHERE `friend`.`display_status` = '0' AND `f_status` = '0'
+        WHERE `friend`.`display_status` = '0' AND
+              `f_status` = '0' AND `friend`.`fs_id` = `result`.`fs_id`
+        ORDER BY `make_time` DESC
     </select>
 
     <!--    Integer insertFriendShip(@Param("friendShip") FriendShip friendShip);-->

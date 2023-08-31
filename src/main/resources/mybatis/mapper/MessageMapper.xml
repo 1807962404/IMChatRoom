@@ -69,6 +69,25 @@
         INSERT INTO `broadcast_message`
             (`u_id`, `content`, `send_time`)
         VALUES
-            (#{broadcastMessage.user.uId }, #{broadcastMessage.content }, #{broadcastMessage.sendTime })
+            (#{broadcastMessage.publisher.uId }, #{broadcastMessage.content }, #{broadcastMessage.sendTime })
     </insert>
+
+<!--    Integer insertArticleMsg(@Param("articleMessage") ArticleMessage articleMessage);-->
+    <insert id="insertArticleMsg" useGeneratedKeys="true" keyProperty="aId">
+        INSERT INTO `article_message`
+            (`u_id`, `content`, `send_time`)
+        VALUES
+            (#{articleMessage.publisher.uId }, #{articleMessage.content }, #{articleMessage.sendTime })
+    </insert>
+
+<!--    Integer deletePriMsg(@Param("privateMessages") List<PrivateMessage> privateMessages);-->
+    <update id="deletePriMsg">
+        <foreach collection="privateMessages" item="msg" separator=";">
+            UPDATE `private_message`
+            <set>
+                `display_status` = '1'
+            </set>
+            WHERE `pr_id` = #{msg.prId }
+        </foreach>
+    </update>
 </mapper>

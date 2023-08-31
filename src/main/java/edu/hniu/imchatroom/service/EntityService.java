@@ -1,5 +1,6 @@
 package edu.hniu.imchatroom.service;
 
+import edu.hniu.imchatroom.model.bean.ArticleMessage;
 import edu.hniu.imchatroom.model.bean.BroadcastMessage;
 import edu.hniu.imchatroom.model.bean.Feedback;
 
@@ -32,4 +33,11 @@ public interface EntityService {
      * @return
      */
     List<BroadcastMessage> doGetBroadcasts(Integer uId);
+
+    /**
+     * 处理 【根据用户id（管理员）】获取【其发布的】所有优文摘要信息 的业务逻辑
+     * @param uId
+     * @return
+     */
+    List<ArticleMessage> doGetArticles(Integer uId);
 }

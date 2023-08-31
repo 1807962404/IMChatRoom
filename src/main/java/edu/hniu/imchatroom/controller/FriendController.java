@@ -1,11 +1,10 @@
 package edu.hniu.imchatroom.controller;
 
-import edu.hniu.imchatroom.model.bean.Friend;
-import edu.hniu.imchatroom.model.bean.FriendShip;
-import edu.hniu.imchatroom.model.bean.ResultVO;
-import edu.hniu.imchatroom.model.bean.User;
+import edu.hniu.imchatroom.model.bean.*;
+import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.FriendService;
+import edu.hniu.imchatroom.service.MessageService;
 import edu.hniu.imchatroom.service.UserService;
 import edu.hniu.imchatroom.util.StringUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,6 +26,7 @@ public class FriendController {
 
     private UserService userService;
     private FriendService friendService;
+    private MessageService messageService;
     @Autowired
     public void setUserService(UserService userService) {
         this.userService = userService;
@@ -34,6 +34,26 @@ public class FriendController {
     @Autowired
     public void setFriendService(FriendService friendService) {
         this.friendService = friendService;
+    }
+    @Autowired
+    public void setMessageService(MessageService messageService) {
+        this.messageService = messageService;
+    }
+
+    /**
+     * 获取我的好友列表
+     * @param request
+     * @return
+     */
+    @ResponseBody
+    @GetMapping("/get-my-friends")
+    public List<Friend> getMyFriends(HttpServletRequest request) {
+        User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
+        // 获取本人所有的好友列表
+        List<Friend> myFriends = friendService.doGetFriendsByUId(thisUser.getUId());
+        log.info("My Friends: {}", myFriends);
+
+        return myFriends;
     }
 
     /**
@@ -148,27 +168,19 @@ public class FriendController {
                      */
                     int result = friendService.doMakeFriend(friendShip.getFsId());
                     if (2 != result) {
-                        resultVO.setCode(RESPONSE_WARNING_CODE);
+                        resultVO.setCode(RESPONSE_FAILED_CODE);
                         resultVO.setMsg("添加好友失败！");
                         log.warn("添加好友失败！");
-                        return resultVO;
+
+                    } else {
+                        resultVO.setCode(RESPONSE_SUCCESS_CODE);
+                        // 设置二者友谊状况为：已是好友关系
+                        resultVO.setData(friendService.doCheckIsFriend(thisUser, friendUser, StatusCodeEnum.getStatusCode(StatusCodeEnum.ISFRIEND)));
+                        resultVO.setMsg("已成功与用户：" + friendUser.getNickname() + " 成为好友！");
+                        log.warn("已成功与用户：{} 成为好友！", friendUser.getNickname());
                     }
 
-                    resultVO.setCode(RESPONSE_SUCCESS_CODE);
-                    // 设置二者友谊状况为：已是好友关系
-                    resultVO.setData(friendService.doCheckIsFriend(thisUser, friendUser, StatusCodeEnum.getStatusCode(StatusCodeEnum.ISFRIEND)));
-                    resultVO.setMsg("已成功与用户：" + friendUser.getNickname() + " 成为好友！");
-                    log.warn("已成功与用户：{} 成为好友！", friendUser.getNickname());
-
-                    /**
-                     * 3、更新两个用户的好友列表
-                     *  因为无法跟踪会话，所以无法做到同时更新两个用户的好友列表，只能更新当前删除对方好友的会话状态。
-                     *  在删除对方好友后，若对方再次发消息来则能够提示已不是他的好友！
-                     */
-                    thisUser.setMyFriendList(friendService.doGetFriendsByUId(thisUser.getUId()));
-                    request.getSession().setAttribute(SIGNINED_USER, thisUser);
                     return resultVO;
-
                 } else {
                     resultVO.setCode(RESPONSE_WARNING_CODE);
                     resultVO.setMsg("您已发送过此好友请求，请耐心等待好友确认！");
@@ -197,6 +209,12 @@ public class FriendController {
         return resultVO;
     }
 
+    /**
+     * 根据好友的id 删除我的好友
+     * @param friendId
+     * @param request
+     * @return
+     */
     @ResponseBody
     @PostMapping("/del-friend/{friendId}")
     public ResultVO delMyFriend(@PathVariable("friendId") String friendId, HttpServletRequest request) {
@@ -230,36 +248,31 @@ public class FriendController {
             return resultVO;
         }
 
-        // 2、删除好友（存在好友关系）
-        int result = friendService.doDelMyFriend(friendShip);
-        if (2 != result) {
+        int result = 0;
+        // 2、删除双方的聊天记录
+        PrivateMessage privateMessage = new PrivateMessage();
+        privateMessage.setSendUser(thisUser);
+        privateMessage.setReceiveUser(friendUser);
+        privateMessage.setMessageType(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG));
+
+        // 2.1、获取双方的聊天记录信息
+        List<? extends Message> messages = messageService.doGetChatMessage(privateMessage);
+        // 2.2、删除双方的私聊记录
+        result += messageService.doDestroyMessage(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG), messages);
+
+        // 3、删除好友（存在好友关系）
+        result += friendService.doDelMyFriend(friendShip);
+
+        if (3 != result) {
             resultVO.setCode(RESPONSE_FAILED_CODE);
             resultVO.setMsg("删除用户id为：" + friendId + " 的好友：" + friendUser.getNickname() + " 失败！");
             log.warn("删除用户id为：{} 的好友：{} 失败！", friendId, friendUser.getNickname());
-            return resultVO;
+
+        } else {
+            resultVO.setCode(RESPONSE_SUCCESS_CODE);
+            resultVO.setMsg("已成功删除用户id为：" + friendId + " 的好友： " + friendUser.getNickname() + "！");
+            log.warn("已成功删除用户id为：{} 的好友：{}！", friendId, friendUser.getNickname());
         }
-
-        /**
-         * 3、更新两个用户的好友列表
-         *  因为无法跟踪会话，所以无法做到同时更新两个用户的好友列表，只能更新当前删除对方好友的会话状态。
-         *  在删除对方好友后，若对方再次发消息来则能够提示已不是他的好友！
-         */
-        thisUser.setMyFriendList(friendService.doGetFriendsByUId(thisUser.getUId()));
-        request.getSession().setAttribute(SIGNINED_USER, thisUser);
-        /*Set<Map.Entry<String, User>> entriesUser = userToUseMap.entrySet();
-        Iterator<Map.Entry<String, User>> iteratorUsers = entriesUser.iterator();
-        while (iteratorUsers.hasNext()) {
-            Map.Entry<String, User> nextUser = iteratorUsers.next();
-            User user = nextUser.getValue();
-            if (user.getUId() == thisUser.getUId() || user.getUId() == friendUser.getUId()) {
-                user.setMyFriendList(friendService.doGetFriendsByUId(thisUser.getUId()));
-                request.getSession().setAttribute(SIGNINED_USER, thisUser);
-            }
-        }*/
-
-        resultVO.setCode(RESPONSE_SUCCESS_CODE);
-        resultVO.setMsg("已成功删除用户id为：" + friendId + " 的好友： " + friendUser.getNickname() + "！");
-        log.warn("已成功删除用户id为：{} 的好友：{}！", friendId, friendUser.getNickname());
 
         return resultVO;
     }

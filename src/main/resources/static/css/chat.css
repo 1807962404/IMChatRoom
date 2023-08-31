@@ -715,6 +715,38 @@ button:hover {
     font-weight: bold;
 }
 
+/**/
+#publish-excellent-abstract .my-pub-article {
+    position: relative;
+    margin: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+#publish-excellent-abstract .my-pub-article .article-content {
+    display: -webkit-box;
+    /*设置几行*/
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    word-break: break-all;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 25px;
+    font-size: 14px;
+    font-weight: normal;
+    color: #000;
+}
+
+#publish-excellent-abstract .my-pub-article .apply-time {
+    margin-top: 15px;
+}
+
+#publish-excellent-abstract .my-pub-article .article-content:before {
+    content: "文摘内容：";
+    color: #f00;
+    font-size: 16px;
+    font-weight: bold;
+}
+
 #feedback #all-feedback-list {
     margin-top: 15px;
 }

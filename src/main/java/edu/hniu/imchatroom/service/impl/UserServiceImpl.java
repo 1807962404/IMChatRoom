@@ -21,22 +21,27 @@ import static edu.hniu.imchatroom.util.VariableUtil.CHATROOM_NAME;
 public class UserServiceImpl implements UserService {
 
     private UserMapper userMapper;
-    private MessageMapper messageMapper;
     private MailUtil mailUtil;
 
     @Autowired
     public void setUserMapper(UserMapper userMapper) {
         this.userMapper = userMapper;
     }
-
-    @Autowired
-    public void setMessageMapper(MessageMapper messageMapper) {
-        this.messageMapper = messageMapper;
-    }
-
     @Autowired
     public void setMailUtils(MailUtil mailUtil) {
         this.mailUtil = mailUtil;
+    }
+
+    /**
+     * 检查表单发送过来的验证码是否 与session中存储的verifycode相等
+     * @param verifyCode
+     * @param checkCode
+     * @return
+     */
+    @Override
+    public boolean checkVerifyCode(String checkCode, String verifyCode) {
+
+        return StringUtil.isNotEmpty(verifyCode) && checkCode.equalsIgnoreCase(verifyCode);
     }
 
     /**

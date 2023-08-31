@@ -17,6 +17,8 @@ public final class VariableUtil {
 
     // 系统广播名称
     public static final String BROADCAST_MESSAGE_NAME = "BROADCAST_MESSAGE";
+    // 优质文摘名称
+    public static final String ARTICLE_MESSAGE_NAME = "ARTICLE_MESSAGE";
 
     // 用作随机生成字符串的变量
     public static final String BASE_CODE = "0123456789ABCDEFGHIJKMLNOPQRSTUVWXYZabcdefghijkmlnopqrstuvwxyz";

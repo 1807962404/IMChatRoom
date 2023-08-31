@@ -27,16 +27,41 @@ import static edu.hniu.imchatroom.util.VariableUtil.*;
 public class GroupController {
 
     private GroupService groupService;
-    private UserService userService;
     @Autowired
     public void setGroupService(GroupService groupService) {
         this.groupService = groupService;
     }
-    @Autowired
-    public void setUserService(UserService userService) {
-        this.userService = userService;
+
+    /**
+     * 获取我加入的所有群组列表
+     * @param request
+     * @return
+     */
+    @ResponseBody
+    @GetMapping("/get-my-groups")
+    public List<Group> getMyGroups(HttpServletRequest request) {
+        User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
+
+        // 1、获取本人加入的所有群聊列表
+        List<Group> myEnteredGroups = groupService.doGetMyEnteredGroups(thisUser.getUId());
+        log.info("My Entered Groups: {}", myEnteredGroups);
+
+        for (Group myEnteredGroup : myEnteredGroups) {
+            // 2、获取我加入的群组中所有的成员
+            List<GroupUser> groupUsers = groupService.doGetGroupsUsersById(myEnteredGroup.getGId(), null);
+
+            // 3、将群组成员设置到该群组中
+            myEnteredGroup.setMembers(groupUsers);
+        }
+
+        return myEnteredGroups;
     }
 
+    /**
+     * 查询我创建的群组列表
+     * @param request
+     * @return
+     */
     @ResponseBody
     @GetMapping("/find-my-groups")
     public List<Group> findMyGroups(HttpServletRequest request) {
@@ -46,6 +71,12 @@ public class GroupController {
         return groups;
     }
 
+    /**
+     * 用户新建群组
+     * @param data
+     * @param request
+     * @return
+     */
     @ResponseBody
     @PostMapping("/add-group")
     public ResultVO<Group> addGroup(String data, HttpServletRequest request) {
@@ -81,10 +112,6 @@ public class GroupController {
             defaultGroupUser.setMember(thisUser);
             newGroup.setMembers(Arrays.asList(defaultGroupUser));
 
-            // 更新登陆用户加入的所有群组信息
-            thisUser.setMyEnteredGroups(groupService.doGetMyEnteredGroups(thisUser.getUId()));
-            request.getSession().setAttribute(SIGNINED_USER, thisUser);
-
             resultVO.setData(newGroup);
             resultVO.setMsg("用户： " + thisUser.getNickname() + " 新建群聊：" + newGroup.getGName() + " 成功！");
             log.info("用户：{} 新建群聊：{} 成功！", thisUser.getNickname(), newGroup.getGName());
@@ -94,6 +121,11 @@ public class GroupController {
         return resultVO;
     }
 
+    /**
+     * 用户查询指定群组
+     * @param data
+     * @return
+     */
     @ResponseBody
     @PostMapping("/find-group")
     public ResultVO<List<Group>> findGroup(String data) {
@@ -126,6 +158,12 @@ public class GroupController {
         return resultVO;
     }
 
+    /**
+     * 用户通过群组的gCode加入群组
+     * @param gCode
+     * @param request
+     * @return
+     */
     @ResponseBody
     @GetMapping("/enter-group/{gCode}")
     public ResultVO enterGroup(@PathVariable("gCode") String gCode, HttpServletRequest request) {
@@ -398,10 +436,6 @@ public class GroupController {
             resultVO.setMsg("已成功解散群组：" + dissolveGroup.getGName() + "！");
             log.info("已成功解散群组：{}！", dissolveGroup.getGName());
 
-            // 更新登陆用户加入的所有群组信息
-            thisUser.setMyEnteredGroups(groupService.doGetMyEnteredGroups(thisUser.getUId()));
-            request.getSession().setAttribute(SIGNINED_USER, thisUser);
-
         } else {
             resultVO.setCode(RESPONSE_FAILED_CODE);
             resultVO.setMsg("未能解散群组：" + dissolveGroup.getGName() + "，请稍后再试！");
@@ -466,10 +500,6 @@ public class GroupController {
             resultVO.setCode(RESPONSE_SUCCESS_CODE);
             resultVO.setMsg("已成功退出群组：" + exitGroup.getGName() + "！");
             log.info("已成功退出群组：{}！", exitGroup.getGName());
-
-            // 更新登陆用户加入的所有群组信息
-            thisUser.setMyEnteredGroups(groupService.doGetMyEnteredGroups(thisUser.getUId()));
-            request.getSession().setAttribute(SIGNINED_USER, thisUser);
 
         } else {
             resultVO.setCode(RESPONSE_FAILED_CODE);

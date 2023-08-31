@@ -1,7 +1,10 @@
 /**
  * 聊天页面js文件
- * @type {Element}
+ * @type {string}
  */
+
+// 获取本人id
+const thisUserId = document.querySelector('#user-info span').dataset.id;
 
 // 滑动私聊聊天版
 function scrollBoard() {
@@ -237,9 +240,13 @@ function changeMsgWindow() {
                     let nonResults = document.querySelectorAll('.non-search-result');
                     let hasResults = document.querySelectorAll('.has-search-result');
                     for (let i = 0; i < nonResults.length; i++) {
+                        if (nonResults[i].parentElement.id === 'my-friend-list' || hasResults[i].parentElement.id === 'my-group-list')
+                            continue;
                         nonResults[i].classList.add('hidden-el');
                     };
                     for (let i = 0; i < hasResults.length; i++) {
+                        if (nonResults[i].parentElement.id === 'my-friend-list' || hasResults[i].parentElement.id === 'my-group-list')
+                            continue;
                         hasResults[i].classList.add('hidden-el');
                     };
 
@@ -388,7 +395,7 @@ function doAddFriendBtnListener(evt, addFriendBtnElem) {
     evt.preventDefault();
     let addFriendUrl = addFriendBtnElem.querySelector('a[class="add-friend-btn"]').dataset.gohref;   // /chatroom/user/add-friend/?
     // console.log(addFriendUrl)
-    sendUrl(addFriendUrl, 'POST', null, getProjectPath() + '/main');
+    sendUrl(addFriendUrl, 'POST', null);
 }
 
 // 监听 加入群聊（搜索群聊） 的button
@@ -501,162 +508,6 @@ function doSingleDataToJson(data) {
     return JSON.parse(JSON.stringify(formData));
 }
 
-// 功能栏的 提交材料信息 封装函数
-function sendMessageToUrl(elem, url, successUrl, failedUrl) {
-    let msgVal = elem.value;
-    if (msgVal === '' | msgVal.length === 0) {
-        callMessage(1, "发送内容不能为空！");
-        return;
-    }
-
-    elem.value = '';        // 内容框置为空
-    // console.log(typeof doSingleDataToJson(msgVal))
-    // 发送url，调用：function sendUrl(url, type, data, successCallbackUrl, failedCallbackUrl)
-    sendUrl(url, 'POST', doSingleDataToJson(msgVal), successUrl, failedUrl);
-};
-
-// 监听 我的好友列表（获取本人与对方的历史私聊消息）
-var myFriendListElem = document.querySelector('#menu-bar #my-friend-list');
-if (myFriendListElem) {
-    let myFriends = myFriendListElem.querySelectorAll('a[class="my-friend"]');
-    for (let i = 0; i < myFriends.length; i++) {
-        let myFriend = myFriends[i];
-
-        // 为左侧消息窗口设置右侧菜单栏下对应的消息窗口
-        let correspondingElem = document.createElement('div');
-        correspondingElem.dataset.id = myFriend.dataset.id;         // 设置用户好友id，以分辨不同的好友
-        correspondingElem.classList.add('hidden-el', 'corresponding');
-
-        document.querySelector('#chat-box #message #private-message').appendChild(correspondingElem);      // 将其添加至群聊板中
-    }
-
-    for (let i = 0; i < myFriends.length; i++) {
-        let myFriend = myFriends[i];
-
-        myFriend.addEventListener('click', (evt) => {
-            // console.log(myFriend)
-            evt.preventDefault();
-
-            let correspondingElems = document.querySelectorAll('#chat-box #message #private-message .corresponding');
-            for (let i = 0; i < correspondingElems.length; i++) {
-                let correspondingElem = correspondingElems[i];
-                if (Number(correspondingElem.dataset.id) === Number(correspondingElem.dataset.id)) {
-                    correspondingElem.classList.remove('hidden-el');
-                } else {
-                    correspondingElem.classList.add('hidden-el');
-                }
-            }
-
-            // 设置 聊天框 上中部位置显示的名称：显示私聊消息对方的名称
-            let chatBoardHeaderElem = document.querySelector('#chat-obj');
-            // chatBoardHeaderElem.classList.remove('hidden-el');
-            chatBoardHeaderElem.innerHTML = `正在与 <span class="show-name">` + myFriend.innerText + `</span> 聊天`;
-
-            // 获取点击好友的 data-id 属性（即好友的用户id）
-            let friendId = myFriend.dataset.id;
-            console.log('friendId: ', friendId);
-            // console.log(myFriend.dataset.hasGetted);
-
-            // 若尚未获取过本人与对方的历史私聊消息
-            if (typeof (myFriend.dataset.hasGetted) === 'undefined') {
-                let priMsgElem = document.querySelector('#chat-box #message #private-message');
-                // 发送ajax请求，获取本人与好友的私聊消息列表
-                $.ajax({
-                    url: getProjectPath() + '/user/chat/private-history-msg/' + friendId,
-                    type: 'GET',
-                    success: function (resp) {
-                        // console.log(resp)
-                        // 成功处理逻辑
-
-                        if (resp.code === 0) {
-                            // 渲染数据
-                            let priMsgList = resp.data;
-                            for (let i = 0; i < priMsgList.length; i++) {
-                                let priMsg = priMsgList[i];
-                                // console.log(priMsg);
-                                setMessageToPriMsgBoard(priMsg, friendId);
-                            }
-
-                            // console.log(priMsgElem);
-                            // 设置一个自定义属性用于：记录已经获取过本人与该好友的历史消息了
-                            myFriend.dataset.hasGetted = true;
-                        }
-                    },
-                    error: function (resp) {
-                        console.log('Error: ' + resp)
-                    }
-                });
-            }
-
-            // 设置一个自定义属性用于：记录已经获取过本人与该好友的历史消息了
-            // myFriend.dataset.hasGetted = true;
-        })
-    }
-}
-
-// 将私聊消息 添加至私聊板块上
-function setMessageToPriMsgBoard(priMsg, friendId) {
-    // 查找群聊聊天板下是否已经有过其它的群聊组信息
-    let correspondingElems = document.querySelectorAll('#chat-box #message #private-message .corresponding');
-    for (let i = 0; i < correspondingElems.length; i++) {
-
-        let correspondingElem = correspondingElems[i];
-        if (Number(correspondingElem.dataset.id) === Number(friendId)) {
-            let priMsgElem = document.querySelector('#chat-box #message #private-message');
-            let msgElem = document.createElement('div');
-            msgElem.classList.add('msg');
-
-            let uIdElem = document.createElement('div');
-            uIdElem.classList.add('hidden-el');
-
-            let avatarElem = document.createElement('div');
-            avatarElem.classList.add('avatar');
-
-            let nameElem = document.createElement('span');
-            nameElem.classList.add('name', 'ellipsis');
-
-            let sentenceElem = document.createElement('div');
-            sentenceElem.classList.add('sentence');
-            let textElem = document.createElement('p');
-            textElem.classList.add('text');
-            let triangleElem = document.createElement('div');
-            triangleElem.classList.add('triangle');
-            let timeElem = document.createElement('p');
-            timeElem.classList.add('time');
-
-            // 如果消息的发送者是对方（好友），渲染数据为 rece_msg（本人接收对方的消息）
-            // console.log(priMsg.sendUser.uId, friendId, Number(priMsg.sendUser.uId === Number(friendId));
-            if (Number(priMsg.sendUser.uId) === Number(friendId)) {
-                msgElem.classList.add('rece_msg');
-                uIdElem.classList.add('rece_uid');
-                avatarElem.classList.add('rece_avatar');
-
-            } else {
-                // 消息发送者是本人，则渲染数据为 send_msg（对方接收本人发送的消息）
-                msgElem.classList.add('send_msg');
-                uIdElem.classList.add('send_uid');
-                avatarElem.classList.add('send_avatar');
-            }
-
-            uIdElem.innerText = priMsg.sendUser.uId;
-
-            avatarElem.style.background = 'url(' + getProjectPath() + '/images' +  priMsg.sendUser.avatarUrl +') no-repeat';
-
-            nameElem.innerText = priMsg.sendUser.nickname;
-
-            textElem.innerText = priMsg.content;
-            let sendTime = new Date(priMsg.sendTime);
-            timeElem.innerText = sendTime.getFullYear() + "年" + (sendTime.getMonth() + 1) + "月" + sendTime.getDate() + "日 "
-                + sendTime.getHours() + "时" + sendTime.getMinutes() + "分" + sendTime.getSeconds() + "秒";
-
-            sentenceElem.append(textElem, triangleElem, timeElem);
-            msgElem.append(uIdElem, avatarElem, nameElem, sentenceElem);
-            priMsgElem.appendChild(msgElem);
-            scrollBoard();
-        }
-    }
-}
-
 // 查找我的新好友通知
 function findMyNewFriends() {
     $.ajax({
@@ -739,30 +590,11 @@ function findMyNewFriends() {
     })
 }
 
-// 删除好友
-function delFriend(friendId, nickname) {
-    // 显示弹窗提醒
-    let pElem = document.createElement('p');
-    pElem.innerHTML = `请您确认是否需要删除uId为：` + friendId + `，昵称为：` + nickname + ` 的好友信息？<br />
-                <button class="opt-cancel" onclick="doFinalDelFriend(true)">容我想想？</button>
-                <button onclick="doFinalDelFriend(false, ` + friendId + `)">确认删除</button>`;
-    showModal(pElem);
-}
-
-function doFinalDelFriend(isCancelled, friendId) {
-    hideModal();
-    if (!isCancelled) {
-        sendUrl(getProjectPath() + '/user/del-friend/' + friendId, 'POST', null, getProjectPath() + "/main");
-    } else {
-        callMessage(1, "已取消操作");
-    }
-}
-
 // 监听 用户会话注销按钮
 var userExitBtn = document.querySelector('#user-exit button');
 if (userExitBtn) {
     userExitBtn.addEventListener('click', () => {
-        sendUrl(getProjectPath() + '/user/logout', 'GET',
+        sendUrl(getProjectPath() + '/user/sign-out', 'GET',
             null, getProjectPath() + '/login', getProjectPath() + '/main')
     })
 }
@@ -789,7 +621,7 @@ function doFinalLogoutAccount(isCancelled) {
 
 // 监听右侧菜单栏下的 发布系统广播 标签（获取该管理员用户发布过的所有的系统广播信息，然后将其展示在左侧消息窗口中）
 // document.getElementById('all-broadcasts').addEventListener('click', (evt) => {
-function doGetAllBroadcasts() {
+function doGetMyBroadcasts() {
     $.ajax({
         url: getProjectPath() + '/entity/admin-published-broadcasts',
         type: 'GET',
@@ -802,12 +634,7 @@ function doGetAllBroadcasts() {
                 let publishedBroadcasts = resp.data;
                 console.log(publishedBroadcasts);
                 let myPubBroadcastPreviewElem = document.querySelector('#publish-system-broadcast #broadcast-preview');
-                if (publishedBroadcasts.length === 0) {
-                    hasBroadcastElem.classList.add('hidden-el');
-                    hasNonBroadcastElem.classList.remove('hidden-el');
-                    hasNonBroadcastElem.firstElementChild.innerText = '您暂未发布任何系统公告！';
-
-                } else {
+                if (publishedBroadcasts && publishedBroadcasts.length > 0) {
                     hasBroadcastElem.classList.remove('hidden-el');
                     hasNonBroadcastElem.classList.add('hidden-el');
                     if (typeof (myPubBroadcastPreviewElem.dataset.hasGetted) === 'undefined') {
@@ -817,12 +644,11 @@ function doGetAllBroadcasts() {
                         }
                         myPubBroadcastPreviewElem.dataset.hasGetted = true;
                     }
+                } else {
+                    hasBroadcastElem.classList.add('hidden-el');
+                    hasNonBroadcastElem.classList.remove('hidden-el');
+                    hasNonBroadcastElem.firstElementChild.innerText = '您暂未发布任何系统公告！';
                 }
-            } else {
-                callMessage(resp.code, resp.msg)
-                hasBroadcastElem.classList.add('hidden-el');
-                hasNonBroadcastElem.classList.remove('hidden-el');
-                hasNonBroadcastElem.querySelector('#publish-system-broadcast .non-search-result p').innerText = `您暂未发布任何系统公告！`;
             }
         },
         error: (resp) => {
@@ -837,11 +663,11 @@ function setContentToOwnPublishedBroadcast(publishedBroadcast) {
 
     let avatarElem = document.createElement('div');
     avatarElem.classList.add('avatar');
-    avatarElem.style.background = 'url(' + getProjectPath() + '/images' + publishedBroadcast.user.avatarUrl + ') no-repeat';
+    avatarElem.style.background = 'url(' + getProjectPath() + '/images' + publishedBroadcast.publisher.avatarUrl + ') no-repeat';
 
     let friendNameElem = document.createElement('div')
     friendNameElem.classList.add('friend-name', 'high-light', 'ellipsis');
-    friendNameElem.innerText = publishedBroadcast.user.nickname;
+    friendNameElem.innerText = publishedBroadcast.publisher.nickname;
 
     let timeElem = document.createElement('div');
     timeElem.classList.add('apply-time');
@@ -861,6 +687,72 @@ function setContentToOwnPublishedBroadcast(publishedBroadcast) {
     }
 }
 
+// 获取本人（管理员用户）发布的所有优文摘要
+function doGetMyArticles() {
+    $.ajax({
+        url: getProjectPath() + '/entity/admin-published-articles',
+        type: 'GET',
+        success: (resp) => {
+            console.log(resp);
+            let hasArticleElem = document.querySelector('#publish-excellent-abstract .has-search-result');
+            let hasNonArticleElem = document.querySelector('#publish-excellent-abstract .non-search-result');
+
+            if (resp.code === 0) {
+                let publishedArticles = resp.data;
+                console.log(publishedArticles);
+                let myPubArticlePreviewElem = document.querySelector('#publish-excellent-abstract #article-preview');
+                if (publishedArticles && publishedArticles.length > 0) {
+                    hasArticleElem.classList.remove('hidden-el');
+                    hasNonArticleElem.classList.add('hidden-el');
+                    if (typeof (myPubArticlePreviewElem.dataset.hasGetted) === 'undefined') {
+                        for (let i = 0; i < publishedArticles.length; i++) {
+                            // 展示到自己的广播内容列表下
+                            setContentToOwnPublishedArticle(publishedArticles[i]);
+                        }
+                        myPubArticlePreviewElem.dataset.hasGetted = true;
+                    }
+                } else {
+                    hasArticleElem.classList.add('hidden-el');
+                    hasNonArticleElem.classList.remove('hidden-el');
+                    hasNonArticleElem.firstElementChild.innerText = '您暂未发表任意优文摘要！';
+                }
+            }
+        },
+        error: (resp) => {
+            console.log("Error: " + resp)
+        }
+    })
+}
+function setContentToOwnPublishedArticle(publishedArticle) {
+    let myPublishedArticleElem = document.createElement('div');
+    myPublishedArticleElem.classList.add('my-pub-article');
+
+    let avatarElem = document.createElement('div');
+    avatarElem.classList.add('avatar');
+    avatarElem.style.background = 'url(' + getProjectPath() + '/images' + publishedArticle.publisher.avatarUrl + ') no-repeat';
+
+    let friendNameElem = document.createElement('div')
+    friendNameElem.classList.add('friend-name', 'high-light', 'ellipsis');
+    friendNameElem.innerText = publishedArticle.publisher.nickname;
+
+    let timeElem = document.createElement('div');
+    timeElem.classList.add('apply-time');
+    timeElem.innerText = FormatDate(publishedArticle.sendTime);
+
+    let articleContentElem = document.createElement('div');
+    articleContentElem.classList.add('article-content');
+    articleContentElem.innerText = publishedArticle.content;
+
+    myPublishedArticleElem.append(avatarElem, friendNameElem, timeElem, articleContentElem);
+    let articlePreviewElem = document.querySelector('#publish-excellent-abstract #article-preview');
+    let hasFristElem = articlePreviewElem.firstElementChild;
+    if (hasFristElem) {
+        articlePreviewElem.insertBefore(myPublishedArticleElem, hasFristElem);
+    } else {
+        articlePreviewElem.appendChild(myPublishedArticleElem);
+    }
+}
+
 // 监听右侧菜单栏下的 意见反馈 标签（获取所有的意见反馈信息，然后将其展示在左侧消息窗口中）
 document.getElementById('all-feedbacks').addEventListener('click', (evt) => {
     evt.preventDefault();
@@ -877,23 +769,16 @@ document.getElementById('all-feedbacks').addEventListener('click', (evt) => {
                 feedbackPreviewElems[i].remove();
             }
 
-            if (feedbackList.length === 0) {
-                hasFeedback.classList.add('hidden-el');
-                hasNonFeedback.classList.remove('hidden-el');
-                hasNonFeedback.querySelector('#feedback .non-search-result p').innerText = `暂无更多反馈信息！`;
-
-            } else {
+            if (feedbackList && feedbackList.length > 0) {
                 hasFeedback.classList.remove('hidden-el');
                 hasNonFeedback.classList.add('hidden-el');
-                /*if (typeof (feedbackPreviewElem.dataset.hasGetted) === 'undefined') {
-                    for (let i = 0; i < feedbackList.length; i++) {
-                        setContentToFeedbackList(feedbackList[i]);
-                    }
-                    feedbackPreviewElem.dataset.hasGetted = true;
-                }*/
                 for (let i = 0; i < feedbackList.length; i++) {
                     setContentToFeedbackList(feedbackList[i]);
                 }
+            } else {
+                hasFeedback.classList.add('hidden-el');
+                hasNonFeedback.classList.remove('hidden-el');
+                hasNonFeedback.querySelector('#feedback .non-search-result p').innerText = `暂无更多反馈信息！`;
             }
         },
         error: (resp) => {
@@ -908,11 +793,11 @@ function setContentToFeedbackList(feedbackContent) {
 
     let avatarElem = document.createElement('div');
     avatarElem.classList.add('avatar');
-    avatarElem.style.background = 'url(' + getProjectPath() + '/images' + feedbackContent.user.avatarUrl + ') no-repeat';
+    avatarElem.style.background = 'url(' + getProjectPath() + '/images' + feedbackContent.publisher.avatarUrl + ') no-repeat';
 
     let friendNameElem = document.createElement('div')
     friendNameElem.classList.add('friend-name', 'high-light', 'ellipsis');
-    friendNameElem.innerText = feedbackContent.user.nickname;
+    friendNameElem.innerText = feedbackContent.publisher.nickname;
 
     let timeElem = document.createElement('div');
     timeElem.classList.add('apply-time');
@@ -1120,20 +1005,7 @@ function doDissolveGroupBtnListener(gName, gCode) {
 function doFinalDissolveGroupBtnListener(isCancelld, gCode) {
     hideModal();
     if (!isCancelld) {
-        $.ajax({
-            url: getProjectPath() + '/user/dissolve-group/' + gCode,
-            type: 'GET',
-            success: (resp) => {
-                callMessage(resp.code, resp.msg);
-                if (resp.code === 0) {
-                    fingMyCreatedGroups();
-                }
-            },
-            error: (resp) => {
-                console.log(resp);
-                callMessage(-1, "***哎呀出错啦，请稍后再试吧！");
-            }
-        })
+        sendUrl(getProjectPath() + '/user/dissolve-group/' + gCode, 'GET', null, getProjectPath() + '/main')
     } else {
         callMessage(1, "已取消操作！");
     }
@@ -1297,83 +1169,136 @@ function doAgreeUserToGroup(gId, uId) {
     })
 }
 
-// 监听 我加入的群组列表（获取群组的历史群聊消息）
-var myGroupListElem = document.querySelector('#menu-bar #my-group-list');
-if (myGroupListElem) {
-    let myEnteredGroups = myGroupListElem.querySelectorAll('a[class="my-entered-group"]');
-    for (let i = 0; i < myEnteredGroups.length; i++) {
-        let myEnteredGroup = myEnteredGroups[i];
+/**
+ * 获取我加入的群组列表
+ */
+function getMyGroups() {
+    let myGroupListElem = document.getElementById('my-group-list');
+    let hasResultElem= myGroupListElem.querySelector('.has-search-result');
+    let nonResultElem = myGroupListElem.querySelector('.non-search-result');
+    let myGroupsElem = hasResultElem.querySelector('#my-groups');
 
-        // 为左侧消息窗口设置右侧菜单栏下对应的消息窗口
-        let correspondingElem = document.createElement('div');
-        correspondingElem.dataset.code = myEnteredGroup.dataset.code;         // 设置群唯一码gCode，以分辨不同的群组
-        correspondingElem.classList.add('hidden-el', 'corresponding');
-        // console.log(':::', myEnteredGroup.dataset.code);
-
-        document.querySelector('#chat-box #message #public-message').appendChild(correspondingElem);      // 将其添加至群聊板中
+    if (myGroupsElem.dataset.hasGetted) {
+        console.log('已获取过群聊列表！');
+        return;
     }
 
-    for (let i = 0; i < myEnteredGroups.length; i++) {
-        let myEnteredGroup = myEnteredGroups[i];
+    $.ajax({
+        url: getProjectPath() + '/user/get-my-groups',
+        type: 'GET',
+        success: (resp) => {
+            let myEnteredGroupList = resp;
+            console.log(myEnteredGroupList);
+            if (myEnteredGroupList && myEnteredGroupList.length > 0) {
 
-        myEnteredGroup.addEventListener('click', (evt) => {
-            // console.log(myEnteredGroup)
-            evt.preventDefault();
+                hasResultElem.classList.remove('hidden-el');
+                nonResultElem.classList.add('hidden-el');
 
-            let correspondingElems = document.querySelectorAll('#chat-box #message #public-message .corresponding');
-            for (let i = 0; i < correspondingElems.length; i++) {
-                let correspondingElem = correspondingElems[i];
-                if (correspondingElem.dataset.code === myEnteredGroup.dataset.code) {
-                    correspondingElem.classList.remove('hidden-el');
-                } else {
-                    correspondingElem.classList.add('hidden-el');
-                }
-            }
+                for (let i = 0; i < myEnteredGroupList.length; i++) {
+                    let myEnteredGroup = myEnteredGroupList[i];
 
-            // 设置 聊天框 上中部位置显示的名称：显示群聊消息 群名称
-            let chatBoardHeaderElem = document.querySelector('#chat-obj');
-            // chatBoardHeaderElem.classList.remove('hidden-el');
-            /*chatBoardHeaderElem.innerText = `<span class="show-name">` + myEnteredGroup.innerText + ` (` +
-                myEnteredGroup.members.length + `)</span>`;*/
-            chatBoardHeaderElem.innerHTML = `<span class="show-name">` + myEnteredGroup.innerText + `</span>`;
+                    let pElem = document.createElement('p');
 
-            // 获取点击好友的 data-code 属性（即群唯一码gCode）
-            let gCode = myEnteredGroup.dataset.code;
-            // console.log(gCode, myEnteredGroup.dataset.hasGetted);
+                    let aElem = document.createElement('a');
+                    aElem.dataset.code = myEnteredGroup.gCode;
+                    // 设置群成员人数
+                    if (myEnteredGroup.members && myEnteredGroup.members.length > 0)
+                        aElem.dataset.memberLen =  myEnteredGroup.members.length;
+                    aElem.classList.add('my-entered-group');
+                    aElem.innerText = myEnteredGroup.gName;
 
-            // 若尚未获取过本人与该群的历史群聊消息
-            if (typeof (myEnteredGroup.dataset.hasGetted) === 'undefined') {
-                let pubMsgElem = document.querySelector('#chat-box #message #public-message');
-                // 发送ajax请求，获取本人与该群的历史群聊消息列表
-                $.ajax({
-                    url: getProjectPath() + '/user/chat/public-history-msg/' + gCode,
-                    type: 'GET',
-                    success: function (resp) {
-                        // console.log(resp)
-                        // 成功处理逻辑
+                    let btnElem = document.createElement('button');
+                    btnElem.dataset.code = myEnteredGroup.gCode;
+                    if (Number(thisUserId) === Number(myEnteredGroup.hostUser.uId)) {
+                        // 如果该用户是群主，则可以操作：解散群聊
+                        btnElem.classList.add('dissolve-group');
+                        btnElem.innerText = '解散群聊';
+                        btnElem.addEventListener('click', () => {
+                            doDissolveGroupBtnListener(myEnteredGroup.gName, myEnteredGroup.gCode);
+                        })
 
-                        if (resp.code === 0) {
-                            // 渲染数据
-                            let pubMsgList = resp.data;
-                            for (let i = 0; i < pubMsgList.length; i++) {
-                                let pubMsg = pubMsgList[i];
-                                // console.log(pubMsg);
-                                setMessageToPubMsgBoard(pubMsg, gCode);
-                            }
-
-                            // console.log(pubMsgElem);
-                            // 设置一个自定义属性用于：记录已经获取过本人与该好友的历史消息了
-                            myEnteredGroup.dataset.hasGetted = true;
-                        }
-                    },
-                    error: function (resp) {
-                        console.log('Error: ' + resp)
+                    } else {
+                        // 如果该用户不是群主，则只能操作：退出群聊
+                        btnElem.classList.add('exit-group');
+                        btnElem.innerText = '退出群聊';
+                        btnElem.addEventListener('click', () => {
+                            doExitGroupBtnListener(myEnteredGroup.gName, myEnteredGroup.gCode);
+                        })
                     }
-                });
-            }
 
-            // 设置一个自定义属性用于：记录已经获取过本人与该好友的历史消息了
-            // myFriend.dataset.hasGetted = true;
+                    aElem.addEventListener('click', () => {
+                        seePubMsg(aElem);
+                    })
+
+                    pElem.append(aElem, btnElem);
+                    myGroupsElem.appendChild(pElem);
+
+                    // 为左侧消息窗口设置右侧菜单栏下群组列表所对应的群聊消息窗口
+                    let correspondingElem = document.createElement('div');
+                    correspondingElem.dataset.code = myEnteredGroup.gCode;         // 设置群组gCode，以分辨不同的群组
+                    correspondingElem.classList.add('hidden-el', 'corresponding');
+                    document.querySelector('#chat-box #message #public-message').appendChild(correspondingElem);      // 将其添加至群聊板中
+                }
+                myGroupsElem.dataset.hasGetted = true;
+
+            } else {
+                hasResultElem.classList.add('hidden-el');
+                nonResultElem.classList.remove('hidden-el');
+                nonResultElem.querySelector('p').innerText = '暂未加入任意群聊！';
+            }
+        },
+        error: (resp) => {
+            console.log("Error: " + resp);
+        }
+    })
+}
+function seePubMsg(myEnteredGroupElem) {
+    let correspondingElems = document.querySelectorAll('#chat-box #message #public-message .corresponding');
+    for (let i = 0; i < correspondingElems.length; i++) {
+        let correspondingElem = correspondingElems[i];
+        if (correspondingElem.dataset.code === myEnteredGroupElem.dataset.code) {
+            correspondingElem.classList.remove('hidden-el');
+        } else {
+            correspondingElem.classList.add('hidden-el');
+        }
+    }
+
+    // 设置 聊天框 上中部位置显示的名称：显示群聊消息 群名称
+    let chatBoardHeaderElem = document.querySelector('#chat-obj');
+    chatBoardHeaderElem.innerHTML = `<span class="show-name">` + myEnteredGroupElem.innerText + ` (` +
+        myEnteredGroupElem.dataset.memberLen + `)</span>`;
+    // chatBoardHeaderElem.innerHTML = `<span class="show-name">` + myEnteredGroupElem.innerText + `</span>`;
+
+    // 获取点击好友的 data-code 属性（即群唯一码gCode）
+    let gCode = myEnteredGroupElem.dataset.code;
+    // console.log(gCode, myEnteredGroup.dataset.hasGetted);
+
+    // 若尚未获取过本人与该群的历史群聊消息
+    if (typeof (myEnteredGroupElem.dataset.hasGetted) === 'undefined') {
+        let pubMsgElem = document.querySelector('#chat-box #message #public-message');
+        // 发送ajax请求，获取本人与该群的历史群聊消息列表
+        $.ajax({
+            url: getProjectPath() + '/user/chat/public-history-msg/' + gCode,
+            type: 'GET',
+            success: function (resp) {
+                // console.log(resp)
+                if (resp.code === 0) {
+                    // 渲染数据
+                    let pubMsgList = resp.data;
+                    for (let i = 0; i < pubMsgList.length; i++) {
+                        let pubMsg = pubMsgList[i];
+                        // console.log(pubMsg);
+                        setMessageToPubMsgBoard(pubMsg, gCode);
+                    }
+
+                    // console.log(pubMsgElem);
+                    // 设置一个自定义属性用于：记录已经获取过本人与该好友的历史消息了
+                    myEnteredGroupElem.dataset.hasGetted = true;
+                }
+            },
+            error: function (resp) {
+                console.log('Error: ' + resp)
+            }
         });
     }
 }
@@ -1441,6 +1366,258 @@ function setMessageToPubMsgBoard(pubMsg, gCode) {
             scrollBoard();
         }
     }
+}
+
+/**
+ * 获取我的好友列表
+ */
+function getMyFriends() {
+    let myFriendListElem = document.getElementById('my-friend-list');
+    let hasResultElem = myFriendListElem.querySelector('.has-search-result');
+    let nonResultElem = myFriendListElem.querySelector('.non-search-result');
+    let myFriendsElem = hasResultElem.querySelector('#my-friends');
+
+    if (myFriendsElem.dataset.hasGetted) {
+        // console.log('已获取过好友列表！');
+        return;
+    }
+
+    $.ajax({
+        url: getProjectPath() + '/user/get-my-friends',
+        type: 'GET',
+        success: (resp) => {
+            let myFriendList = resp;
+            console.log(myFriendList);
+            if (myFriendList && myFriendList.length > 0) {
+
+                hasResultElem.classList.remove('hidden-el');
+                nonResultElem.classList.add('hidden-el');
+
+                for (let i = 0; i < myFriendList.length; i++) {
+                    let friend = myFriendList[i];
+
+                    let pElem = document.createElement('p');
+
+                    let aElem = document.createElement('a');
+                    aElem.classList.add('my-friend');
+
+                    let btnElem = document.createElement('button');
+                    btnElem.classList.add('del-user');
+                    btnElem.innerText = '删除好友';
+
+                    let friendId = 0;
+                    let friendName = '';
+                    console.log('thisUserId: ', thisUserId)
+                    if (Number(thisUserId) === Number(friend.friendShip.hostUser.uId)) {
+                        // 如果我是好友关系的申请人，则显示对方 好友的id和名称
+                        friendId = friend.friendShip.friendUser.uId;
+                        friendName = friend.friendShip.remark;
+                        // aElem.innerText = friend.friendShip.friendUser.nickname;
+
+                    } else if (Number(thisUserId) === Number(friend.friendShip.friendUser.uId)){
+                        // 如果我是好友关系的被申请人，则显示申请人（即对方 好友）的id和名称
+                        friendId = friend.friendShip.hostUser.uId;
+                        friendName = friend.friendShip.hostUser.nickname;
+                    }
+
+                    aElem.dataset.id = friendId;
+                    aElem.innerText = friendName;
+                    aElem.addEventListener('click', () => {
+                        seePriMsg(aElem);
+                    });
+
+                    btnElem.addEventListener('click', () => {
+                        doDelFriendBtnListener(friendId, friendName);
+                    })
+
+                    pElem.append(aElem, btnElem);
+                    myFriendsElem.appendChild(pElem);
+
+                    // 为左侧消息窗口设置右侧菜单栏下好友列表所对应的消息窗口
+                    let correspondingElem = document.createElement('div');
+                    correspondingElem.dataset.id = aElem.dataset.id;         // 设置用户好友id，以分辨不同的好友
+                    correspondingElem.classList.add('hidden-el', 'corresponding');
+                    document.querySelector('#chat-box #message #private-message').appendChild(correspondingElem);      // 将其添加至群聊板中
+                }
+                myFriendsElem.dataset.hasGetted = true;
+
+            } else {
+                hasResultElem.classList.add('hidden-el');
+                nonResultElem.classList.remove('hidden-el');
+                nonResultElem.querySelector('p').innerText = '暂无任何好友信息！';
+            }
+        },
+        error: (resp) => {
+            console.log("Error: " + resp);
+        }
+    })
+}
+// 获取本人与对方的历史私聊消息
+function seePriMsg(myFriendElem) {
+    // 获取点击好友的 data-id 属性（即好友的用户id）
+    let friendId = Number(myFriendElem.dataset.id);
+    console.log('friendId: ', friendId);
+
+    // 设置左侧消息窗口展示的 对应好友私聊消息
+    let correspondingElems = document.querySelectorAll('#chat-box #message #private-message .corresponding');
+    for (let i = 0; i < correspondingElems.length; i++) {
+        let correspondingElem = correspondingElems[i];
+        // 只有是此好友对应id的私聊消息窗口，才会展示出来
+        if (Number(correspondingElem.dataset.id) === friendId) {
+            correspondingElem.classList.remove('hidden-el');
+        } else {
+            correspondingElem.classList.add('hidden-el');
+        }
+    }
+
+    // 设置 聊天框 上中部位置显示的名称：显示私聊消息对方的名称
+    let chatBoardHeaderElem = document.querySelector('#chat-obj');
+    // chatBoardHeaderElem.classList.remove('hidden-el');
+    chatBoardHeaderElem.innerHTML = `正在与 <span class="show-name">` + myFriendElem.innerText + `</span> 聊天`;
+
+    // console.log(myFriend.dataset.hasGetted);
+    // 若尚未获取过本人与对方的历史私聊消息
+    if (typeof (myFriendElem.dataset.hasGetted) === 'undefined') {
+        // 发送ajax请求，获取本人与好友的私聊消息列表
+        $.ajax({
+            url: getProjectPath() + '/user/chat/private-history-msg/' + friendId,
+            type: 'GET',
+            success: function (resp) {
+                // console.log(resp)
+                // 成功处理逻辑
+
+                if (resp.code === 0) {
+                    // 渲染数据
+                    let priMsgList = resp.data;
+                    for (let i = 0; i < priMsgList.length; i++) {
+                        let priMsg = priMsgList[i];
+                        // console.log(priMsg);
+                        setMessageToPriMsgBoard(priMsg, friendId);
+                    }
+
+                    // console.log(priMsgElem);
+                    // 设置一个自定义属性用于：记录已经获取过本人与该好友的历史消息了
+                    myFriendElem.dataset.hasGetted = true;
+                }
+            },
+            error: function (resp) {
+                console.log('Error: ' + resp)
+            }
+        });
+    }
+}
+
+// 将私聊消息 添加至私聊板块上
+function setMessageToPriMsgBoard(priMsg, friendId) {
+    // 查找群聊聊天板下是否已经有过其它的群聊组信息
+    let correspondingElems = document.querySelectorAll('#chat-box #message #private-message .corresponding');
+    for (let i = 0; i < correspondingElems.length; i++) {
+
+        let correspondingElem = correspondingElems[i];
+        if (Number(correspondingElem.dataset.id) === Number(friendId)) {
+            let priMsgElem = document.querySelector('#chat-box #message #private-message');
+            let msgElem = document.createElement('div');
+            msgElem.classList.add('msg');
+
+            let uIdElem = document.createElement('div');
+            uIdElem.classList.add('hidden-el');
+
+            let avatarElem = document.createElement('div');
+            avatarElem.classList.add('avatar');
+
+            let nameElem = document.createElement('span');
+            nameElem.classList.add('name', 'ellipsis');
+
+            let sentenceElem = document.createElement('div');
+            sentenceElem.classList.add('sentence');
+            let textElem = document.createElement('p');
+            textElem.classList.add('text');
+            let triangleElem = document.createElement('div');
+            triangleElem.classList.add('triangle');
+            let timeElem = document.createElement('p');
+            timeElem.classList.add('time');
+
+            // 如果消息的发送者是对方（好友），渲染数据为 rece_msg（本人接收对方的消息）
+            // console.log(priMsg.sendUser.uId, friendId, Number(priMsg.sendUser.uId === Number(friendId));
+            if (Number(priMsg.sendUser.uId) === Number(friendId)) {
+                msgElem.classList.add('rece_msg');
+                uIdElem.classList.add('rece_uid');
+                avatarElem.classList.add('rece_avatar');
+
+            } else {
+                // 消息发送者是本人，则渲染数据为 send_msg（对方接收本人发送的消息）
+                msgElem.classList.add('send_msg');
+                uIdElem.classList.add('send_uid');
+                avatarElem.classList.add('send_avatar');
+            }
+
+            uIdElem.innerText = priMsg.sendUser.uId;
+
+            avatarElem.style.background = 'url(' + getProjectPath() + '/images' +  priMsg.sendUser.avatarUrl +') no-repeat';
+
+            nameElem.innerText = priMsg.sendUser.nickname;
+
+            textElem.innerText = priMsg.content;
+            let sendTime = new Date(priMsg.sendTime);
+            timeElem.innerText = sendTime.getFullYear() + "年" + (sendTime.getMonth() + 1) + "月" + sendTime.getDate() + "日 "
+                + sendTime.getHours() + "时" + sendTime.getMinutes() + "分" + sendTime.getSeconds() + "秒";
+
+            sentenceElem.append(textElem, triangleElem, timeElem);
+            msgElem.append(uIdElem, avatarElem, nameElem, sentenceElem);
+            correspondingElem.appendChild(msgElem);
+            scrollBoard();
+        }
+    }
+}
+
+// 删除好友
+function doDelFriendBtnListener(friendId, nickname) {
+    // 显示弹窗提醒
+    let pElem = document.createElement('p');
+    pElem.innerHTML = `请您确认是否需要删除uId为：` + friendId + `，昵称为：` + nickname + ` 的好友信息？<br />
+                <button class="opt-cancel" onclick="doFinalDelFriendBtnListener(true)">容我想想？</button>
+                <button onclick="doFinalDelFriendBtnListener(false, ` + friendId + `)">确认删除</button>`;
+    showModal(pElem);
+}
+
+function doFinalDelFriendBtnListener(isCancelled, friendId) {
+    hideModal();
+    if (!isCancelled) {
+        sendUrl(getProjectPath() + '/user/del-friend/' + friendId, 'POST', null, getProjectPath() + "/main");
+    } else {
+        callMessage(1, "已取消操作");
+    }
+}
+
+/**
+ * 修改用户信息
+ */
+function editProfile() {
+    let newNicknameVal = document.querySelector('#profile-introduce input[type="text"]').value;
+    let newPasswordVal = document.querySelector('#profile-introduce input[type="password"]').value;
+
+    // 1、检查昵称是否合规
+    if (newNicknameVal === '' | newNicknameVal.length < 3 | newNicknameVal.length > 15) {
+        callMessage(1, "请检查输入的昵称格式！");
+        return;
+    }
+
+    // 封装数据
+    let data = {
+        'nickname': newNicknameVal,
+    };
+
+    // 2、检查密码是否合规
+    if (newPasswordVal && '' != newPasswordVal) {
+        if (newPasswordVal === '' | newPasswordVal.length < 6 | newPasswordVal.length > 20) {
+            callMessage(1, "请检查输入的密码格式！");
+            return;
+        }
+        data['password'] = newPasswordVal;
+    }
+
+    // 3、发送请求修改个人信息
+    sendUrl(getProjectPath() + '/user/edit-profile', 'POST', JSON.parse(JSON.stringify(data)), getProjectPath() + '/main')
 }
 
 

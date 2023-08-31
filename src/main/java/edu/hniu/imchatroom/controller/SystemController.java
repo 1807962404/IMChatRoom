@@ -11,12 +11,7 @@ public class SystemController {
         return "sign";
     }
 
-    @GetMapping(value = {"/", "/index"})
-    public String toIndexPage() {
-        return "index";
-    }
-
-    @GetMapping(value = {"/main"})
+    @GetMapping(value = {"/", "/main"})
     public String toMainPage() {
         return "main";
     }

@@ -18,7 +18,7 @@ public class Feedback implements Serializable {
 
     private static final long serialVersionUID = 1231242342341231L;
     private Integer fbId;
-    private User user;
+    private User publisher;
     private String fbContent;
     @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss")
     private Date publishTime;

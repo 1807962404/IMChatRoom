@@ -13,7 +13,6 @@ import java.util.Date;
 @AllArgsConstructor
 public class Message implements Serializable {
     private static final long serialVersionUID = 1289437882371283L;
-//    private String toId;
     // 记录消息类型（私聊消息、群聊消息、系统公告通知消息）
     private String messageType;
     private String content;

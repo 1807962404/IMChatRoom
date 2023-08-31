@@ -111,6 +111,11 @@ public class WebSocketServer {
             // 系统公告消息
             BroadcastMessage messageToUse = JSON.parseObject(message, BroadcastMessage.class);
             sendInfo(JSON.toJSONString(messageToUse), null);        // 系统消息需要推送给所有在线用户
+
+        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
+            // 优文摘要消息
+            ArticleMessage messageToUse = JSON.parseObject(message, ArticleMessage.class);
+            sendInfo(JSON.toJSONString(messageToUse), null);        // 优文摘要消息需要推送给所有在线用户
         }
     }
 

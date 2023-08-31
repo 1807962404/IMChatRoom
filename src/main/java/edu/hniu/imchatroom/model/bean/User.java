@@ -38,10 +38,6 @@ public class User implements Serializable {
     private Date modifiedTime;
     // 展示状态。0：显示，1：隐藏
     private String displayStatus;
-    // 用户的好友列表
-    private List<Friend> myFriendList;
-    // 用户加入的所有群聊列表
-    private List<Group> myEnteredGroups;
     // 管理员发布的系统公告
     private List<BroadcastMessage> myPublishedBroadcasts;
 

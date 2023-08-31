@@ -1,6 +1,7 @@
 package edu.hniu.imchatroom.service.impl;
 
 import edu.hniu.imchatroom.mapper.EntityMapper;
+import edu.hniu.imchatroom.model.bean.ArticleMessage;
 import edu.hniu.imchatroom.model.bean.BroadcastMessage;
 import edu.hniu.imchatroom.model.bean.Feedback;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
@@ -61,5 +62,18 @@ public class EntityServiceImpl implements EntityService {
             uId = null;
 
         return entityMapper.selectBroadcasts(uId);
+    }
+
+    /**
+     * 处理 【根据用户id（管理员）】获取【其发布的】所有优文摘要信息 的业务逻辑
+     * @param uId
+     * @return
+     */
+    @Override
+    public List<ArticleMessage> doGetArticles(Integer uId) {
+        if (null == uId || 0 >= uId)
+            uId = null;
+
+        return entityMapper.selectArticles(uId);
     }
 }

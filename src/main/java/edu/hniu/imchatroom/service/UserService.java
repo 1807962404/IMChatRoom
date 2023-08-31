@@ -10,6 +10,14 @@ import java.util.List;
 public interface UserService {
 
     /**
+     * 检查表单发送过来的验证码是否 与session中存储的verifycode相等
+     * @param verifyCode
+     * @param checkCode
+     * @return
+     */
+    boolean checkVerifyCode(String checkCode, String verifyCode);
+
+    /**
      * 模糊查询用户信息
      * @param data
      * @return

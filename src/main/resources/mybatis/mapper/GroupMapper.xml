@@ -90,7 +90,7 @@
                 FROM `group_user`
                 WHERE `display_status` = '0' AND
                     `member_id` = #{uId } AND `gu_status` = '0'
-                ORDER BY `join_time` ASC
+                ORDER BY `join_time` DESC
             )
     </select>
 

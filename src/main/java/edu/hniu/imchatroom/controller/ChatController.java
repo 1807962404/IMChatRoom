@@ -5,7 +5,7 @@ import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
 import edu.hniu.imchatroom.model.enums.ResponseCodeEnum;
 import edu.hniu.imchatroom.model.enums.RoleEnum;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
-import edu.hniu.imchatroom.service.ChatService;
+import edu.hniu.imchatroom.service.MessageService;
 import edu.hniu.imchatroom.service.FriendService;
 import edu.hniu.imchatroom.service.GroupService;
 import edu.hniu.imchatroom.service.UserService;
@@ -30,7 +30,7 @@ public class ChatController {
 
     private UserService userService;
     private FriendService friendService;
-    private ChatService chatService;
+    private MessageService messageService;
     private GroupService groupService;
 
     @Autowired
@@ -42,8 +42,8 @@ public class ChatController {
         this.friendService = friendService;
     }
     @Autowired
-    public void setChatService(ChatService chatService) {
-        this.chatService = chatService;
+    public void setChatService(MessageService messageService) {
+        this.messageService = messageService;
     }
     @Autowired
     public void setGroupService(GroupService groupService) {
@@ -74,8 +74,9 @@ public class ChatController {
             // 群聊消息
             return doChatToGroup(message, id, thisUser);
 
-        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
-            // 系统公告消息
+        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG)) ||
+                thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
+            // 系统公告消息、优文摘要消息
             return doChatToEveryone(message, thisUser);
 
         }
@@ -107,6 +108,10 @@ public class ChatController {
         } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
             // 系统公告消息
             messageToUse = new BroadcastMessage();
+
+        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
+            // 优文摘要消息
+            messageToUse = new ArticleMessage();
 
         } else {
             return null;
@@ -165,13 +170,13 @@ public class ChatController {
                 thisUser.getNickname(), friendUser.getNickname(), message.getContent());
 
         // 4、本人发送消息给对方（好友）
-        int result = chatService.doChat(privateMessage);
+        int result = messageService.doChat(privateMessage);
 
         if (1 == result) {
             resultVO.setCode(RESPONSE_SUCCESS_CODE);
             resultVO.setData(privateMessage);
             resultVO.setMsg("消息发送成功！");
-            log.warn("消息发送成功！");
+            log.info("消息发送成功！");
 
         } else {
             resultVO.setCode(RESPONSE_FAILED_CODE);
@@ -230,13 +235,13 @@ public class ChatController {
                 thisUser.getNickname(), receiveGroup.getGName(), message.getContent());
 
         // 4、本人发送消息给对方（好友）
-        int result = chatService.doChat(publicMessage);
+        int result = messageService.doChat(publicMessage);
 
         if (1 == result) {
             resultVO.setCode(RESPONSE_SUCCESS_CODE);
             resultVO.setData(publicMessage);
             resultVO.setMsg("消息发送成功！");
-            log.warn("消息发送成功！");
+            log.info("消息发送成功！");
 
         } else {
             resultVO.setCode(RESPONSE_FAILED_CODE);
@@ -253,34 +258,65 @@ public class ChatController {
      * @param thisUser
      * @return
      */
-    public ResultVO<BroadcastMessage> doChatToEveryone(Message message, User thisUser) {
-        ResultVO<BroadcastMessage> resultVO = new ResultVO<>();
+    private ResultVO<Message> doChatToEveryone(Message message, User thisUser) {
+        ResultVO<Message> resultVO = new ResultVO<>();
 
         // 1、检查此用户是否为管理员
         if (!thisUser.getRole().equals(RoleEnum.getRoleName(RoleEnum.ADMIN))) {
             resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("用户权限不够，无法发布系统广播信息！");
-            log.warn("用户权限不够，无法发布系统广播信息！");
+            resultVO.setMsg("用户权限不够，无法操作此功能！");
+            log.warn("用户权限不够，无法操作此功能！");
             return resultVO;
         }
 
-        BroadcastMessage broadcastMessage = (BroadcastMessage) doDispatchMessage(message);
-        // 设置系统公告所有人
-        broadcastMessage.setUser(thisUser);
+        int result = 0;
+        boolean success = false;
+        String responseMsg = "";    // 响应信息
+        String thisMsgType = message.getMessageType();
+        // 根据消息类别分别操作
+        if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
+            // ·系统广播公告信息
+            BroadcastMessage broadcastMessage = (BroadcastMessage) doDispatchMessage(message);
+            // 设置系统公告发布人
+            broadcastMessage.setPublisher(thisUser);
 
-        // 2、发布系统公告
-        int result = chatService.doChat(broadcastMessage);
+            // 2、发布系统公告
+            result = messageService.doChat(broadcastMessage);
+            if (1 == result) {
+                resultVO.setData(broadcastMessage);
+                responseMsg = "系统公告发布成功！";
+                success = true;
 
-        if (1 == result) {
+            } else {
+                responseMsg = "系统公告发布失败！";
+            }
+
+        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
+            // ·优文摘要信息
+            ArticleMessage articleMessage = (ArticleMessage) doDispatchMessage(message);
+            // 设置优文摘要发表人
+            articleMessage.setPublisher(thisUser);
+
+            // 2、发表优文摘要
+            result = messageService.doChat(articleMessage);
+            if (1 == result) {
+                resultVO.setData(articleMessage);
+                responseMsg = "优文摘要信息发表成功！";
+                success = true;
+
+            } else {
+                responseMsg = "优文摘要信息发表失败！";
+            }
+        }
+
+        resultVO.setMsg(responseMsg);
+        if (success) {  // 成功
             resultVO.setCode(RESPONSE_SUCCESS_CODE);
-            resultVO.setData(broadcastMessage);
-            resultVO.setMsg("系统公告发布成功！");
-            log.warn("系统公告发布成功！");
+            log.info(responseMsg);
 
-        } else {
+        } else {        // 失败
             resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("系统公告发布失败！");
-            log.warn("系统公告发布失败！");
+            log.warn(responseMsg);
         }
 
         return resultVO;
@@ -326,7 +362,7 @@ public class ChatController {
         privateMessage.setMessageType(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG));
 
         // 6、查询二人间的 历史私聊消息
-        List<? extends Message> privateMessages = chatService.doGetChatMessage(privateMessage);
+        List<? extends Message> privateMessages = messageService.doGetChatMessage(privateMessage);
         /*System.out.println("getPrivateMessage: ");
         privateMessages.forEach(message -> System.out.println(message));*/
 
@@ -366,7 +402,7 @@ public class ChatController {
         publicMessage.setMessageType(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG));
 
         // 5、查询指定群组的历史群聊消息
-        List<? extends Message> publicMessages = chatService.doGetChatMessage(publicMessage);
+        List<? extends Message> publicMessages = messageService.doGetChatMessage(publicMessage);
         /*System.out.println("getPublicMessage: ");
         publicMessages.forEach(message -> System.out.println(message));*/
 

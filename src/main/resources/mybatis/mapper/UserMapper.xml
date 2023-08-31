@@ -66,6 +66,12 @@
     <update id="updateUser">
         UPDATE `user`
         <trim prefix="SET" suffixOverrides=",">
+            <if test="null != user.nickname and '' != user.nickname">
+                `nickname` = #{user.nickname },
+            </if>
+            <if test="null != user.password and '' != user.password">
+                `password` = #{user.password },
+            </if>
             <if test="null != user.onlineStatus and '' != user.onlineStatus">
                 `online_status` = #{user.onlineStatus },
             </if>

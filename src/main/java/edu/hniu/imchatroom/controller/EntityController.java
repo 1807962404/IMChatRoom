@@ -1,9 +1,6 @@
 package edu.hniu.imchatroom.controller;
 
-import edu.hniu.imchatroom.model.bean.BroadcastMessage;
-import edu.hniu.imchatroom.model.bean.Feedback;
-import edu.hniu.imchatroom.model.bean.ResultVO;
-import edu.hniu.imchatroom.model.bean.User;
+import edu.hniu.imchatroom.model.bean.*;
 import edu.hniu.imchatroom.model.enums.RoleEnum;
 import edu.hniu.imchatroom.service.EntityService;
 import edu.hniu.imchatroom.util.StringUtil;
@@ -122,7 +119,7 @@ public class EntityController {
 
         // 新增意见反馈信息
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
-        feedback.setUser(thisUser);
+        feedback.setPublisher(thisUser);
         int result = entityService.doAddFeedback(feedback);
 
         if (result != 1) {
@@ -164,6 +161,34 @@ public class EntityController {
         resultVO.setCode(RESPONSE_SUCCESS_CODE);
         resultVO.setData(myPublishedBroadcasts);
         log.info("已查询出管理员用户：{} 发布过的所有广播信息！", thisUser.getNickname());
+
+        return resultVO;
+    }
+
+    /**
+     * 获取用户管理员发布过的所有优文摘要信息
+     * @param request
+     * @return
+     */
+    @ResponseBody
+    @GetMapping("/admin-published-articles")
+    public ResultVO<List<ArticleMessage>> getPublishedArticles(HttpServletRequest request) {
+        User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
+        ResultVO<List<ArticleMessage>> resultVO = new ResultVO<>();
+
+        // 1、检查此用户是否为管理员
+        if (!thisUser.getRole().equals(RoleEnum.getRoleName(RoleEnum.ADMIN))) {
+            resultVO.setCode(RESPONSE_FAILED_CODE);
+            resultVO.setMsg("用户权限不够，无法访问！");
+            log.warn("用户权限不够，无法访问！");
+            return resultVO;
+        }
+
+        // 2、查询此管理员用户发布过的优文摘要
+        List<ArticleMessage> myPublishedArticles = entityService.doGetArticles(thisUser.getUId());
+        resultVO.setCode(RESPONSE_SUCCESS_CODE);
+        resultVO.setData(myPublishedArticles);
+        log.info("已查询出管理员用户：{} 发布过的所有优文摘要信息！", thisUser.getNickname());
 
         return resultVO;
     }

@@ -1,11 +1,8 @@
 package edu.hniu.imchatroom.controller;
 
 import edu.hniu.imchatroom.model.bean.*;
-import edu.hniu.imchatroom.model.enums.RoleEnum;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.EntityService;
-import edu.hniu.imchatroom.service.FriendService;
-import edu.hniu.imchatroom.service.GroupService;
 import edu.hniu.imchatroom.service.UserService;
 import edu.hniu.imchatroom.util.Md5Util;
 import edu.hniu.imchatroom.util.StringUtil;
@@ -19,7 +16,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -35,9 +31,7 @@ import static edu.hniu.imchatroom.util.VariableUtil.SIGNINED_USER;
 public class UserController {
 
     private UserService userService;
-    private FriendService friendService;
     private EntityService entityService;
-    private GroupService groupService;
 
     // 记录所有用户
     private final Set<User> users = new CopyOnWriteArraySet<>();
@@ -51,27 +45,8 @@ public class UserController {
         this.userService = userService;
     }
     @Autowired
-    public void setFriendService(FriendService friendService) {
-        this.friendService = friendService;
-    }
-    @Autowired
     public void setEntityService(EntityService entityService) {
         this.entityService = entityService;
-    }
-    @Autowired
-    public void setGroupService(GroupService groupService) {
-        this.groupService = groupService;
-    }
-
-    /**
-     * 检查表单发送过来的验证码是否 与session中存储的verifycode相等
-     * @param verifyCode
-     * @param checkCode
-     * @return
-     */
-    private boolean checkVerifyCode(String checkCode, String verifyCode) {
-
-        return StringUtil.isNotEmpty(verifyCode) && checkCode.equalsIgnoreCase(verifyCode);
     }
 
 
@@ -100,7 +75,7 @@ public class UserController {
         // 1、获取服务端中对应时间戳的验证码的验证码，并将其与提交的表单中输入的验证码内容 进行忽略大小写比对
         Map<String, String> verifyCodeMap = (Map<String, String>)request.getSession().getAttribute(VariableUtil.CHECK_CODE);
         log.info("时间戳：{}，时间戳对应验证码：{}，验证码：{}", identify, verifyCodeMap.get(identify), verifyCode);
-        boolean flag = checkVerifyCode(verifyCodeMap.get(identify), verifyCode);
+        boolean flag = userService.checkVerifyCode(verifyCodeMap.get(identify), verifyCode);
         if (!flag) {
             resultVO.setCode(RESPONSE_FAILED_CODE);
             resultVO.setMsg("验证码有误！");
@@ -203,7 +178,7 @@ public class UserController {
 
         // 1、获取服务端中对应时间戳的验证码的验证码，并将其与提交的表单中输入的验证码内容 进行忽略大小写比对
         Map<String, String> verifyCodeMap = (Map<String, String>)request.getSession().getAttribute(VariableUtil.CHECK_CODE);
-        boolean flag = checkVerifyCode(verifyCodeMap.get(identify), verifyCode);
+        boolean flag = userService.checkVerifyCode(verifyCodeMap.get(identify), verifyCode);
         if (!flag) {
             resultVO.setCode(RESPONSE_FAILED_CODE);
             resultVO.setMsg("验证码有误！");
@@ -249,11 +224,11 @@ public class UserController {
     }
 
     private void doLoginInitResources(HttpServletRequest request, User userByIdentified) {
-        // 1、设置登陆用户的好友列表信息
+        /*// 1、设置登陆用户的好友列表信息
         userByIdentified.setMyFriendList(friendService.doGetFriendsByUId(userByIdentified.getUId()));
 
         // 2、设置登陆用户加入的所有群组信息
-        userByIdentified.setMyEnteredGroups(groupService.doGetMyEnteredGroups(userByIdentified.getUId()));
+        userByIdentified.setMyEnteredGroups(groupService.doGetMyEnteredGroups(userByIdentified.getUId()));*/
 
         log.info("用户信息：{}", userByIdentified);
 
@@ -264,19 +239,23 @@ public class UserController {
         List<BroadcastMessage> broadcastMessages = entityService.doGetBroadcasts(null);
         session.setAttribute(BROADCAST_MESSAGE_NAME, broadcastMessages);
 
-        // 3.2、设置用户唯一标识码：建立WebSocket连接时需要使用
+        // 3.2、设置优文摘要供所有用户查看
+        List<ArticleMessage> articleMessages = entityService.doGetArticles(null);
+        session.setAttribute(ARTICLE_MESSAGE_NAME, articleMessages);
+
+        // 3.3、设置用户唯一标识码：建立WebSocket连接时需要使用
         String uniqueUserCode = StringUtil.getRandomCode(false);
         log.info("doSignin() uniqueUserCode: {}", uniqueUserCode);
         session.setAttribute(SIGNINED_USER_WS_CODE, uniqueUserCode);       // 用户的唯一标识码
         setUserToUse(userByIdentified, uniqueUserCode);     // 给本次登陆的用户设置唯一标识码
 
-        // 3.3、将登陆的用户信息存入至session中，以及存入在线人数中
+        // 4、将登陆的用户信息存入至session中，以及存入在线人数中
         session.setAttribute(SIGNINED_USER, userByIdentified);
 
         addOnlineCount();       // 在线人数 +1
         log.info("当前在线总人数为：{}", getOnlineCount());
 
-        // 设置管理员和普通用户名称，用于前端校验
+        // 5、设置管理员和普通用户名称，用于前端校验
         if (null == session.getAttribute(ADMIN_USER_NAME)) {
             session.setAttribute("ADMIN_USER_NAME", ADMIN_USER_NAME);
         }
@@ -363,14 +342,67 @@ public class UserController {
     }
 
     /**
-     * 用户会话注销
+     * 修改用户个人信息
+     * @param user
+     * @param request
+     * @return
+     */
+    @ResponseBody
+    @PostMapping("/edit-profile")
+    public ResultVO editProfile(User user, HttpServletRequest request) {
+
+        ResultVO resultVO = new ResultVO();
+        User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
+
+        // 1、检查输入的昵称是否与原先昵称一致，并且检查输入的密码是否为空
+        if ((user.getNickname().equals(thisUser.getNickname()) || StringUtil.isEmpty(user.getNickname())) &&
+                StringUtil.isEmpty(user.getPassword())) {
+            resultVO.setCode(RESPONSE_WARNING_CODE);
+            resultVO.setMsg("昵称不能与先前设置的昵称保持一致！");
+            log.warn("昵称不能与先前设置的昵称保持一致！");
+            return resultVO;
+        }
+
+        String newNickname = user.getNickname();
+        if (StringUtil.isNotEmpty(newNickname))
+            thisUser.setNickname(newNickname);
+        try {
+            String newPassword = user.getPassword();
+            if (StringUtil.isNotEmpty(newPassword))
+                thisUser.setPassword(Md5Util.encodeByMd5(newPassword));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        // 2、修改个人信息
+        int result = userService.doUpdateUser(thisUser);
+        if (1 != result) {
+            resultVO.setCode(RESPONSE_FAILED_CODE);
+            resultVO.setMsg("修改个人信息失败！");
+            log.warn("修改个人信息失败！");
+
+        } else {
+            resultVO.setCode(RESPONSE_SUCCESS_CODE);
+            resultVO.setMsg("成功修改个人信息！");
+            log.info("成功修改个人信息！");
+
+            // 更新此用户信息
+            thisUser = userService.doGetUserById(thisUser.getUId());
+            request.getSession().setAttribute(SIGNINED_USER, thisUser);
+        }
+
+        return resultVO;
+    }
+
+    /**
+     * 用户会话注销，退出登陆
      * 后期使用ResultInfo封装结果集，并会有前端响应
      * @param request
      * @return
      */
     @ResponseBody
-    @GetMapping("/logout")
-    public ResultVO doLogout(HttpServletRequest request) {
+    @GetMapping("/sign-out")
+    public ResultVO doSignOut(HttpServletRequest request) {
 
         User logoutUser = (User) request.getSession().getAttribute(SIGNINED_USER);
         // 1、修改该用户为离线状态

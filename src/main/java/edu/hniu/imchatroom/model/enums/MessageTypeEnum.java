@@ -4,8 +4,9 @@ package edu.hniu.imchatroom.model.enums;
  * 消息类型枚举类
  */
 public enum MessageTypeEnum {
-    // 私聊、群聊、系统 消息
-    PRI_MSG("private-message"), PUB_MSG("public-message"), SYSTEM_MSG("system-message");
+    // 私聊、群聊、系统、优文摘要 消息
+    PRI_MSG("private-message"), PUB_MSG("public-message"),
+    SYSTEM_MSG("system-message"), ABSTRACT_MSG("abstract-message");
 
     private final String msgType;
     MessageTypeEnum(String msgType) {
