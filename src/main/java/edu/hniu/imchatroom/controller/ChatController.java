@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import static edu.hniu.imchatroom.model.enums.MessageTypeEnum.ONLINE_COUNT_MSG;
 import static edu.hniu.imchatroom.util.VariableUtil.*;
 
 /**
@@ -51,12 +52,12 @@ public class ChatController {
     }
 
     @ResponseBody
-    @PostMapping("/let-chat/{id}")
+    @PostMapping("/communicate/{id}")
     public ResultVO<? extends Message> letUsChat(Message message,
                                                  @PathVariable(value = "id", required = false) String id,
                                                  HttpServletRequest request
     ) {
-        log.info("Let us chat's Message: {}", message);
+        log.info("Let us chat's or communicate Message: {}", message);
 
         ResultVO<? extends Message> resultVO = new ResultVO<>();
 
@@ -78,12 +79,32 @@ public class ChatController {
                 thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
             // 系统公告消息、优文摘要消息
             return doChatToEveryone(message, thisUser);
-
         }
 
         resultVO.setCode(RESPONSE_FAILED_CODE);
         resultVO.setMsg("消息类型匹配不上：" + thisMsgType + " not equal to " + MessageTypeEnum.values() + "！");
         log.warn("消息类型匹配不上：{} not equal to '{}'！", thisMsgType, MessageTypeEnum.values());
+        return resultVO;
+    }
+
+    /**
+     * 获取用户在线数量
+     * @return
+     */
+    @ResponseBody
+    @GetMapping("/online-user-count")
+    public ResultVO<Message> doGetOnlineUserCount() {
+
+        ResultVO<Message> resultVO = new ResultVO<>();
+        resultVO.setCode(RESPONSE_SUCCESS_CODE);
+        int onlineUserCount = UserController.getOnlineCount();
+        log.info("当前用户在线数为：{}", onlineUserCount);
+
+        Message message = new Message();
+        message.setMessageType(MessageTypeEnum.getMessageType(ONLINE_COUNT_MSG));
+        message.setContent(String.valueOf(onlineUserCount));
+        resultVO.setData(message);
+
         return resultVO;
     }
 

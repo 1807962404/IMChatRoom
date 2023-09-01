@@ -285,17 +285,16 @@ function doSignIn() {
         type: 'POST',
         data: data,
         success: function (resp) {
-            console.log(resp)
-            // 成功处理逻辑
+            // console.log(resp);
+            callMessage(resp.code, resp.msg);
 
             let verifyCodeElem = document.querySelector('#signin input[name="verifyCode"]');
             if (resp.code === 0) {
                 // 登陆成功
-                callMessage(0, resp.msg);
                 sleep(sleepTime).then(()=> window.location.href = getProjectPath() + '/main');
 
             } else {
-                callMessage(resp.code, resp.msg);
+
                 // 登陆失败需要切换验证码
                 changeCheckCode(verifyCode[1], true);
             }

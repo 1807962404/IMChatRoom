@@ -234,6 +234,8 @@ public class UserController {
         doLoginInitResources(request, userByIdentified);
 
         resultVO.setCode(RESPONSE_SUCCESS_CODE);
+        // 每个用户登陆成功后都将推送：在线用户人数 消息给所有用户
+//        resultVO.setData(request.getSession().getAttribute(SIGNINED_USER_WS_CODE));
         resultVO.setMsg("登陆成功，欢迎回来：" + userByIdentified.getNickname() + "！");
         log.info("登陆成功！");
         return resultVO;
@@ -313,22 +315,6 @@ public class UserController {
         return resultVO;
     }
 
-    /**
-     * 获取用户在线数量
-     * @return
-     */
-    @ResponseBody
-    @GetMapping("/online-user-count")
-    public ResultVO<Integer> doGetOnlineUserCount() {
-
-        ResultVO<Integer> resultVO = new ResultVO<>();
-        resultVO.setCode(RESPONSE_SUCCESS_CODE);
-        int onlineUserCount = getOnlineCount();
-        log.info("当前用户在线数为：{}", onlineUserCount);
-        resultVO.setData(onlineUserCount);
-
-        return resultVO;
-    }
     /**
      * 获取所有的在线用户信息
      * @return

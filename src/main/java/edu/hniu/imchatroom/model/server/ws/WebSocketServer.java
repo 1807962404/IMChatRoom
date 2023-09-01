@@ -1,7 +1,6 @@
 package edu.hniu.imchatroom.model.server.ws;
 
 import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
 import edu.hniu.imchatroom.controller.UserController;
 import edu.hniu.imchatroom.model.bean.*;
 import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
@@ -17,6 +16,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+
+import static edu.hniu.imchatroom.model.enums.MessageTypeEnum.ONLINE_COUNT_MSG;
 
 /**
  * @ServerEndpoint：该注解的功能就是将当前类定义成一个 WebSocket服务器端，
@@ -116,6 +117,9 @@ public class WebSocketServer {
             // 优文摘要消息
             ArticleMessage messageToUse = JSON.parseObject(message, ArticleMessage.class);
             sendInfo(JSON.toJSONString(messageToUse), null);        // 优文摘要消息需要推送给所有在线用户
+
+        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(ONLINE_COUNT_MSG))) {
+            sendInfo(JSON.toJSONString(messageJson), null);         // 统计在线用户人数消息需要推送给所有在线用户
         }
     }
 

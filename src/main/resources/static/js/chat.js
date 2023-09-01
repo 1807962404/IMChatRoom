@@ -10,7 +10,6 @@ const thisUserId = document.querySelector('#user-info span').dataset.id;
 function scrollBoard() {
     let elems = new Array();
     elems.push(document.querySelector('#chat-bg #chat-box'));
-    // elems.push(document.querySelector('#chat-bg #menu-bar #system-message'));
     for (let i = 0; i < elems.length; i++) {
         let elem = elems[i];
         //判断元素是否出现了滚动条
@@ -25,34 +24,12 @@ function scrollBoard() {
         }
     }
 }
-
-// 获取用户在线数量
-function getOnlineUserCount() {
-    $.ajax({
-        url: getProjectPath() + '/user/online-user-count',
-        type: 'GET',
-        success: function (resp) {
-            console.log(resp)
-            // 成功处理逻辑
-
-            if (resp.code === 0) {
-                // console.log('当前用户总在线数为' + resp.data);
-                // 设置在线用户数量
-                document.querySelector('#chat-header #info-show #online-user-count #count').innerText = resp.data;
-            }
-        },
-        error: function (resp) {
-            console.log(resp)
-        }
-    })
-};
-
 scrollBoard();
-getOnlineUserCount();
 
-var onlineCountsEvt = setInterval(() => {
-    getOnlineUserCount();
-}, 60000);   // 1分钟发送一次请求
+// 设置用户在线人数
+function setMessageToOnlineCountBoard(message) {
+    document.querySelector('#chat-header #info-show #online-user-count #count').innerText = message.content;
+}
 
 // 监听发送内容框
 const content = document.querySelector('#chat-ipt #ipt-content #content');
@@ -591,8 +568,25 @@ function findMyNewFriends() {
 var userExitBtn = document.querySelector('#user-exit button');
 if (userExitBtn) {
     userExitBtn.addEventListener('click', () => {
-        sendUrl(getProjectPath() + '/user/sign-out', 'GET',
-            null, getProjectPath() + '/login', getProjectPath() + '/main')
+        /*sendUrl(getProjectPath() + '/user/sign-out', 'GET',
+            null, getProjectPath() + '/login', getProjectPath() + '/main');*/
+        $.ajax({
+            url: getProjectPath() + '/user/sign-out',
+            type: 'GET',
+            success:  (resp) => {
+                // console.log(resp);
+                callMessage(resp.code, resp.msg);
+                if (resp.code === 0) {
+                    // console.log('当前用户总在线数为' + resp.data);
+                    // 设置在线用户数量（会出问题）
+                    realTimeUpdateOnlineCount();
+                    sleep(sleepTime).then(()=> window.location.href = getProjectPath() + '/login');
+                }
+            },
+            error: function (resp) {
+                console.log("Error: " + resp);
+            }
+        })
     })
 }
 

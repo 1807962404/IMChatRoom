@@ -5,10 +5,17 @@
 
 var ws = null;
 
+/**
+ * 检查WebSocket连接是否为空
+ * @returns {number}
+ */
+function checkWSIsNull() {
+    return ws === undefined | ws === null;
+}
+
 // 创建WebSocket连接
 function createWebSocketClient(uniqueUserCode) {
 
-    // console.log(uniqueUserCode)
     if (uniqueUserCode) {
         // 判断当前浏览器是否支持WebSocket
         if ('WebSocket' in window) {
@@ -23,14 +30,6 @@ function createWebSocketClient(uniqueUserCode) {
 
 const user = document.getElementById('unique-user-code').value;   // onlineUser
 createWebSocketClient(user);
-
-/**
- * 检查WebSocket连接是否为空
- * @returns {number}
- */
-function checkWSIsNull() {
-    return ws === undefined | ws === null;
-}
 
 // websocket 连接成功执行的回调函数
 ws.onopen = (evt) => {
@@ -80,6 +79,10 @@ ws.onmessage = (evt) => {
         callMessage(0, "管理员：" + message.publisher.nickname + " 发表了一部优文摘要文摘！");
         setMessageToArticleBoard(message);
         setContentToOwnPublishedArticle(message);
+
+    } else if (message.messageType === 'online-count-message') {
+        // callMessage(0, "有一用户登陆！");
+        setMessageToOnlineCountBoard(message);
     }
 
 }
@@ -99,8 +102,33 @@ window.onbeforeunload = () => {
 }
 
 window.onunload = () => {
-    clearInterval(onlineCountsEvt);     // 清除获取在线人数的间隔定时器
+    // clearInterval(onlineCountsEvt);     // 清除获取在线人数的间隔定时器
     clearInterval(curTimeEvt);     // 清除获取当前时间的间隔定时器
+}
+
+window.onload = () => {
+    realTimeUpdateOnlineCount();
+}
+
+function realTimeUpdateOnlineCount() {
+    $.ajax({
+        url: getProjectPath() + '/user/chat/online-user-count',
+        type: 'GET',
+        success: (resp) => {
+            // console.log(resp);
+            // 成功处理逻辑
+
+            if (resp.code === 0) {
+                // console.log('当前用户总在线数为' + resp.data);
+                // 设置在线用户数量
+                let onlineNumberMsg = resp.data;
+                ws.send(JSON.stringify(onlineNumberMsg));
+            }
+        },
+        error: function (resp) {
+            console.log("Error: " + resp);
+        }
+    })
 }
 
 // 监听聊天输入框的回车键
@@ -155,7 +183,7 @@ function callSendMessage(evt) {
         // console.log(sendMsgData);
 
         $.ajax({
-            url: getProjectPath() + '/user/chat/let-chat/' + priFriendId,
+            url: getProjectPath() + '/user/chat/communicate/' + priFriendId,
             type: 'POST',
             data: sendMsgData,
             success: (resp) => {    // 消息发送成功
@@ -184,7 +212,7 @@ function callSendMessage(evt) {
         // console.log(sendMsgData);
 
         $.ajax({
-            url: getProjectPath() + '/user/chat/let-chat/' + gCode,
+            url: getProjectPath() + '/user/chat/communicate/' + gCode,
             type: 'POST',
             data: sendMsgData,
             success: (resp) => {    // 消息发送成功
@@ -241,7 +269,7 @@ if (broadcastBtn) {
 
         // console.log(doMessageJsonData(publishBroadcastVal, 'system-message'))
         $.ajax({
-            url: getProjectPath() + '/user/chat/let-chat/0',
+            url: getProjectPath() + '/user/chat/communicate/0',
             type: 'POST',
             data: doMessageJsonData(publishBroadcastVal, 'system-message'),
             success: (resp) => {
@@ -288,7 +316,7 @@ if (articleBtn) {
         };
 
         $.ajax({
-            url: getProjectPath() + '/user/chat/let-chat/0',
+            url: getProjectPath() + '/user/chat/communicate/0',
             type: 'POST',
             data: doMessageJsonData(publishArticleVal, 'abstract-message'),
             success: (resp) => {
