@@ -73,7 +73,7 @@ class ImChatRoomApplicationTests {
         try {
             System.out.println(mailUtil.sendEmail(targetEmail, content, CHATROOM_NAME + "激活邮件") ? "发送成功！" : "发送失败");
         } catch (MessagingException e) {
-            System.out.println(e);
+            System.out.println("邮件发送失败！" + e);
         }
     }
 

@@ -500,14 +500,6 @@ if (enterGroupBtn) {
     });
 }
 
-// 封装单个 data 为Json数据
-function doSingleDataToJson(data) {
-    let formData = {
-        'data': data
-    };
-    return JSON.parse(JSON.stringify(formData));
-}
-
 // 查找我的新好友通知
 function findMyNewFriends() {
     $.ajax({

@@ -367,3 +367,61 @@ function doFinalSignUp(isCancelled) {
         changeCheckCode(verifyCode[0], false);
     }
 }
+
+// 解散群聊
+function doForgetPasswordBtnListener() {
+    let container = document.createElement("div");
+    container.innerHTML = `<input id="reset-email" type="email" placeholder="请输入需要重置密码的邮箱地址..." required /><br />`;
+    let pElem = document.createElement('p');
+    pElem.innerHTML = `请您确认是否需要重置此账户密码？<br/>
+                        <button class="opt-cancel" onclick="doFinalForgetPasswordBtnListener(true)">容我想想？</button>
+                        <button onclick="doFinalForgetPasswordBtnListener(false)">确认重置</button>`;
+    container.appendChild(pElem);
+    showModal(container);
+}
+function doFinalForgetPasswordBtnListener(isCancelld) {
+
+    if (isCancelld) {
+        hideModal();
+        callMessage(1, "已取消操作！");
+        return;
+    }
+
+    // 检查邮箱
+    let resetEmail = document.querySelector("#customized-modal .custom-modal-content #reset-email");
+    let emailVal = resetEmail.value;
+    // console.log(emailVal);
+    var email_form = /^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z0-9]{2,6}$/;
+    if (emailVal === undefined || emailVal === '' || emailVal.length < 10 || !email_form.test(emailVal)) {
+        callMessage(1, '请输入正确的邮箱地址！');
+        return ;
+    }
+
+    if (!isCancelld) {
+        $.ajax({
+            url: getProjectPath() + '/user/reset-password',
+            type: 'POST',
+            data: doSingleDataToJson(emailVal),
+            success: (resp) => {
+                callMessage(resp.code, resp.msg);
+
+                if (resp.code === 0) {
+                    resetEmail.value = '';
+                    hideModal();
+                }
+            },
+            error: (resp) => {
+                console.log("Error: " + resp);
+            }
+        });
+        // sendUrl(getProjectPath() + '/user/reset-password', 'POST', doSingleDataToJson(emailVal));
+    }
+}
+
+// 封装单个 data 为Json数据
+function doSingleDataToJson(data) {
+    let formData = {
+        'data': data
+    };
+    return JSON.parse(JSON.stringify(formData));
+}

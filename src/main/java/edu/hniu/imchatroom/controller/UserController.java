@@ -84,30 +84,42 @@ public class UserController {
         }
 
         log.info("用户注册中输入的用户信息：{}", user);
-        // 2、对该用户输入的密码进行 MD5加密 操作
-        try {
-            user.setPassword(Md5Util.encodeByMd5(user.getPassword()));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+
+        // 2、检查用户信息是否存在
+        User userByIdentified = userService.doCheckUserExists(user, false);
+        log.info("账号信息为：{}", userByIdentified);
+
+        boolean notExists = false;
+        if (null == userByIdentified) {
+            notExists = true;
+
+        } else {
+            if (!(userByIdentified.getEmail().equals(user.getEmail()))) {
+                // 不存在使用该邮箱地址的用户
+                notExists = true;
+
+            } else {
+                // 如果账号是已激活状态
+                if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ACTIVATED))) {
+                    resultVO.setCode(RESPONSE_WARNING_CODE);
+                    resultVO.setMsg("账号已存在，请直接登陆即可！");
+                    log.warn("账号已存在，请直接登陆即可！");
+
+                } else if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.INACTIVE))) {
+                    // 如果账号是未激活状态
+                    resultVO.setCode(RESPONSE_WARNING_CODE);
+                    resultVO.setMsg("该账号处于未激活状态，请先激活账号再享受更多体验！");
+                    log.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
+                }
+                return resultVO;
+            }
         }
 
-        // 3、检查用户信息是否存在
-        User userByIdentified = userService.doCheckUserExists(user, false);
-        if (null != userByIdentified) {
-            // 如果账号是已激活状态
-            if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ACTIVATED))) {
-                resultVO.setCode(RESPONSE_WARNING_CODE);
-                resultVO.setMsg("账号已存在，请直接登陆即可！");
-                log.warn("账号已存在，请直接登陆即可！");
-                log.info("账号信息为：{}", userByIdentified);
-
-            } else if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.INACTIVE))) {
-                // 如果账号是未激活状态
-                resultVO.setCode(RESPONSE_WARNING_CODE);
-                resultVO.setMsg("该账号处于未激活状态，请先激活账号再享受更多体验！");
-                log.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
-            }
-
+        // 如果拥有该邮箱的用户已存在，则无法进行注册
+        if (!notExists) {
+            resultVO.setCode(RESPONSE_WARNING_CODE);
+            resultVO.setMsg("该邮箱地址已被注册，请直接登陆即可！");
+            log.warn("该邮箱地址已被注册，请直接登陆即可！");
             return resultVO;
         }
 
@@ -392,6 +404,113 @@ public class UserController {
         }
 
         return resultVO;
+    }
+
+    /**
+     * 重置密码操作
+     * @param data
+     * @return
+     */
+    @ResponseBody
+    @PostMapping("/reset-password")
+    public ResultVO doResetPassword(String data) {
+
+        // 封装结果集
+        ResultVO resultVO = new ResultVO();
+
+        // 检查用户信息是否存在
+        User resetUser = new User();
+        resetUser.setEmail(data);
+        User userByIdentified = userService.doCheckUserExists(resetUser, false);
+        log.info("账号信息为：{}", userByIdentified);
+
+        boolean notExists = false;
+        if (null == userByIdentified) {
+            notExists = true;
+
+        } else {
+            if (!userByIdentified.getEmail().equals(data)) {
+                // 不存在使用该邮箱地址的用户
+                notExists = true;
+
+            } else {
+                // 如果账号是已激活状态
+                if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ACTIVATED))) {
+                    // 处理忘记密码的逻辑（使用用户激活码作为凭证）
+                    int result = userService.doForgetPassword(userByIdentified, 1);
+                    if (0 == result) {
+                        // 成功发送 重置账户密码 邮件
+                        resultVO.setCode(RESPONSE_SUCCESS_CODE);
+                        resultVO.setMsg("已成功发送重置密码邮件，请检查您的邮箱！");
+                        log.info("已成功发送重置密码邮件，请检查您的邮箱！");
+
+                    } else {
+                        resultVO.setCode(RESPONSE_FAILED_CODE);
+                        resultVO.setMsg("未能成功发送重置密码邮件，请稍后再试！");
+                        log.warn("未能成功发送重置密码邮件，请稍后再试！");
+                    }
+
+                } else if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.INACTIVE))) {
+                    // 如果账号是未激活状态
+                    resultVO.setCode(RESPONSE_WARNING_CODE);
+                    resultVO.setMsg("该账号处于未激活状态，请先激活账号再享受更多体验！");
+                    log.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
+                }
+                return resultVO;
+            }
+        }
+
+        if (notExists) {
+            resultVO.setCode(RESPONSE_FAILED_CODE);
+            resultVO.setMsg("不存在使用该邮箱地址的用户！");
+            log.warn("不存在使用该邮箱地址的用户！");
+        }
+
+        return resultVO;
+    }
+
+    /**
+     * 重置密码最终操作
+     * @param code
+     * @return
+     */
+    @GetMapping("/reset-password/{code}")
+    public void doFinalResetPassword(
+            @PathVariable("code") String code,
+            HttpServletResponse response
+    ) throws IOException {
+
+        // 1、检查code是否为空
+        if (StringUtil.isEmpty(code)) {
+            log.warn("用户重置的激活码为空！");
+            response.sendRedirect("/login");
+            return;
+        }
+
+        // 2、【根据激活码code】查询此用户是否存在
+        User resetUser = userService.doGetUserByActiveCode(code);
+        if (null == resetUser) {
+            log.warn("用户不存在！");
+            response.sendRedirect("/login");
+            return;
+        }
+
+        // 3、重置该用户的密码
+        int result = userService.doForgetPassword(resetUser, 2);
+        String content = "";
+        if (0 == result) {
+            content = "账号重置密码成功！为确保安全，请尽快在个人信息栏中修改密码。";
+            log.info("账号重置密码成功！为确保安全，请尽快在个人信息栏中修改密码。");
+
+        } else {
+            content = "账号重置密码失败！";
+            log.warn("账号重置密码失败！");
+        }
+
+        response.setContentType("text/html; charset=UTF-8");
+        response.getWriter().write(
+                "<h1 style='color: #f00'>" + content +
+                        "</h1><a href='http://localhost:8080/chatroom/login'>点击跳转至登陆页面</a>");
     }
 
     /**

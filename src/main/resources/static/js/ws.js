@@ -13,7 +13,6 @@ function createWebSocketClient(uniqueUserCode) {
         // 判断当前浏览器是否支持WebSocket
         if ('WebSocket' in window) {
             ws = new WebSocket('ws://127.0.0.1:8080' + getProjectPath() + '/api/websocket/' + uniqueUserCode);
-            // ws = new WebSocket('ws://127.0.0.1:8080/chatroom/api/websocket/' + data);
         } else {
             callMessage(-1, "当前浏览器 不支持WebSocket服务！");
         }
@@ -60,6 +59,7 @@ ws.onmessage = (evt) => {
 
     // console.log(evt);
     let message = JSON.parse(evt.data);
+    console.log("message: ", message);
     if (message.messageType === 'private-message') {
         let priFriendId = document.querySelector('#my-friend-list a[class="my-friend content-active"]').dataset.id;
         if (Number(priFriendId) != Number(message.receiveUser.uId)) {   // 若好友Id不等于消息接收者id

@@ -71,4 +71,19 @@ public interface UserService {
      * @return
      */
     Integer doUpdateUser(User user);
+
+    /**
+     * 按步骤处理 用户忘记密码 的业务逻辑
+     * @param user
+     * @param step
+     * @return
+     */
+    Integer doForgetPassword(User user, int step);
+
+    /**
+     * 处理 根据activeCode用户账号激活码查询指定用户 的业务逻辑
+     * @param activeCode
+     * @return
+     */
+    User doGetUserByActiveCode(String activeCode);
 }

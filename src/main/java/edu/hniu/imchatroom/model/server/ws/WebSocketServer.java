@@ -169,30 +169,6 @@ public class WebSocketServer {
     }
 
     /**
-     * 群发自定义消息
-     * @param message
-     * @param user
-     */
-    /*public static void sendInfo(String message, @PathParam("user") Object user) {
-        log.info("推送消息至窗口：{}，推送内容为：{}", user, message);
-
-        Iterator<WebSocketServer> iterator = webSocketServerSet.iterator();
-        while (iterator.hasNext()) {
-            WebSocketServer next = iterator.next();
-            try {
-                // 此处可设定之推送给某哦个具体的sid客户端，sid为null则表示全部推送
-                if (null == user) {
-
-                } else if (next.user.equals(user)) {
-                    next.sendMessage(message);
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }*/
-
-    /**
      * 获取所有的WebSocket连接
      * @return
      */

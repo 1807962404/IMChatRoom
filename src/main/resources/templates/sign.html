@@ -77,7 +77,7 @@
       <!--        时间戳标识符-->
       <input type="hidden" name="identify" class="identify" />
       <span><img class="verifyCode shrink" src="verifyCode" alt="点击切换验证码" onclick="changeCheckCode(this, true)"></span><br />
-      <a href="#" class="forget-password shrink">忘记密码？</a><br />
+      <a href="#" class="forget-password shrink" onclick="doForgetPasswordBtnListener()">忘记密码？</a><br />
       <button class="signIn shrink" onclick="return doSignIn();">登陆</button>
     </div>
   </div>

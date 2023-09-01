@@ -11,6 +11,8 @@ import java.util.Arrays;
 public final class VariableUtil {
 
     public static final String CHATROOM_NAME = "IM";
+    // 默认密码
+    public static final String DEFAULT_PASSWORD = "123456";
     public static final String SIGNINED_USER = "SIGNINED_USER";
     // 建立WebSocket连接时用
     public static final String SIGNINED_USER_WS_CODE = "SIGNINED_USER_WS_CODE";
@@ -39,5 +41,6 @@ public final class VariableUtil {
     public static final String[] STATIC_RESOURCES_PATH = new String[] {"/css/**", "/js/**", "/images/**", "/favicon.ico"};
     // 需要排除拦截或过滤的请求资源路径
     public static final String[] EXCLUSIVE_REQUEST_PATH = new String[] {"/login", "/signin", "/user/login", "/user/signin",
-            "/user/signup", "/entity/verify-code/*", "/user/active-user-account/*", "/user/logout", "/error"};
+            "/user/signup", "/entity/verify-code/*", "/user/active-user-account/*", "/user/sign-out", "/error",
+            "/user/reset-password", "/user/reset-password/*"};
 }

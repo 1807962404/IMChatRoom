@@ -7,6 +7,7 @@ import edu.hniu.imchatroom.model.bean.User;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.UserService;
 import edu.hniu.imchatroom.util.MailUtil;
+import edu.hniu.imchatroom.util.Md5Util;
 import edu.hniu.imchatroom.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.util.Date;
 import java.util.List;
 
 import static edu.hniu.imchatroom.util.VariableUtil.CHATROOM_NAME;
+import static edu.hniu.imchatroom.util.VariableUtil.DEFAULT_PASSWORD;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -92,15 +94,22 @@ public class UserServiceImpl implements UserService {
         // 1、为该用户创建一个唯一的 账号Account
         user.setAccount(StringUtil.getRandomCode(8));
 
-        // 2、为该用户创建一个唯一的 账号激活码
+        // 2、对该用户输入的密码进行 MD5加密 操作
+        try {
+            user.setPassword(Md5Util.encodeByMd5(user.getPassword()));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        // 3、为该用户创建一个唯一的 账号激活码
         String activeCode = StringUtil.getRandomCode(true);
         user.setActiveCode(activeCode);
 
-        // 3、修改时间设置为当前时间
+        // 4、修改时间设置为当前时间
         user.setModifiedTime(new Date(System.currentTimeMillis()));
 
-        // 4、发送邮件
-        String content = "<h1 style='color: #f00'>欢迎注册“" + CHATROOM_NAME + "”账户，点击以下链接激活账户，以便获取更多惊喜体验！</h1>" +
+        // 5、发送邮件
+        String content = "<h1 style='color: #f00'>欢迎注册“" + CHATROOM_NAME + "”账户，点击下面链接激活账户，以便获取更多惊喜体验！</h1>" +
                 "<a href='http://localhost:8080/chatroom/user/active-user-account/" +  activeCode
                 + "'>点击激活【" + CHATROOM_NAME +"】账户！</a>";
         try {
@@ -110,7 +119,7 @@ public class UserServiceImpl implements UserService {
             return 0;
         }
 
-        // 5、新增用户
+        // 6、新增用户
         int result = userMapper.insertUser(user);
 
         return result;
@@ -177,5 +186,48 @@ public class UserServiceImpl implements UserService {
         user.setLastSigninTime(null);
 
         return userMapper.updateUser(user);
+    }
+
+    /**
+     * 按步骤处理 用户忘记密码 的业务逻辑
+     * @param user
+     * @param step
+     * @return
+     */
+    public Integer doForgetPassword(User user, int step) {
+
+        boolean success = false;
+        if (1 == step) {
+            // 第一步：发送邮件
+            String content = "<h1 style='color: #f00'>" + CHATROOM_NAME + "邮箱通知，点击下面链接重置账户密码！</h1>" +
+                    "<a href='http://localhost:8080/chatroom/user/reset-password/" +  user.getActiveCode()
+                    + "'>点击重置【" + CHATROOM_NAME +"】账户密码为默认密码（" + DEFAULT_PASSWORD + "）！</a>";
+            try {
+                success = mailUtil.sendEmail(user.getEmail(), content, CHATROOM_NAME + "重置密码邮件");
+            } catch (MessagingException e) {
+                System.out.println("发送邮件失败：" + e.getMessage());
+            }
+
+        } else if (2 == step){
+            // 第二步：重置该用户的密码为 默认密码
+            try {
+                user.setPassword(Md5Util.encodeByMd5(DEFAULT_PASSWORD));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            success = doUpdateUser(user) == 1;
+        }
+
+        return success ? 0 : 1;
+    }
+
+    /**
+     * 处理 根据activeCode用户账号激活码查询指定用户 的业务逻辑
+     * @param activeCode
+     * @return
+     */
+    @Override
+    public User doGetUserByActiveCode(String activeCode) {
+        return userMapper.selectUserByActiveCode(activeCode);
     }
 }

@@ -55,8 +55,10 @@
     <select id="selectUserToVerify" resultMap="userResultMap">
         <include refid="AllUsersResult" />
         WHERE `display_status` = '0' AND
-            (`account` = #{user.email } OR
-            `email` = #{user.email })
+            (
+                `account` = #{user.email } OR
+                `email` = #{user.email }
+            )
             <if test="hasPwd">
                 AND `password` = #{user.password }
             </if>
@@ -114,5 +116,11 @@
             `email` LIKE CONCAT('%', #{data }, '%') OR
             `nickname` LIKE CONCAT('%', #{data }, '%'))
             ORDER BY `active_time` DESC
+    </select>
+
+<!--    User selectUserByActiveCode(String activeCode);-->
+    <select id="selectUserByActiveCode" resultMap="userResultMap">
+        <include refid="AllUsersResult" />
+        WHERE `display_status` = '0' AND `active_code` = #{activeCode }
     </select>
 </mapper>

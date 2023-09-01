@@ -70,6 +70,10 @@
     color: #000000;
 }
 
+#customized-modal .custom-modal-content input[id="reset-email"] {
+    width: 300px;
+}
+
 /*隐藏元素*/
 .hidden-el {
     display: none;!important;
