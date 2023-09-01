@@ -3,14 +3,16 @@ package edu.hniu.imchatroom.util;
 import java.security.MessageDigest;
 
 /**
- * 写一个MD5算法,运行结果与MySQL的md5()函数相同
- * 将明文密码转成MD5密码
- * 123456->e10adc3949ba59abbe56e057f20f883e
+ * 加密工具类
  */
-public final class Md5Util {
-	private Md5Util(){}
+public final class EncryptUtil {
+	private EncryptUtil(){}
+
+	private static String[] hex = {"0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"};
 	/**
-	 * 将明文密码转成MD5密码 
+	 * 将明文密码转成MD5密码
+	 *  写一个MD5算法,运行结果与MySQL的md5()函数相同，将明文密码转成MD5密码
+	 *  如 123456->e10adc3949ba59abbe56e057f20f883e
 	 */
 	public static String encodeByMd5(String password) throws Exception{
 		//Java中MessageDigest类封装了MD5和SHA算法，今天我们只要MD5算法
@@ -53,5 +55,4 @@ public final class Md5Util {
 		//通过下标取值
 		return hex[d1] + hex[d2];
 	}
-	private static String[] hex = {"0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"};
 }

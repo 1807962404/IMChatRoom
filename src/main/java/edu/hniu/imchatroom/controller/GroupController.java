@@ -6,12 +6,10 @@ import edu.hniu.imchatroom.model.bean.ResultVO;
 import edu.hniu.imchatroom.model.bean.User;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.GroupService;
-import edu.hniu.imchatroom.service.UserService;
 import edu.hniu.imchatroom.util.StringUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -22,7 +20,7 @@ import java.util.List;
 import static edu.hniu.imchatroom.util.VariableUtil.*;
 
 @Slf4j
-@Controller
+@RestController
 @RequestMapping("/user")
 public class GroupController {
 
@@ -38,8 +36,8 @@ public class GroupController {
      * @return
      */
     @ResponseBody
-    @GetMapping("/get-my-groups")
-    public List<Group> getMyGroups(HttpServletRequest request) {
+    @GetMapping("/get-my-entered-groups")
+    public List<Group> doGetMyEnteredGroups(HttpServletRequest request) {
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
 
         // 1、获取本人加入的所有群聊列表
@@ -58,13 +56,13 @@ public class GroupController {
     }
 
     /**
-     * 查询我创建的群组列表
+     * 获取我创建的群组列表
      * @param request
      * @return
      */
     @ResponseBody
-    @GetMapping("/find-my-groups")
-    public List<Group> findMyGroups(HttpServletRequest request) {
+    @GetMapping("/get-my-created-groups")
+    public List<Group> doGetMyCreatedGroups(HttpServletRequest request) {
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
         List<Group> groups = groupService.doGetMyGroups(thisUser.getUId());
         log.info("用户 {} 创建的群组信息：{}", thisUser.getNickname(), groups);
@@ -79,7 +77,7 @@ public class GroupController {
      */
     @ResponseBody
     @PostMapping("/add-group")
-    public ResultVO<Group> addGroup(String data, HttpServletRequest request) {
+    public ResultVO<Group> doAddGroup(String data, HttpServletRequest request) {
         ResultVO<Group> resultVO = new ResultVO<>();
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
         Group newGroup = new Group();
@@ -128,7 +126,7 @@ public class GroupController {
      */
     @ResponseBody
     @PostMapping("/find-group")
-    public ResultVO<List<Group>> findGroup(String data) {
+    public ResultVO<List<Group>> doFindGroup(String data) {
 
         ResultVO<List<Group>> resultVO = new ResultVO<>();
 
@@ -166,7 +164,8 @@ public class GroupController {
      */
     @ResponseBody
     @GetMapping("/enter-group/{gCode}")
-    public ResultVO enterGroup(@PathVariable("gCode") String gCode, HttpServletRequest request) {
+    public ResultVO doEnterGroup(@PathVariable("gCode") String gCode,
+                               HttpServletRequest request) {
 
         log.info("加入群聊的code唯一码为：{}", gCode);
         ResultVO resultVO = new ResultVO<>();
@@ -230,7 +229,7 @@ public class GroupController {
      */
     @ResponseBody
     @GetMapping("/find-group-notifications")
-    public ResultVO<List<GroupUser>> findGroupNotifications(HttpServletRequest request) {
+    public ResultVO<List<GroupUser>> doFindGroupNotifications(HttpServletRequest request) {
 
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
         ResultVO<List<GroupUser>> resultVO = new ResultVO<>();
@@ -268,7 +267,7 @@ public class GroupController {
      */
     @ResponseBody
     @GetMapping("/agree-enter-group/{gId}/{uId}")
-    public ResultVO agreeUserEnterMyGroup(@PathVariable("gId") String gId,
+    public ResultVO doAgreeUserEnterMyGroup(@PathVariable("gId") String gId,
                                           @PathVariable("uId") String uId,
                                           HttpServletRequest request
     ) {
@@ -327,7 +326,7 @@ public class GroupController {
      */
     @ResponseBody
     @GetMapping("/drop-member-from-group/{gId}/{uId}")
-    public ResultVO dropMemberFromGroup(@PathVariable("gId") String gId,
+    public ResultVO doDropMemberFromGroup(@PathVariable("gId") String gId,
                                         @PathVariable("uId") String uId,
                                         HttpServletRequest request
     ) {
@@ -385,7 +384,7 @@ public class GroupController {
      */
     @ResponseBody
     @GetMapping("/dissolve-group/{gCode}")
-    public ResultVO dissolveGroup(@PathVariable("gCode") String gCode,
+    public ResultVO doDissolveGroup(@PathVariable("gCode") String gCode,
                                   HttpServletRequest request) {
 
         ResultVO resultVO = new ResultVO<>();
@@ -452,7 +451,7 @@ public class GroupController {
      */
     @ResponseBody
     @GetMapping("/exit-group/{gCode}")
-    public ResultVO exitGroup(@PathVariable("gCode") String gCode,
+    public ResultVO doExitGroup(@PathVariable("gCode") String gCode,
                               HttpServletRequest request) {
 
         ResultVO resultVO = new ResultVO<>();

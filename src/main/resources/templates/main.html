@@ -39,6 +39,9 @@
     <div id="board">
         <input type="hidden" id="unique-user-code" th:value="${session.SIGNINED_USER_WS_CODE }"/>
         <h1 id="title">IM 聊天室</h1>
+        <div id="cur-time">
+            <p></p>
+        </div>
         <div id="chat-bg">
             <!--        聊天板头-->
             <div id="chat-header">
@@ -346,6 +349,8 @@
                                     <!--                                    头像-->
                                     <div id="profile-avatar">
                                         <img th:src="@{'/images' + ${session.SIGNINED_USER.avatarUrl }}" alt="用户头像，点击切换" />
+                                        <input id="avatar-upload" multiple="multiple" name="avatar"
+                                               type="file" style="width: 55px; height: 55px; border-radius: 50%;">
                                     </div>
                                     <!--                                    简介-->
                                     <div id="profile-introduce">

@@ -1,9 +1,7 @@
 package edu.hniu.imchatroom.service;
 
 
-import edu.hniu.imchatroom.model.bean.PrivateMessage;
 import edu.hniu.imchatroom.model.bean.User;
-import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -15,7 +13,15 @@ public interface UserService {
      * @param checkCode
      * @return
      */
-    boolean checkVerifyCode(String checkCode, String verifyCode);
+    boolean doCheckVerifyCode(String checkCode, String verifyCode);
+
+    /**
+     * 设置可用 用户
+     * 一个唯一的uniqueUserCode 对应一个用户（不区分在线或否）
+     * @param user
+     * @param uniqueUserCode
+     */
+    void doSetUserToUse(User user, String uniqueUserCode);
 
     /**
      * 模糊查询用户信息

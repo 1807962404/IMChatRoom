@@ -1,5 +1,12 @@
 package edu.hniu.imchatroom.util;
 
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+/**
+ * 更多工具类
+ */
 public class MoreUtil {
 
     /**
@@ -34,5 +41,33 @@ public class MoreUtil {
 
 //        System.out.println(mergedArray.getClass().getTypeName());     // java.lang.Object[]
         return mergedArray;
+    }
+
+    /**
+     * 保存文件至指定目录下
+     * @param srcData
+     * @param destPath
+     * @return
+     */
+    private boolean saveFileToDestPath(byte[] srcData, String destPath) {
+        BufferedOutputStream bufferedOutputStream = null;
+        try {
+            bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(destPath));
+            bufferedOutputStream.write(srcData);    // 写入指定目录下
+            return true;
+
+        } catch (IOException e) {
+            System.out.println("文件保存失败！{}" + e.getMessage());
+            return false;
+
+        } finally {
+            if (null != bufferedOutputStream) {
+                try {
+                    bufferedOutputStream.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 }

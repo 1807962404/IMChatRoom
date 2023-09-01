@@ -10,7 +10,6 @@ import edu.hniu.imchatroom.util.StringUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Iterator;
@@ -20,7 +19,7 @@ import static edu.hniu.imchatroom.util.VariableUtil.*;
 import static edu.hniu.imchatroom.util.VariableUtil.RESPONSE_SUCCESS_CODE;
 
 @Slf4j
-@Controller
+@RestController
 @RequestMapping("/user")
 public class FriendController {
 
@@ -47,7 +46,7 @@ public class FriendController {
      */
     @ResponseBody
     @GetMapping("/get-my-friends")
-    public List<Friend> getMyFriends(HttpServletRequest request) {
+    public List<Friend> doGetMyFriends(HttpServletRequest request) {
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
         // 获取本人所有的好友列表
         List<Friend> myFriends = friendService.doGetFriendsByUId(thisUser.getUId());
@@ -63,7 +62,7 @@ public class FriendController {
      */
     @ResponseBody
     @PostMapping("/find-friend")
-    public ResultVO<List<User>> findFriends(String data) {
+    public ResultVO<List<User>> doFindFriends(String data) {
         ResultVO<List<User>> resultVO = new ResultVO<>();
 
         log.info("搜索用户的data为: {}", data);
@@ -108,7 +107,7 @@ public class FriendController {
      */
     @ResponseBody
     @PostMapping("/add-friend/{uId}")
-    public ResultVO<FriendShip> addFriend(@PathVariable("uId") String uId, HttpServletRequest request) {
+    public ResultVO<FriendShip> doAddFriend(@PathVariable("uId") String uId, HttpServletRequest request) {
         ResultVO<FriendShip> resultVO = new ResultVO<>();
         log.info("添加好友的uId为：{}", uId);
 
@@ -217,7 +216,7 @@ public class FriendController {
      */
     @ResponseBody
     @PostMapping("/del-friend/{friendId}")
-    public ResultVO delMyFriend(@PathVariable("friendId") String friendId, HttpServletRequest request) {
+    public ResultVO doDelMyFriend(@PathVariable("friendId") String friendId, HttpServletRequest request) {
 
         ResultVO resultVO = new ResultVO();
 
@@ -278,12 +277,12 @@ public class FriendController {
     }
 
     /**
-     * 查询本人尚未同意好友申请的用户信息（新好友通知）
+     * 查询本人尚未同意好友申请的用户信息（查看新好友通知）
      * @return
      */
     @ResponseBody
     @GetMapping("/find-new-friends")
-    public List<FriendShip> findMyNewFriends(HttpServletRequest request) {
+    public List<FriendShip> doFindMyNewFriends(HttpServletRequest request) {
 
         final User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
         // 获取其他用户给我发送过的好友请求

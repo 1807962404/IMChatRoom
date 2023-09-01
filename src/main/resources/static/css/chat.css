@@ -38,7 +38,7 @@ a {
 
 #title {
     position: absolute;
-    left: 730px;
+    left: 710px;
     top: -50px;
     color: #fff;
     font-family: 黑体;
@@ -52,6 +52,20 @@ a {
     margin: 130px auto;
     width: 950px;
     height: 700px;
+}
+
+#cur-time {
+    position: absolute;
+    left: 1050px;
+    top: -30px;
+    z-index: 1;
+}
+
+#cur-time p {
+    color: #fff;
+    font-size: 22px;
+    font-weight: bolder;
+    font-family: 华文楷体;
 }
 
 #chat-bg #chat-header {
@@ -786,11 +800,23 @@ button:hover {
     position: relative;
 }
 
-#profile #profile-avatar img {
+#profile #profile-avatar {
+    position: relative;
     margin-left: 45px;
     width: 70px;
     height: 70px;
+}
+
+#profile #profile-avatar img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
     border-radius: 50%;
+}
+
+#profile #profile-avatar #avatar-upload {
+    position: absolute;
+    opacity: 0;         /*设置透明度为0*/
 }
 
 #profile #profile-introduce {

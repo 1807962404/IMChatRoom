@@ -1,13 +1,12 @@
 package edu.hniu.imchatroom.service.impl;
 
-import edu.hniu.imchatroom.mapper.MessageMapper;
+import edu.hniu.imchatroom.controller.UserController;
 import edu.hniu.imchatroom.mapper.UserMapper;
-import edu.hniu.imchatroom.model.bean.PrivateMessage;
 import edu.hniu.imchatroom.model.bean.User;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.UserService;
 import edu.hniu.imchatroom.util.MailUtil;
-import edu.hniu.imchatroom.util.Md5Util;
+import edu.hniu.imchatroom.util.EncryptUtil;
 import edu.hniu.imchatroom.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,9 +40,27 @@ public class UserServiceImpl implements UserService {
      * @return
      */
     @Override
-    public boolean checkVerifyCode(String checkCode, String verifyCode) {
+    public boolean doCheckVerifyCode(String checkCode, String verifyCode) {
 
         return StringUtil.isNotEmpty(verifyCode) && checkCode.equalsIgnoreCase(verifyCode);
+    }
+
+    /**
+     * 设置可用 用户
+     * 一个唯一的uniqueUserCode 对应一个用户（不区分在线或否）
+     * @param user
+     * @param uniqueUserCode
+     */
+    public void doSetUserToUse(User user, String uniqueUserCode) {
+        if (null != user) {
+            // 将用户的密码和激活码设为空
+            user.setPassword(null);
+            user.setActiveCode(null);
+
+            if (null != uniqueUserCode)
+                // 唯一用户码对应在线用户
+                UserController.onlineUserToUseMap.put(uniqueUserCode, user);
+        }
     }
 
     /**
@@ -96,7 +113,7 @@ public class UserServiceImpl implements UserService {
 
         // 2、对该用户输入的密码进行 MD5加密 操作
         try {
-            user.setPassword(Md5Util.encodeByMd5(user.getPassword()));
+            user.setPassword(EncryptUtil.encodeByMd5(user.getPassword()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -211,7 +228,7 @@ public class UserServiceImpl implements UserService {
         } else if (2 == step){
             // 第二步：重置该用户的密码为 默认密码
             try {
-                user.setPassword(Md5Util.encodeByMd5(DEFAULT_PASSWORD));
+                user.setPassword(EncryptUtil.encodeByMd5(DEFAULT_PASSWORD));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

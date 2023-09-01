@@ -50,7 +50,7 @@ function getOnlineUserCount() {
 scrollBoard();
 getOnlineUserCount();
 
-var getOnlineCounts = setInterval(() => {
+var onlineCountsEvt = setInterval(() => {
     getOnlineUserCount();
 }, 60000);   // 1分钟发送一次请求
 
@@ -88,28 +88,33 @@ for (let i = 0; i < unAllowedFunctions.length; i++) {
     });
 }
 
-function getDateTime() {
-    let nowDate = new Date();
-    let hour = nowDate.getHours();
-    let minutes = nowDate.getMinutes();
-    let seconds = nowDate.getSeconds();
-    return nowDate.getFullYear() + "-" + (nowDate.getMonth() + 1) + "-" + nowDate.getDate() + " " +
+// 格式化日期时间
+function formatDateTime(date) {
+    let month = (date.getMonth() + 1);
+    let curDay = date.getDate();
+    let hour = date.getHours();
+    let minutes = date.getMinutes();
+    let seconds = date.getSeconds();
+    return date.getFullYear() + "-" +
+        (month < 10 ? ('0' + month) : month) + "-" +
+        (curDay < 10 ? ('0' + curDay) : curDay) + " " +
         (hour < 10 ? ('0' + hour) : hour) + ":" +
         (minutes < 10 ? ('0' + minutes) : minutes) + ":" +
         (seconds < 10 ? ('0' + seconds) : seconds);
 }
-
+function getDateTime() {
+    let nowDate = new Date();
+    return formatDateTime(nowDate);
+}
 // 格式化日期 封装函数
 function FormatDate(date) { //参数是时间
     let myDate = new Date(date);
-    let hour = myDate.getHours();
-    let minutes = myDate.getMinutes();
-    let seconds = myDate.getSeconds();
-    return myDate.getFullYear() + "-" + (myDate.getMonth() + 1) + "-" + myDate.getDate() + " " +
-        (hour < 10 ? ('0' + hour) : hour) + ":" +
-        (minutes < 10 ? ('0' + minutes) : minutes) + ":" +
-        (seconds < 10 ? ('0' + seconds) : seconds);
+    return formatDateTime(myDate);
 }
+
+var curTimeEvt = setInterval(() => {
+    document.getElementById('cur-time').firstElementChild.innerText = getDateTime();
+}, 1000);
 
 /**
  * 导航栏切换：
@@ -843,7 +848,7 @@ feedbackElem.querySelector('button[type="button"]').addEventListener('click', (e
 // 查询我创建的所有群组、以及这些群组中所有的用户信息
 function fingMyCreatedGroups() {
     $.ajax({
-        url: getProjectPath() + '/user/find-my-groups',
+        url: getProjectPath() + '/user/get-my-created-groups',
         type: 'GET',
         success: (resp) => {
             let rootElem = document.getElementById('my-created-groups');
@@ -1176,7 +1181,7 @@ function getMyGroups() {
     }
 
     $.ajax({
-        url: getProjectPath() + '/user/get-my-groups',
+        url: getProjectPath() + '/user/get-my-entered-groups',
         type: 'GET',
         success: (resp) => {
             let myEnteredGroupList = resp;
@@ -1612,6 +1617,56 @@ function editProfile() {
     sendUrl(getProjectPath() + '/user/edit-profile', 'POST', JSON.parse(JSON.stringify(data)), getProjectPath() + '/main')
 }
 
+// 头像上传
+var avatarElem = document.querySelector('#profile #profile-avatar #avatar-upload');
+avatarElem.addEventListener('change', (evt) => {
+    let file = avatarElem.files[0];
+    // console.log(file);
+    uploadAvatar(file);
+})
+
+function uploadAvatar(file) {
+
+    if (file === undefined) {
+        return;
+    }
+
+    // 检查是否支持上传的头像文件
+    let isSupport = false;
+    switch (file.type) {
+        case 'image/jpg':
+        case 'image/png':
+        case 'image/jpeg':
+            isSupport = true;
+    }
+
+    if (!isSupport) {
+        callMessage(1, "不支持的文件类型，请上传jpg、png或jpeg格式的头像文件！");
+        return ;
+    }
+
+    file.width
+
+    let fileData = new FormData();
+    fileData.append('avatar', file);
+    console.log(fileData);
+
+    $.ajax({
+        url: getProjectPath() + '/user/upload-avatar',
+        type: 'POST',
+        data: fileData,
+        processData: false, // 告诉jQuery不要去处理发送的数据
+        contentType: false, // 告诉jQuery不要去设置Content-Type请求头
+        success: (resp) => {
+            callMessage(resp.code, resp.msg);
+            if (resp.code === 0)
+                sleep(sleepTime).then(()=> window.location.href = getProjectPath() + '/main');
+        },
+        error: (resp) => {
+            console.log("Error: " + resp);
+        }
+    })
+}
 
 // 消息的右键菜单栏
 /*

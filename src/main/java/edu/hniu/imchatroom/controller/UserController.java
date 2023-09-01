@@ -4,7 +4,7 @@ import edu.hniu.imchatroom.model.bean.*;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.EntityService;
 import edu.hniu.imchatroom.service.UserService;
-import edu.hniu.imchatroom.util.Md5Util;
+import edu.hniu.imchatroom.util.EncryptUtil;
 import edu.hniu.imchatroom.util.StringUtil;
 import edu.hniu.imchatroom.util.VariableUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,14 +13,14 @@ import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.ClassUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 import static edu.hniu.imchatroom.util.VariableUtil.*;
 import static edu.hniu.imchatroom.util.VariableUtil.SIGNINED_USER;
@@ -33,8 +33,6 @@ public class UserController {
     private UserService userService;
     private EntityService entityService;
 
-    // 记录所有用户
-    private final Set<User> users = new CopyOnWriteArraySet<>();
     // 记录在线用户
     public static final Map<String, User> onlineUserToUseMap = new ConcurrentHashMap<>();
     // 静态变量，用于记录当前在线连接数
@@ -60,7 +58,10 @@ public class UserController {
      */
     @ResponseBody
     @PostMapping("/signup")
-    public ResultVO doSignUp(User user, String verifyCode, String identify, HttpServletRequest request) {
+    public ResultVO doSignUp(User user,
+                             String verifyCode,
+                             String identify,
+                             HttpServletRequest request) {
 
         // 封装结果集
         ResultVO resultVO = new ResultVO();
@@ -75,7 +76,7 @@ public class UserController {
         // 1、获取服务端中对应时间戳的验证码的验证码，并将其与提交的表单中输入的验证码内容 进行忽略大小写比对
         Map<String, String> verifyCodeMap = (Map<String, String>)request.getSession().getAttribute(VariableUtil.CHECK_CODE);
         log.info("时间戳：{}，时间戳对应验证码：{}，验证码：{}", identify, verifyCodeMap.get(identify), verifyCode);
-        boolean flag = userService.checkVerifyCode(verifyCodeMap.get(identify), verifyCode);
+        boolean flag = userService.doCheckVerifyCode(verifyCodeMap.get(identify), verifyCode);
         if (!flag) {
             resultVO.setCode(RESPONSE_FAILED_CODE);
             resultVO.setMsg("验证码有误！");
@@ -177,7 +178,10 @@ public class UserController {
      */
     @ResponseBody
     @PostMapping(value = {"/signin", "/login"})
-    public ResultVO doSignIn(User user, String verifyCode, String identify, HttpServletRequest request) {
+    public ResultVO doSignIn(User user,
+                             String verifyCode,
+                             String identify,
+                             HttpServletRequest request) {
 
         ResultVO resultVO = new ResultVO();
 
@@ -190,7 +194,7 @@ public class UserController {
 
         // 1、获取服务端中对应时间戳的验证码的验证码，并将其与提交的表单中输入的验证码内容 进行忽略大小写比对
         Map<String, String> verifyCodeMap = (Map<String, String>)request.getSession().getAttribute(VariableUtil.CHECK_CODE);
-        boolean flag = userService.checkVerifyCode(verifyCodeMap.get(identify), verifyCode);
+        boolean flag = userService.doCheckVerifyCode(verifyCodeMap.get(identify), verifyCode);
         if (!flag) {
             resultVO.setCode(RESPONSE_FAILED_CODE);
             resultVO.setMsg("验证码有误！");
@@ -202,7 +206,7 @@ public class UserController {
 
         // 2、对该用户输入的密码进行 MD5加密 操作
         try {
-            user.setPassword(Md5Util.encodeByMd5(user.getPassword()));
+            user.setPassword(EncryptUtil.encodeByMd5(user.getPassword()));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -236,74 +240,47 @@ public class UserController {
     }
 
     private void doLoginInitResources(HttpServletRequest request, User userByIdentified) {
-        /*// 1、设置登陆用户的好友列表信息
-        userByIdentified.setMyFriendList(friendService.doGetFriendsByUId(userByIdentified.getUId()));
-
-        // 2、设置登陆用户加入的所有群组信息
-        userByIdentified.setMyEnteredGroups(groupService.doGetMyEnteredGroups(userByIdentified.getUId()));*/
 
         log.info("用户信息：{}", userByIdentified);
 
-        // 3、设置资源-->
+        // 1、设置资源-->
         HttpSession session = request.getSession();
 
-        // 3.1、设置系统通告供所有用户查看
+        // 1.1、设置系统通告供所有用户查看
         List<BroadcastMessage> broadcastMessages = entityService.doGetBroadcasts(null);
         session.setAttribute(BROADCAST_MESSAGE_NAME, broadcastMessages);
 
-        // 3.2、设置优文摘要供所有用户查看
+        // 1.2、设置优文摘要供所有用户查看
         List<ArticleMessage> articleMessages = entityService.doGetArticles(null);
         session.setAttribute(ARTICLE_MESSAGE_NAME, articleMessages);
 
-        // 3.3、设置用户唯一标识码：建立WebSocket连接时需要使用
+        // 1.3、设置用户唯一标识码：建立WebSocket连接时需要使用
         String uniqueUserCode = StringUtil.getRandomCode(false);
         log.info("doSignin() uniqueUserCode: {}", uniqueUserCode);
         session.setAttribute(SIGNINED_USER_WS_CODE, uniqueUserCode);       // 用户的唯一标识码
-        setUserToUse(userByIdentified, uniqueUserCode);     // 给本次登陆的用户设置唯一标识码
+        userService.doSetUserToUse(userByIdentified, uniqueUserCode);     // 给本次登陆的用户设置唯一标识码
 
-        // 4、将登陆的用户信息存入至session中，以及存入在线人数中
-        session.setAttribute(SIGNINED_USER, userByIdentified);
-
-        addOnlineCount();       // 在线人数 +1
-        log.info("当前在线总人数为：{}", getOnlineCount());
-
-        // 5、设置管理员和普通用户名称，用于前端校验
+        // 1.4、设置管理员和普通用户名称，用于前端校验
         if (null == session.getAttribute(ADMIN_USER_NAME)) {
             session.setAttribute("ADMIN_USER_NAME", ADMIN_USER_NAME);
         }
         if (null == session.getAttribute(COMMON_USER_NAME)) {
             session.setAttribute("COMMON_USER_NAME", COMMON_USER_NAME);
         }
+
+        // 2、将登陆的用户信息存入至session中，以及存入在线人数中
+        session.setAttribute(SIGNINED_USER, userByIdentified);
+
+        // 3、记录在线人数 +1
+        addOnlineCount();       // 在线人数 +1
+        log.info("当前在线总人数为：{}", getOnlineCount());
     }
 
     /**
-     * 设置可用 用户
-     * 一个唯一的uniqueUserCode 对应一个用户（不区分在线或否）
-     * @param user
+     * 建立WebSocket连接时需要使用，获取uniqueUserCode对应的用户信息
      * @param uniqueUserCode
-     */
-    private void setUserToUse(User user, String uniqueUserCode) {
-        if (null != user) {
-            // 将用户的密码和激活码设为空
-            user.setPassword(null);
-            user.setActiveCode(null);
-
-            // 用户数量 +1
-            users.add(user);
-            if (null != uniqueUserCode)
-                // 唯一用户码对应在线用户
-                onlineUserToUseMap.put(uniqueUserCode, user);
-        }
-    }
-
-    /**
-     * 获取所有的在线用户信息
      * @return
      */
-    /*@GetMapping("/online-user-count")
-    public Set<User> doGetOnlineUsers() { return onlineUsers; }*/
-
-    // 建立WebSocket连接时需要使用
     public static User doGetUserToWebSocket(String uniqueUserCode) {
         User user = onlineUserToUseMap.get(uniqueUserCode);
         log.info("doGetUserToWebSocket() uniqueUserCode: {}, user: {}, {}",
@@ -328,7 +305,7 @@ public class UserController {
         // 获取所有已激活账号的用户信息
         List<User> allUsers = userService.doGetAllUsers(StatusCodeEnum.getStatusCode(StatusCodeEnum.ACTIVATED));
         for (User user : allUsers)
-            setUserToUse(user, null);
+            userService.doSetUserToUse(user, null);
 
         resultVO.setCode(RESPONSE_SUCCESS_CODE);
         resultVO.setData(allUsers);
@@ -342,7 +319,7 @@ public class UserController {
      */
     @ResponseBody
     @GetMapping("/online-user-count")
-    public ResultVO<Integer> getOnlineUserCount() {
+    public ResultVO<Integer> doGetOnlineUserCount() {
 
         ResultVO<Integer> resultVO = new ResultVO<>();
         resultVO.setCode(RESPONSE_SUCCESS_CODE);
@@ -352,6 +329,12 @@ public class UserController {
 
         return resultVO;
     }
+    /**
+     * 获取所有的在线用户信息
+     * @return
+     */
+    /*@GetMapping("/online-user-count")
+    public Set<User> doGetOnlineUsers() { return onlineUsers; }*/
 
     /**
      * 修改用户个人信息
@@ -361,7 +344,7 @@ public class UserController {
      */
     @ResponseBody
     @PostMapping("/edit-profile")
-    public ResultVO editProfile(User user, HttpServletRequest request) {
+    public ResultVO doEditProfile(User user, HttpServletRequest request) {
 
         ResultVO resultVO = new ResultVO();
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
@@ -381,7 +364,7 @@ public class UserController {
         try {
             String newPassword = user.getPassword();
             if (StringUtil.isNotEmpty(newPassword))
-                thisUser.setPassword(Md5Util.encodeByMd5(newPassword));
+                thisUser.setPassword(EncryptUtil.encodeByMd5(newPassword));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -401,6 +384,91 @@ public class UserController {
             // 更新此用户信息
             thisUser = userService.doGetUserById(thisUser.getUId());
             request.getSession().setAttribute(SIGNINED_USER, thisUser);
+        }
+
+        return resultVO;
+    }
+
+    @ResponseBody
+    @PostMapping("/upload-avatar")
+    public ResultVO doChangeAvatar(
+            @RequestPart("avatar") MultipartFile avatarFile,
+            HttpServletRequest request
+    ) {
+
+        ResultVO resultVO = new ResultVO();
+        if (avatarFile.isEmpty()) {
+            resultVO.setCode(RESPONSE_FAILED_CODE);
+            resultVO.setMsg("上传头像失败！");
+            log.warn("上传头像失败！");
+
+        } else {
+
+            String staticPath = ClassUtils.getDefaultClassLoader().getResource("static").getPath();
+            log.info("文件上传保存至静态资源目录路径：{}", staticPath);
+
+            // 获取用户上传过来的头像文件名
+            String avatarFileName = avatarFile.getOriginalFilename();
+            // 1、设置头像文件保存路径
+            String avatarFilePath = "/avatar/" + StringUtil.getRandomCode(false) + "-" + avatarFileName;
+
+            String realAvatarFilePath = staticPath + "/images" + avatarFilePath;
+            log.info("头像文件保存路径：{}", realAvatarFilePath);
+
+            // 2、保存头像文件至指定路径下
+            File saveFile = new File(realAvatarFilePath);
+            if (!saveFile.exists()) {
+                try {
+                    saveFile.createNewFile();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            // 检查文件的宽高是否符合标准（暂未能实现）
+            /*try {
+                BufferedImage uploadAvatar = ImageIO.read(saveFile);
+                log.info("上传头像的宽：{}， 高：{}", uploadAvatar.getWidth(), uploadAvatar.getHeight());
+                if (uploadAvatar.getWidth() != 42 || uploadAvatar.getHeight() != 42) {
+                    resultVO.setCode(RESPONSE_WARNING_CODE);
+                    resultVO.setMsg("请上传42*42的头像图片！");
+                    log.warn("请上传42*42的头像图片！");
+                    return resultVO;
+                }
+
+            } catch (IOException e) {
+                resultVO.setCode(RESPONSE_FAILED_CODE);
+                resultVO.setMsg("上传头像失败！");
+                log.error("无法保存头像文件：{}", e.getMessage());
+                return resultVO;
+            }*/
+            try {
+                avatarFile.transferTo(saveFile);    // 实现文件下载（本质上是字节流输入，即文件复制）
+            } catch (IOException e) {
+                resultVO.setCode(RESPONSE_FAILED_CODE);
+                resultVO.setMsg("上传头像失败！");
+                log.error("无法保存头像文件：{}", e.getMessage());
+                return resultVO;
+            }
+
+            // 3、设置本人的头像路径
+            User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
+            thisUser.setAvatarUrl(avatarFilePath);
+            int result = userService.doUpdateUser(thisUser);
+
+            if (1 == result) {
+                resultVO.setCode(RESPONSE_SUCCESS_CODE);
+                resultVO.setMsg("已成功上传头像！");
+                log.info("已成功上传头像！");
+                // 更新该登陆用户的资源
+                request.getSession().setAttribute(SIGNINED_USER, thisUser);
+
+            } else {
+                resultVO.setCode(RESPONSE_FAILED_CODE);
+                resultVO.setMsg("上传头像失败！");
+                log.warn("上传头像失败！");
+            }
+            return resultVO;
         }
 
         return resultVO;

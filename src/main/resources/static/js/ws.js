@@ -99,7 +99,8 @@ window.onbeforeunload = () => {
 }
 
 window.onunload = () => {
-    clearInterval(getOnlineCounts);     // 清除获取在线人数的间隔定时器
+    clearInterval(onlineCountsEvt);     // 清除获取在线人数的间隔定时器
+    clearInterval(curTimeEvt);     // 清除获取当前时间的间隔定时器
 }
 
 // 监听聊天输入框的回车键

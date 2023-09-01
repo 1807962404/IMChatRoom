@@ -329,7 +329,7 @@ public class ChatController {
      */
     @ResponseBody
     @GetMapping("/private-history-msg/{friendId}")
-    public ResultVO<List<? extends Message>> getPrivateMessage(
+    public ResultVO<List<? extends Message>> doGetPrivateMessage(
             @PathVariable("friendId") String friendId,
             HttpServletRequest request
     ) {
@@ -375,7 +375,7 @@ public class ChatController {
 
     @ResponseBody
     @GetMapping("/public-history-msg/{gCode}")
-    public ResultVO<List<? extends Message>> getPublicMessage(@PathVariable("gCode") String gCode) {
+    public ResultVO<List<? extends Message>> doGetPublicMessage(@PathVariable("gCode") String gCode) {
         ResultVO<List<? extends Message>> resultVO = new ResultVO<>();
         PublicMessage publicMessage = new PublicMessage();
 

@@ -4,8 +4,7 @@ import edu.hniu.imchatroom.filter.SystemFilter;
 import edu.hniu.imchatroom.interceptor.LoginInterceptor;
 import edu.hniu.imchatroom.model.enums.ResponseCodeEnum;
 import edu.hniu.imchatroom.model.enums.RoleEnum;
-import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
-import edu.hniu.imchatroom.util.Md5Util;
+import edu.hniu.imchatroom.util.EncryptUtil;
 import edu.hniu.imchatroom.util.StringUtil;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +17,7 @@ public class EntityTests {
     @Test
     void testMD5() throws Exception {
         String password = "123456";
-        System.out.println(Md5Util.encodeByMd5(password));		// MD5加密
+        System.out.println(EncryptUtil.encodeByMd5(password));		// MD5加密
     }
 
     @Test

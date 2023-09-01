@@ -9,7 +9,7 @@ import javax.mail.internet.MimeMessage;
 import java.util.Properties;
 
 /**
- * 邮箱发送工具类
+ * 邮件发送工具类
  */
 @Service
 public final class MailUtil {

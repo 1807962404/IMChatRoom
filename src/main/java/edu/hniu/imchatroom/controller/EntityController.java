@@ -42,7 +42,7 @@ public class EntityController {
     }
 
     @RequestMapping("/verify-code/{timestamp}")
-    public void checkCode(
+    public void doGetCheckCode(
             HttpServletRequest request,
             HttpServletResponse response,
             @PathVariable("timestamp") String timestamp
@@ -91,7 +91,7 @@ public class EntityController {
      */
     @ResponseBody
     @GetMapping("/all-feedbacks")
-    public List<Feedback> getAllFeedbacks() {
+    public List<Feedback> doGetAllFeedbacks() {
 
         List<Feedback> feedbacks = entityService.doGetAllFeedbacks(null);
         log.info("All Feedbacks: " + feedbacks);
@@ -106,7 +106,7 @@ public class EntityController {
      */
     @ResponseBody
     @PostMapping("/send-feedback")
-    public ResultVO<Feedback> sendFeedback(Feedback feedback, HttpServletRequest request) {
+    public ResultVO<Feedback> doSendFeedback(Feedback feedback, HttpServletRequest request) {
 
         ResultVO<Feedback> resultVO = new ResultVO<>();
         // 1、检查传入的feedback（即需要反馈的意见内容）是否为空
@@ -144,7 +144,7 @@ public class EntityController {
      */
     @ResponseBody
     @GetMapping("/admin-published-broadcasts")
-    public ResultVO<List<BroadcastMessage>> getPublishedBroadcasts(HttpServletRequest request) {
+    public ResultVO<List<BroadcastMessage>> doGetPublishedBroadcasts(HttpServletRequest request) {
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
         ResultVO<List<BroadcastMessage>> resultVO = new ResultVO<>();
 
@@ -172,7 +172,7 @@ public class EntityController {
      */
     @ResponseBody
     @GetMapping("/admin-published-articles")
-    public ResultVO<List<ArticleMessage>> getPublishedArticles(HttpServletRequest request) {
+    public ResultVO<List<ArticleMessage>> doGetPublishedArticles(HttpServletRequest request) {
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
         ResultVO<List<ArticleMessage>> resultVO = new ResultVO<>();
 

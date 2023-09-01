@@ -74,6 +74,9 @@
             <if test="null != user.password and '' != user.password">
                 `password` = #{user.password },
             </if>
+            <if test="null != user.avatarUrl and '' != user.avatarUrl">
+                `avatar_url` = #{user.avatarUrl },
+            </if>
             <if test="null != user.onlineStatus and '' != user.onlineStatus">
                 `online_status` = #{user.onlineStatus },
             </if>
