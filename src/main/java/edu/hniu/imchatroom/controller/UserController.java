@@ -1,8 +1,10 @@
 package edu.hniu.imchatroom.controller;
 
 import edu.hniu.imchatroom.model.bean.*;
+import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.EntityService;
+import edu.hniu.imchatroom.service.MessageService;
 import edu.hniu.imchatroom.service.UserService;
 import edu.hniu.imchatroom.util.EncryptUtil;
 import edu.hniu.imchatroom.util.StringUtil;
@@ -12,7 +14,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.util.ClassUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,12 +27,12 @@ import static edu.hniu.imchatroom.util.VariableUtil.*;
 import static edu.hniu.imchatroom.util.VariableUtil.SIGNINED_USER;
 
 @Slf4j
-@Controller
+@RestController
 @RequestMapping("/user")
 public class UserController {
 
     private UserService userService;
-    private EntityService entityService;
+    private MessageService messageService;
 
     // 记录在线用户
     public static final Map<String, User> onlineUserToUseMap = new ConcurrentHashMap<>();
@@ -43,45 +44,37 @@ public class UserController {
         this.userService = userService;
     }
     @Autowired
-    public void setEntityService(EntityService entityService) {
-        this.entityService = entityService;
+    public void setMessageService(MessageService messageService) {
+        this.messageService = messageService;
     }
-
 
     /**
      * 用户注册
+     *
      * @param user
      * @param verifyCode
      * @param identify：时间戳，唯一标识
      * @param request
      * @return
      */
-    @ResponseBody
     @PostMapping("/signup")
     public ResultVO doSignUp(User user,
                              String verifyCode,
                              String identify,
                              HttpServletRequest request) {
 
-        // 封装结果集
-        ResultVO resultVO = new ResultVO();
-
         if (StringUtil.isEmpty(identify)) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("身份识别错误！");
             log.warn("身份识别错误！（传入的identify：" + identify + " 错误）");
-            return resultVO;
+            return Result.failed("身份识别错误！");
         }
 
         // 1、获取服务端中对应时间戳的验证码的验证码，并将其与提交的表单中输入的验证码内容 进行忽略大小写比对
-        Map<String, String> verifyCodeMap = (Map<String, String>)request.getSession().getAttribute(VariableUtil.CHECK_CODE);
+        Map<String, String> verifyCodeMap = (Map<String, String>) request.getSession().getAttribute(VariableUtil.CHECK_CODE);
         log.info("时间戳：{}，时间戳对应验证码：{}，验证码：{}", identify, verifyCodeMap.get(identify), verifyCode);
         boolean flag = userService.doCheckVerifyCode(verifyCodeMap.get(identify), verifyCode);
         if (!flag) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("验证码有误！");
             log.warn("验证码有误！");
-            return resultVO;
+            return Result.failed("验证码有误！");
         }
 
         log.info("用户注册中输入的用户信息：{}", user);
@@ -100,48 +93,39 @@ public class UserController {
                 notExists = true;
 
             } else {
-                // 如果账号是已激活状态
                 if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ACTIVATED))) {
-                    resultVO.setCode(RESPONSE_WARNING_CODE);
-                    resultVO.setMsg("账号已存在，请直接登陆即可！");
+                    // 如果账号是已激活状态
                     log.warn("账号已存在，请直接登陆即可！");
+                    return Result.warn("账号已存在，请直接登陆即可！");
 
                 } else if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.INACTIVE))) {
                     // 如果账号是未激活状态
-                    resultVO.setCode(RESPONSE_WARNING_CODE);
-                    resultVO.setMsg("该账号处于未激活状态，请先激活账号再享受更多体验！");
                     log.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
+                    return Result.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
                 }
-                return resultVO;
             }
         }
 
         // 如果拥有该邮箱的用户已存在，则无法进行注册
         if (!notExists) {
-            resultVO.setCode(RESPONSE_WARNING_CODE);
-            resultVO.setMsg("该邮箱地址已被注册，请直接登陆即可！");
             log.warn("该邮箱地址已被注册，请直接登陆即可！");
-            return resultVO;
+            return Result.warn("该邮箱地址已被注册，请直接登陆即可！");
         }
 
         // 4、注册一个新用户
         int result = userService.doSignUp(user);
-        if (1 == result) {
-            resultVO.setCode(RESPONSE_SUCCESS_CODE);
-            resultVO.setMsg("账号激活已发送至您的邮箱，请检查邮箱并点击链接激活账号！");
-            log.info("账号激活已发送至您的邮箱，请检查邮箱并点击链接激活账号！");
-
-        } else {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("账号注册失败，请检查邮箱地址是否有误！");
+        if (1 != result) {
             log.warn("账号注册失败，请检查邮箱地址是否有误！");
+            return Result.warn("账号注册失败，请检查邮箱地址是否有误！");
         }
 
-        return resultVO;
+        log.info("账号激活已发送至您的邮箱，请检查邮箱并点击链接激活账号！");
+        return Result.ok("账号激活已发送至您的邮箱，请检查邮箱并点击链接激活账号！");
     }
 
     /**
      * 激活账号
+     *
      * @param activeCode
      * @return
      */
@@ -156,8 +140,7 @@ public class UserController {
         if (1 != result) {
             content = "账号激活失败！";
             log.warn("账号激活失败！");
-        }
-        else {
+        } else {
             content = "账号激活成功！";
             log.info("账号激活成功！");
         }
@@ -170,75 +153,58 @@ public class UserController {
 
     /**
      * 用户登陆
+     *
      * @param user
      * @param verifyCode
      * @param identify：时间戳，唯一标识
      * @param request
      * @return
      */
-    @ResponseBody
     @PostMapping(value = {"/signin", "/login"})
     public ResultVO doSignIn(User user,
                              String verifyCode,
                              String identify,
                              HttpServletRequest request) {
 
-        ResultVO resultVO = new ResultVO();
-
         if (StringUtil.isEmpty(identify)) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("身份识别错误！");
             log.warn("身份识别错误！（传入的identify：" + identify + " 错误）");
-            return resultVO;
+            return Result.failed("身份识别错误！");
         }
 
         // 1、获取服务端中对应时间戳的验证码的验证码，并将其与提交的表单中输入的验证码内容 进行忽略大小写比对
-        Map<String, String> verifyCodeMap = (Map<String, String>)request.getSession().getAttribute(VariableUtil.CHECK_CODE);
+        Map<String, String> verifyCodeMap = (Map<String, String>) request.getSession().getAttribute(VariableUtil.CHECK_CODE);
         boolean flag = userService.doCheckVerifyCode(verifyCodeMap.get(identify), verifyCode);
         if (!flag) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("验证码有误！");
             log.warn("验证码有误！");
-            return resultVO;
+            return Result.failed("验证码有误！");
         }
 
         log.info("用户输入的登陆信息：{}", user);
 
-        // 2、对该用户输入的密码进行 MD5加密 操作
-        try {
-            user.setPassword(EncryptUtil.encodeByMd5(user.getPassword()));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        // 3、检查用户是否存在
+        // 2、检查用户是否存在
         User userByIdentified = userService.doCheckUserExists(user, true);
         if (null == userByIdentified) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("账号信息有误，请检查后重新登陆！");
             log.warn("账号信息有误，请检查后重新登陆！");
-            return resultVO;
+            return Result.failed("账号信息有误，请检查后重新登陆！");
 
-        }else if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.INACTIVE))) {
+        } else if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.INACTIVE))) {
             // 如果账号是未激活状态
-            resultVO.setCode(RESPONSE_WARNING_CODE);
-            resultVO.setMsg("该账号处于未激活状态，请先激活账号再享受更多体验！");
             log.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
-            return resultVO;
+            return Result.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
         }
 
-        // 4、用户登陆
-        userByIdentified = userService.doSignIn(user);
+        // 3、用户登陆
+        int result = userService.doSignIn(userByIdentified);
+        if (1 != result) {
+            log.warn("登陆失败，请稍后再试！");
+            return Result.failed("登陆失败，请稍后再试！");
+        }
 
-        // 5、用户登陆之后初始化资源操作
+        // 4、用户登陆之后初始化资源操作
         doLoginInitResources(request, userByIdentified);
 
-        resultVO.setCode(RESPONSE_SUCCESS_CODE);
-        // 每个用户登陆成功后都将推送：在线用户人数 消息给所有用户
-//        resultVO.setData(request.getSession().getAttribute(SIGNINED_USER_WS_CODE));
-        resultVO.setMsg("登陆成功，欢迎回来：" + userByIdentified.getNickname() + "！");
         log.info("登陆成功！");
-        return resultVO;
+        return Result.ok("登陆成功，欢迎回来：" + userByIdentified.getNickname() + "！");
     }
 
     private void doLoginInitResources(HttpServletRequest request, User userByIdentified) {
@@ -249,12 +215,16 @@ public class UserController {
         HttpSession session = request.getSession();
 
         // 1.1、设置系统通告供所有用户查看
-        List<BroadcastMessage> broadcastMessages = entityService.doGetBroadcasts(null);
-        session.setAttribute(BROADCAST_MESSAGE_NAME, broadcastMessages);
+        Message broadcastMessage = new BroadcastMessage();
+        broadcastMessage.setMessageType(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG));
+        List<? extends Message> messages = messageService.doGetChatMessage(broadcastMessage);
+        session.setAttribute(BROADCAST_MESSAGE_NAME, messages);
 
         // 1.2、设置优文摘要供所有用户查看
-        List<ArticleMessage> articleMessages = entityService.doGetArticles(null);
-        session.setAttribute(ARTICLE_MESSAGE_NAME, articleMessages);
+        Message articleMessage = new ArticleMessage();
+        articleMessage.setMessageType(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG));
+        messages = messageService.doGetChatMessage(articleMessage);
+        session.setAttribute(ARTICLE_MESSAGE_NAME, messages);
 
         // 1.3、设置用户唯一标识码：建立WebSocket连接时需要使用
         String uniqueUserCode = StringUtil.getRandomCode(false);
@@ -280,6 +250,7 @@ public class UserController {
 
     /**
      * 建立WebSocket连接时需要使用，获取uniqueUserCode对应的用户信息
+     *
      * @param uniqueUserCode
      * @return
      */
@@ -297,22 +268,18 @@ public class UserController {
 
     /**
      * 获取所有 “账号已激活” 的用户信息
+     *
      * @return
      */
-    @ResponseBody
     @GetMapping("/all-users")
     public ResultVO<List<User>> doGetAllUsers() {
 
-        ResultVO<List<User>> resultVO = new ResultVO<>();
         // 获取所有已激活账号的用户信息
         List<User> allUsers = userService.doGetAllUsers(StatusCodeEnum.getStatusCode(StatusCodeEnum.ACTIVATED));
         for (User user : allUsers)
             userService.doSetUserToUse(user, null);
 
-        resultVO.setCode(RESPONSE_SUCCESS_CODE);
-        resultVO.setData(allUsers);
-
-        return resultVO;
+        return Result.ok(allUsers);
     }
 
     /**
@@ -324,24 +291,21 @@ public class UserController {
 
     /**
      * 修改用户个人信息
+     *
      * @param user
      * @param request
      * @return
      */
-    @ResponseBody
     @PostMapping("/edit-profile")
     public ResultVO doEditProfile(User user, HttpServletRequest request) {
 
-        ResultVO resultVO = new ResultVO();
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
 
         // 1、检查输入的昵称是否与原先昵称一致，并且检查输入的密码是否为空
         if ((user.getNickname().equals(thisUser.getNickname()) || StringUtil.isEmpty(user.getNickname())) &&
                 StringUtil.isEmpty(user.getPassword())) {
-            resultVO.setCode(RESPONSE_WARNING_CODE);
-            resultVO.setMsg("昵称不能与先前设置的昵称保持一致！");
             log.warn("昵称不能与先前设置的昵称保持一致！");
-            return resultVO;
+            return Result.warn("昵称不能与先前设置的昵称保持一致！");
         }
 
         String newNickname = user.getNickname();
@@ -352,66 +316,69 @@ public class UserController {
             if (StringUtil.isNotEmpty(newPassword))
                 thisUser.setPassword(EncryptUtil.encodeByMd5(newPassword));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            String errMsg = "编辑个人信息操作中MD5加密发生错误: " + e.getMessage();
+            log.error(errMsg);
+            return Result.failed(errMsg);
         }
 
         // 2、修改个人信息
         int result = userService.doUpdateUser(thisUser);
         if (1 != result) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("修改个人信息失败！");
             log.warn("修改个人信息失败！");
+            return Result.failed("修改个人信息失败！");
 
-        } else {
-            resultVO.setCode(RESPONSE_SUCCESS_CODE);
-            resultVO.setMsg("成功修改个人信息！");
-            log.info("成功修改个人信息！");
-
-            // 更新此用户信息
-            thisUser = userService.doGetUserById(thisUser.getUId());
-            request.getSession().setAttribute(SIGNINED_USER, thisUser);
         }
 
-        return resultVO;
+        // 更新此用户信息
+        thisUser = userService.doGetUserById(thisUser.getUId());
+        request.getSession().setAttribute(SIGNINED_USER, thisUser);
+        log.info("成功修改个人信息！");
+        return Result.ok("成功修改个人信息！");
     }
 
-    @ResponseBody
+
+    /**
+     * 上传头像
+     *
+     * @param avatarFile
+     * @param request
+     * @return
+     */
     @PostMapping("/upload-avatar")
     public ResultVO doChangeAvatar(
             @RequestPart("avatar") MultipartFile avatarFile,
             HttpServletRequest request
     ) {
 
-        ResultVO resultVO = new ResultVO();
         if (avatarFile.isEmpty()) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("上传头像失败！");
             log.warn("上传头像失败！");
+            return Result.failed("上传头像失败！");
+        }
 
-        } else {
+        String staticPath = ClassUtils.getDefaultClassLoader().getResource("static").getPath();
+        log.info("文件上传保存至静态资源目录路径：{}", staticPath);
 
-            String staticPath = ClassUtils.getDefaultClassLoader().getResource("static").getPath();
-            log.info("文件上传保存至静态资源目录路径：{}", staticPath);
+        // 获取用户上传过来的头像文件名
+        String avatarFileName = avatarFile.getOriginalFilename();
+        // 1、设置头像文件保存路径
+        String avatarFilePath = "/avatar/" + StringUtil.getRandomCode(false) + "-" + avatarFileName;
 
-            // 获取用户上传过来的头像文件名
-            String avatarFileName = avatarFile.getOriginalFilename();
-            // 1、设置头像文件保存路径
-            String avatarFilePath = "/avatar/" + StringUtil.getRandomCode(false) + "-" + avatarFileName;
+        String realAvatarFilePath = staticPath + "/images" + avatarFilePath;
+        log.info("头像文件保存路径：{}", realAvatarFilePath);
 
-            String realAvatarFilePath = staticPath + "/images" + avatarFilePath;
-            log.info("头像文件保存路径：{}", realAvatarFilePath);
-
-            // 2、保存头像文件至指定路径下
-            File saveFile = new File(realAvatarFilePath);
-            if (!saveFile.exists()) {
-                try {
-                    saveFile.createNewFile();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+        // 2、保存头像文件至指定路径下
+        File saveFile = new File(realAvatarFilePath);
+        if (!saveFile.exists()) {
+            try {
+                saveFile.createNewFile();
+            } catch (IOException e) {
+                String errMsg = "上传头像操作中发生错误: " + e.getMessage();
+                log.error(errMsg);
+                return Result.failed(errMsg);
             }
+        }
 
-            // 检查文件的宽高是否符合标准（暂未能实现）
+        // 检查文件的宽高是否符合标准（暂未能实现）
             /*try {
                 BufferedImage uploadAvatar = ImageIO.read(saveFile);
                 log.info("上传头像的宽：{}， 高：{}", uploadAvatar.getWidth(), uploadAvatar.getHeight());
@@ -428,49 +395,38 @@ public class UserController {
                 log.error("无法保存头像文件：{}", e.getMessage());
                 return resultVO;
             }*/
-            try {
+        try {
                 avatarFile.transferTo(saveFile);    // 实现文件下载（本质上是字节流输入，即文件复制）
-            } catch (IOException e) {
-                resultVO.setCode(RESPONSE_FAILED_CODE);
-                resultVO.setMsg("上传头像失败！");
-                log.error("无法保存头像文件：{}", e.getMessage());
-                return resultVO;
-            }
-
-            // 3、设置本人的头像路径
-            User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
-            thisUser.setAvatarUrl(avatarFilePath);
-            int result = userService.doUpdateUser(thisUser);
-
-            if (1 == result) {
-                resultVO.setCode(RESPONSE_SUCCESS_CODE);
-                resultVO.setMsg("已成功上传头像！");
-                log.info("已成功上传头像！");
-                // 更新该登陆用户的资源
-                request.getSession().setAttribute(SIGNINED_USER, thisUser);
-
-            } else {
-                resultVO.setCode(RESPONSE_FAILED_CODE);
-                resultVO.setMsg("上传头像失败！");
-                log.warn("上传头像失败！");
-            }
-            return resultVO;
+        } catch (IOException e) {
+            String errMsg = "无法保存头像文件错误：{}" + e.getMessage();
+            log.error(errMsg);
+            return Result.failed(errMsg);
         }
 
-        return resultVO;
+        // 3、设置本人的头像路径
+        User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
+        thisUser.setAvatarUrl(avatarFilePath);
+        int result = userService.doUpdateUser(thisUser);
+
+        if (1 != result) {
+            log.warn("上传头像失败！");
+            return Result.failed("上传头像失败！");
+        }
+
+        // 更新该登陆用户的资源
+        request.getSession().setAttribute(SIGNINED_USER, thisUser);
+        log.info("已成功上传头像！");
+        return Result.ok("已成功上传头像！");
     }
 
     /**
      * 重置密码操作
+     *
      * @param data
      * @return
      */
-    @ResponseBody
     @PostMapping("/reset-password")
     public ResultVO doResetPassword(String data) {
-
-        // 封装结果集
-        ResultVO resultVO = new ResultVO();
 
         // 检查用户信息是否存在
         User resetUser = new User();
@@ -494,37 +450,33 @@ public class UserController {
                     int result = userService.doForgetPassword(userByIdentified, 1);
                     if (0 == result) {
                         // 成功发送 重置账户密码 邮件
-                        resultVO.setCode(RESPONSE_SUCCESS_CODE);
-                        resultVO.setMsg("已成功发送重置密码邮件，请检查您的邮箱！");
                         log.info("已成功发送重置密码邮件，请检查您的邮箱！");
+                        return Result.ok("已成功发送重置密码邮件，请检查您的邮箱！");
 
                     } else {
-                        resultVO.setCode(RESPONSE_FAILED_CODE);
-                        resultVO.setMsg("未能成功发送重置密码邮件，请稍后再试！");
                         log.warn("未能成功发送重置密码邮件，请稍后再试！");
+                        return Result.failed("未能成功发送重置密码邮件，请稍后再试！");
                     }
 
                 } else if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.INACTIVE))) {
                     // 如果账号是未激活状态
-                    resultVO.setCode(RESPONSE_WARNING_CODE);
-                    resultVO.setMsg("该账号处于未激活状态，请先激活账号再享受更多体验！");
                     log.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
+                    return Result.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
                 }
-                return resultVO;
             }
         }
 
         if (notExists) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("不存在使用该邮箱地址的用户！");
             log.warn("不存在使用该邮箱地址的用户！");
+            return Result.failed("不存在使用该邮箱地址的用户！");
         }
 
-        return resultVO;
+        return Result.failed("重置密码过程中出现了未知错误！");
     }
 
     /**
      * 重置密码最终操作
+     *
      * @param code
      * @return
      */
@@ -570,69 +522,64 @@ public class UserController {
     /**
      * 用户会话注销，退出登陆
      * 后期使用ResultInfo封装结果集，并会有前端响应
+     *
      * @param request
      * @return
      */
-    @ResponseBody
     @GetMapping("/sign-out")
     public ResultVO doSignOut(HttpServletRequest request) {
 
+        // 1、检查用户是否已登陆（可省）
         User logoutUser = (User) request.getSession().getAttribute(SIGNINED_USER);
-        // 1、修改该用户为离线状态
-        logoutUser.setOnlineStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.OFFLINE));
-        int result = userService.doUpdateUser(logoutUser);
-
-        ResultVO resultVO = new ResultVO();
-        log.info("用户 {} 注销会话情况：{}", logoutUser.getNickname(), result == 1 ? "已成功退出登陆！" : "注销会话失败！");
-        if (result != 1) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("注销会话失败！");
-            return resultVO;
+        if (null == logoutUser) {
+            log.warn("请先登陆！");
+            return Result.warn("请先登陆！");
         }
 
-        onlineUserToUseMap.remove(logoutUser);     // 在线用户数量-1
+        // 2、修改该用户为离线状态
+        logoutUser.setOnlineStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.OFFLINE));
+        int result = userService.doUpdateUser(logoutUser);
+        log.info("用户 {} 注销会话情况：{}", logoutUser.getNickname(), result == 1 ? "已成功退出登陆！" : "注销会话失败！");
+        if (1 != result) {
+            log.warn("注销会话失败！");
+            return Result.failed("注销会话失败！");
+        }
+
+        // 在线用户数量-1
+        onlineUserToUseMap.remove(logoutUser);
         subOnlineCount();
         request.getSession().invalidate();
 
-        resultVO.setCode(RESPONSE_SUCCESS_CODE);
-        resultVO.setMsg("已成功退出登陆！");
-        log.info("当前在线总人数为：{}", getOnlineCount());
-        return resultVO;
+        log.info("已成功退出登陆！当前在线总人数为：{}", getOnlineCount());
+        return Result.ok("已成功退出登陆！");
     }
 
     /**
      * 用户账号注销
+     *
      * @return
      */
-    @ResponseBody
     @GetMapping("/logout-account")
     public ResultVO doLogoutAccount(HttpServletRequest request) {
-        User logoutAccountUser = (User) request.getSession().getAttribute(SIGNINED_USER);
-        // 设置该用户的账号为：已注销状态
-        logoutAccountUser.setAccountStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.INVALID));
-        int result = userService.doUpdateUser(logoutAccountUser);
 
-        ResultVO resultVO = new ResultVO();
-        log.info("用户 {} 注销账号情况：{}", logoutAccountUser.getNickname(), result == 1 ? "已成功注销账号！" : "注销账号失败！");
-        if (result != 1) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("注销账号失败！");
-            return resultVO;
-
+        User loggoutUser = (User) request.getSession().getAttribute(SIGNINED_USER);
+        int result = userService.doLogoutAccount(loggoutUser);
+        if (1 > result) {
+            log.warn("账号注销失败！");
+            return Result.failed("账号注销失败！");
         }
 
-        onlineUserToUseMap.remove(logoutAccountUser);     // 在线用户数量-1
+        onlineUserToUseMap.remove(loggoutUser);     // 在线用户数量-1
         subOnlineCount();
         request.getSession().invalidate();
 
-        resultVO.setCode(RESPONSE_SUCCESS_CODE);
-        resultVO.setMsg("已成功注销账号！");
-        log.info("当前在线总人数为：{}", getOnlineCount());
-        return resultVO;
+        log.info("已成功注销用户 {} 的账号！当前在线总人数为：{}", loggoutUser.getNickname(), getOnlineCount());
+        return Result.ok("已成功注销账号！");
     }
 
     /**
      * 获取在线人数
+     *
      * @return
      */
     public static synchronized int getOnlineCount() {

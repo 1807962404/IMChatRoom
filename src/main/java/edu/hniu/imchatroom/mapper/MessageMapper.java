@@ -21,10 +21,25 @@ public interface MessageMapper {
 
     /**
      * 查询群聊消息（会根据群gId进行查询）
+     * 查询的群聊消息是在该用户加入此群聊之后的消息
      * @param publicMessage
      * @return
      */
     List<PublicMessage> selectPublicMessage(@Param("publicMessage") PublicMessage publicMessage);
+
+    /**
+     * 获取所有系统广播信息
+     * @param broadcastMessage
+     * @return
+     */
+    List<BroadcastMessage> selectBroadcastMessage(@Param("broadcastMessage") BroadcastMessage broadcastMessage);
+
+    /**
+     * 获取所有优文摘要信息
+     * @param articleMessage
+     * @return
+     */
+    List<ArticleMessage> selectArticleMessage(@Param("articleMessage") ArticleMessage articleMessage);
 
     /**
      * 插入私聊消息
@@ -61,4 +76,24 @@ public interface MessageMapper {
      */
     Integer deletePriMsg(@Param("privateMessages") List<PrivateMessage> privateMessages);
 
+    /**
+     * 根据puId批量删除群聊信息
+     * @param publicMessages
+     * @return
+     */
+    Integer deletePubMsg(@Param("publicMessages") List<PublicMessage> publicMessages);
+
+    /**
+     * 根据bId删除系统广播信息
+     * @param broadcastMessages
+     * @return
+     */
+    int deleteBroMsg(@Param("broadcastMessages") List<BroadcastMessage> broadcastMessages);
+
+    /**
+     * 根据aId删除优文摘要信息
+     * @param articleMessages
+     * @return
+     */
+    int deleteArtMsg(@Param("articleMessages") List<ArticleMessage> articleMessages);
 }

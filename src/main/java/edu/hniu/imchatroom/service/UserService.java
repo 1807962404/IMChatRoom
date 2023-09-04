@@ -9,6 +9,7 @@ public interface UserService {
 
     /**
      * 检查表单发送过来的验证码是否 与session中存储的verifycode相等
+     *
      * @param verifyCode
      * @param checkCode
      * @return
@@ -18,6 +19,7 @@ public interface UserService {
     /**
      * 设置可用 用户
      * 一个唯一的uniqueUserCode 对应一个用户（不区分在线或否）
+     *
      * @param user
      * @param uniqueUserCode
      */
@@ -25,6 +27,7 @@ public interface UserService {
 
     /**
      * 模糊查询用户信息
+     *
      * @param data
      * @return
      */
@@ -32,6 +35,7 @@ public interface UserService {
 
     /**
      * 【根据账号状态】查询所有用户信息
+     *
      * @return
      */
     List<User> doGetAllUsers(String accountStatus);
@@ -43,19 +47,22 @@ public interface UserService {
 
     /**
      * 注册用户信息
+     *
      * @return
      */
     Integer doSignUp(User user);
 
     /**
      * 用户登陆操作
+     *
      * @param user
      * @return
      */
-    User doSignIn(User user);
+    Integer doSignIn(User user);
 
     /**
      * 激活账户操作
+     *
      * @param activeCode
      * @return
      */
@@ -63,6 +70,7 @@ public interface UserService {
 
     /**
      * 是否根据账号(account/email)+密码的形式 检查user是否存在
+     *
      * @param user
      * @param hasPwd
      * @return
@@ -71,8 +79,9 @@ public interface UserService {
 
     /**
      * 更新账号信息
-     *  1、处理 用户会话注销 的业务逻辑
-     *  2、处理 注销用户账号 的业务逻辑
+     * 1、处理 用户会话注销 的业务逻辑
+     * 2、处理 注销用户账号 的业务逻辑
+     *
      * @param user
      * @return
      */
@@ -80,6 +89,7 @@ public interface UserService {
 
     /**
      * 按步骤处理 用户忘记密码 的业务逻辑
+     *
      * @param user
      * @param step
      * @return
@@ -88,8 +98,16 @@ public interface UserService {
 
     /**
      * 处理 根据activeCode用户账号激活码查询指定用户 的业务逻辑
+     *
      * @param activeCode
      * @return
      */
     User doGetUserByActiveCode(String activeCode);
+
+    /**
+     * 注销用户账号
+     * @param loggoutUser
+     * @return
+     */
+    Integer doLogoutAccount(User loggoutUser);
 }

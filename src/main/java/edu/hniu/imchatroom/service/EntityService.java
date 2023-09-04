@@ -27,17 +27,4 @@ public interface EntityService {
      * @return
      */
     Integer doAddFeedback(Feedback feedback);
-
-    /**
-     * 处理 【根据用户id（管理员）】获取【其发布的】所有系统广播信息 的业务逻辑
-     * @return
-     */
-    List<BroadcastMessage> doGetBroadcasts(Integer uId);
-
-    /**
-     * 处理 【根据用户id（管理员）】获取【其发布的】所有优文摘要信息 的业务逻辑
-     * @param uId
-     * @return
-     */
-    List<ArticleMessage> doGetArticles(Integer uId);
 }

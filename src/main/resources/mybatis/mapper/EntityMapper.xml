@@ -6,32 +6,10 @@
         `fb_id`, `u_id`, `fb_content`, `publish_time`
     </sql>
 
-    <sql id="broadcast_column">
-        `b_id`, `u_id`, `content`, `send_time`
-    </sql>
-
-    <sql id="article_column">
-        `a_id`, `u_id`, `content`, `send_time`
-    </sql>
-
     <resultMap id="FeedbackResultMap" type="edu.hniu.imchatroom.model.bean.Feedback">
         <id column="fb_id" property="fbId" />
         <result column="fb_content" property="fbContent" />
         <result column="publish_time" property="publishTime" />
-        <association column="u_id" property="publisher" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById"/>
-    </resultMap>
-    
-    <resultMap id="BroadcastResultMap" type="edu.hniu.imchatroom.model.bean.BroadcastMessage">
-        <id column="b_id" property="bId" />
-        <result column="content" property="content" />
-        <result column="send_time" property="sendTime" />
-        <association column="u_id" property="publisher" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById"/>
-    </resultMap>
-
-    <resultMap id="ArticleResultMap" type="edu.hniu.imchatroom.model.bean.ArticleMessage">
-        <id column="a_id" property="aId" />
-        <result column="content" property="content" />
-        <result column="send_time" property="sendTime" />
         <association column="u_id" property="publisher" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById"/>
     </resultMap>
 
@@ -60,27 +38,5 @@
         <include refid="feedback_column" />, `display_status`
         FROM `feedback`
         WHERE `display_status` = '0' AND `fb_id` = #{fbId }
-    </select>
-
-<!--    List<BroadcastMessage> selectBroadcasts(@Param("uId") Integer uId);-->
-    <select id="selectBroadcasts" resultMap="BroadcastResultMap">
-        SELECT
-            <include refid="broadcast_column" />, `display_status`
-        FROM `broadcast_message`
-        WHERE `display_status` = '0'
-        <if test="uId != null">
-            AND `u_id` = #{uId }
-        </if>
-    </select>
-
-<!--    List<ArticleMessage> selectArticles(@Param("uId") Integer uId);-->
-    <select id="selectArticles" resultMap="ArticleResultMap">
-        SELECT
-            <include refid="article_column" />, `display_status`
-        FROM `article_message`
-        WHERE `display_status` = '0'
-        <if test="uId != null">
-            AND `u_id` = #{uId }
-        </if>
     </select>
 </mapper>

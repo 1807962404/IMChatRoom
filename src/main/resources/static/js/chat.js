@@ -6,7 +6,7 @@
 // 获取本人id
 const thisUserId = document.querySelector('#user-info span').dataset.id;
 
-// 滑动私聊聊天版
+// 滑动私聊聊天板块，会根据内容自适应
 function scrollBoard() {
     let elems = new Array();
     elems.push(document.querySelector('#chat-bg #chat-box'));
@@ -31,14 +31,15 @@ function setMessageToOnlineCountBoard(message) {
     document.querySelector('#chat-header #info-show #online-user-count #count').innerText = message.content;
 }
 
-// 监听发送内容框
+// 监听内容发送框
 const content = document.querySelector('#chat-ipt #ipt-content #content');
-// 检查内容狂的长度
-function checkContentLength(content, contentLength) {
-    let contentVal = content.value
+// 检查内容框中输入内容的长度
+function checkContentLength(contentElem, contentLength) {
+    let contentVal = contentElem.value
     if (contentVal.length > contentLength)
         callMessage(1, "发送内容字数不得超过" + contentLength + "！");
-    content.value = contentVal.substring(0, contentLength);
+
+    contentElem.value = contentVal.substring(0, contentLength);
 }
 content.addEventListener('change', function () {
     checkContentLength(this, 120);
@@ -89,6 +90,7 @@ function FormatDate(date) { //参数是时间
     return formatDateTime(myDate);
 }
 
+// 时间提醒
 var curTimeEvt = setInterval(() => {
     document.getElementById('cur-time').firstElementChild.innerText = getDateTime();
 }, 1000);
@@ -511,11 +513,9 @@ function findMyNewFriends() {
 
                     let avatarElem = document.createElement('div');
                     avatarElem.classList.add('avatar');
-                    avatarElem.style.background = 'url(' + getProjectPath() + '/images' + newFriend.avatarUrl + ') no-repeat';
 
                     let friendNameElem = document.createElement('div');
                     friendNameElem.classList.add('friend-name', 'high-light');
-                    friendNameElem.innerText = newFriend.nickname;
 
                     let applyTimeElem = document.createElement('div');
                     applyTimeElem.classList.add('apply-time');
@@ -523,27 +523,36 @@ function findMyNewFriends() {
                     let appContentElem = document.createElement('div');
                     appContentElem.classList.add('app-content');
 
-                    if (newFriends[i].fsStatus === '0') {
-                        applyTimeElem.innerText = '结交时间：' + FormatDate(newFriends[i].applyTime);
-                        appContentElem.innerText = '已同意好友申请！';
+                    if (newFriend && newFriend !== null && newFriend !== undefined) {
+                        avatarElem.style.background = 'url(' + getProjectPath() + '/images' + newFriend.avatarUrl + ') no-repeat';
+                        friendNameElem.innerText = newFriend.nickname;
 
-                    } else if (newFriends[i].fsStatus === '1') {   // 正处于好友关系确认中
-                        applyTimeElem.innerText = '申请时间：' + FormatDate(newFriends[i].applyTime);
-                        let aElem = document.createElement('a');
-                        // 为a标签设置自定义属性 gohref：发送的请求
-                        aElem.dataset.gohref = getProjectPath() + '/user/add-friend/' + newFriend.uId;
-                        aElem.classList.add('add-friend-btn');
-                        aElem.innerText = '点击同意好友申请！'
+                        if (newFriends[i].fsStatus === '0') {
+                            applyTimeElem.innerText = '结交时间：' + FormatDate(newFriends[i].applyTime);
+                            appContentElem.innerText = '已同意好友申请！';
 
-                        let addBtnElem = document.createElement('span');
-                        addBtnElem.appendChild(aElem);
-                        addBtnElem.classList.add('agree');
-                        addBtnElem.addEventListener('click',  (evt) => {
-                            doAddFriendBtnListener(evt, addBtnElem);    // 绑上监听点击事件（添加好友）
-                        });
+                        } else if (newFriends[i].fsStatus === '1') {   // 正处于好友关系确认中
+                            applyTimeElem.innerText = '申请时间：' + FormatDate(newFriends[i].applyTime);
+                            let aElem = document.createElement('a');
+                            // 为a标签设置自定义属性 gohref：发送的请求
+                            aElem.dataset.gohref = getProjectPath() + '/user/add-friend/' + newFriend.uId;
+                            aElem.classList.add('add-friend-btn');
+                            aElem.innerText = '点击同意好友申请！'
 
-                        appContentElem.innerText = `请求添加好友，`;
-                        appContentElem.appendChild(addBtnElem);
+                            let addBtnElem = document.createElement('span');
+                            addBtnElem.appendChild(aElem);
+                            addBtnElem.classList.add('agree');
+                            addBtnElem.addEventListener('click',  (evt) => {
+                                doAddFriendBtnListener(evt, addBtnElem);    // 绑上监听点击事件（添加好友）
+                            });
+
+                            appContentElem.innerText = `请求添加好友，`;
+                            appContentElem.appendChild(addBtnElem);
+                        }
+
+                    } else {
+                        friendNameElem.innerText = '此账号已注销';
+                        appContentElem.innerText = `已无法操作！`;
                     }
 
                     friendInfoElem.append(avatarElem, friendNameElem, applyTimeElem, appContentElem);
@@ -574,11 +583,9 @@ if (userExitBtn) {
             url: getProjectPath() + '/user/sign-out',
             type: 'GET',
             success:  (resp) => {
-                // console.log(resp);
                 callMessage(resp.code, resp.msg);
                 if (resp.code === 0) {
-                    // console.log('当前用户总在线数为' + resp.data);
-                    // 设置在线用户数量（会出问题）
+                    // 更新在线用户数量
                     realTimeUpdateOnlineCount();
                     sleep(sleepTime).then(()=> window.location.href = getProjectPath() + '/login');
                 }
@@ -614,7 +621,7 @@ function doFinalLogoutAccount(isCancelled) {
 // document.getElementById('all-broadcasts').addEventListener('click', (evt) => {
 function doGetMyBroadcasts() {
     $.ajax({
-        url: getProjectPath() + '/entity/admin-published-broadcasts',
+        url: getProjectPath() + '/user/chat/admin-published-broadcasts',
         type: 'GET',
         success: (resp) => {
             console.log(resp);
@@ -681,7 +688,7 @@ function setContentToOwnPublishedBroadcast(publishedBroadcast) {
 // 获取本人（管理员用户）发布的所有优文摘要
 function doGetMyArticles() {
     $.ajax({
-        url: getProjectPath() + '/entity/admin-published-articles',
+        url: getProjectPath() + '/user/chat/admin-published-articles',
         type: 'GET',
         success: (resp) => {
             console.log(resp);
@@ -784,11 +791,9 @@ function setContentToFeedbackList(feedbackContent) {
 
     let avatarElem = document.createElement('div');
     avatarElem.classList.add('avatar');
-    avatarElem.style.background = 'url(' + getProjectPath() + '/images' + feedbackContent.publisher.avatarUrl + ') no-repeat';
 
     let friendNameElem = document.createElement('div')
     friendNameElem.classList.add('friend-name', 'high-light', 'ellipsis');
-    friendNameElem.innerText = feedbackContent.publisher.nickname;
 
     let timeElem = document.createElement('div');
     timeElem.classList.add('apply-time');
@@ -797,6 +802,14 @@ function setContentToFeedbackList(feedbackContent) {
     let feedbackContentElem = document.createElement('div');
     feedbackContentElem.classList.add('feedback-content');
     feedbackContentElem.innerText = feedbackContent.fbContent;
+
+    if (feedbackContent.publisher && feedbackContent.publisher !== null && feedbackContent.publisher !== undefined) {
+        avatarElem.style.background = 'url(' + getProjectPath() + '/images' + feedbackContent.publisher.avatarUrl + ') no-repeat';
+        friendNameElem.innerText = feedbackContent.publisher.nickname;
+
+    } else {
+        friendNameElem.innerText = '此账号已注销';
+    }
 
     feedbackPreviewContentElem.append(avatarElem, friendNameElem, timeElem, feedbackContentElem);
     let feedbackPreviewElem = document.querySelector('#all-feedback-list .feedback-preview');
@@ -1044,7 +1057,6 @@ if (createGroupBtn) {
                     let group = resp.data;
                     console.log(group);
                     setGroupUsersInfo(group);
-                    // fingMyCreatedGroups();
                 }
             },
             error: (resp) => {
@@ -1170,7 +1182,7 @@ function getMyGroups() {
     let myGroupsElem = hasResultElem.querySelector('#my-groups');
 
     if (myGroupsElem.dataset.hasGetted) {
-        console.log('已获取过群聊列表！');
+        // console.log('已获取过群聊列表！');
         return;
     }
 
@@ -1254,7 +1266,7 @@ function seePubMsg(myEnteredGroupElem) {
         }
     }
 
-    // 设置 聊天框 上中部位置显示的名称：显示群聊消息 群名称
+    // 设置 聊天框 上中部位置显示的名称：显示群聊消息 群名称（群聊成员人数）
     let chatBoardHeaderElem = document.querySelector('#chat-obj');
     chatBoardHeaderElem.innerHTML = `<span class="show-name">` + myEnteredGroupElem.innerText + ` (` +
         myEnteredGroupElem.dataset.memberLen + `)</span>`;
@@ -1266,6 +1278,7 @@ function seePubMsg(myEnteredGroupElem) {
 
     // 若尚未获取过本人与该群的历史群聊消息
     if (typeof (myEnteredGroupElem.dataset.hasGetted) === 'undefined') {
+
         let pubMsgElem = document.querySelector('#chat-box #message #public-message');
         // 发送ajax请求，获取本人与该群的历史群聊消息列表
         $.ajax({
@@ -1387,6 +1400,11 @@ function getMyFriends() {
                 for (let i = 0; i < myFriendList.length; i++) {
                     let friend = myFriendList[i];
 
+                    if (friend.friendShip.hostUser === undefined || friend.friendShip.friendUser === undefined ||
+                        friend.friendShip.hostUser === null || friend.friendShip.friendUser === null ||
+                        friend.friendShip.hostUser.accountStatus !== '0' || friend.friendShip.friendUser.accountStatus !== '0')
+                        continue;
+
                     let pElem = document.createElement('p');
 
                     let aElem = document.createElement('a');
@@ -1398,7 +1416,7 @@ function getMyFriends() {
 
                     let friendId = 0;
                     let friendName = '';
-                    console.log('thisUserId: ', thisUserId)
+                    // console.log('thisUserId: ', thisUserId)
                     if (Number(thisUserId) === Number(friend.friendShip.hostUser.uId)) {
                         // 如果我是好友关系的申请人，则显示对方 好友的id和名称
                         friendId = friend.friendShip.friendUser.uId;
@@ -1438,7 +1456,7 @@ function getMyFriends() {
                 nonResultElem.querySelector('p').innerText = '暂无任何好友信息！';
             }
         },
-        error: (resp) => {
+        error: (resp) => {v`                                                                               `
             console.log("Error: " + resp);
         }
     })
@@ -1447,7 +1465,7 @@ function getMyFriends() {
 function seePriMsg(myFriendElem) {
     // 获取点击好友的 data-id 属性（即好友的用户id）
     let friendId = Number(myFriendElem.dataset.id);
-    console.log('friendId: ', friendId);
+    // console.log('friendId: ', friendId);
 
     // 设置左侧消息窗口展示的 对应好友私聊消息
     let correspondingElems = document.querySelectorAll('#chat-box #message #private-message .corresponding');
@@ -1469,6 +1487,7 @@ function seePriMsg(myFriendElem) {
     // console.log(myFriend.dataset.hasGetted);
     // 若尚未获取过本人与对方的历史私聊消息
     if (typeof (myFriendElem.dataset.hasGetted) === 'undefined') {
+
         // 发送ajax请求，获取本人与好友的私聊消息列表
         $.ajax({
             url: getProjectPath() + '/user/chat/private-history-msg/' + friendId,

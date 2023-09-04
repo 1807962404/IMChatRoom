@@ -1,14 +1,15 @@
 package edu.hniu.imchatroom.service.impl;
 
 import edu.hniu.imchatroom.mapper.GroupMapper;
-import edu.hniu.imchatroom.model.bean.Group;
-import edu.hniu.imchatroom.model.bean.GroupUser;
-import edu.hniu.imchatroom.model.bean.User;
+import edu.hniu.imchatroom.model.bean.*;
+import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.GroupService;
+import edu.hniu.imchatroom.service.MessageService;
 import edu.hniu.imchatroom.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,10 +19,15 @@ import java.util.List;
 public class GroupServiceImpl implements GroupService {
 
     private GroupMapper groupMapper;
+    private MessageService messageService;
 
     @Autowired
     public void setGroupMapper(GroupMapper groupMapper) {
         this.groupMapper = groupMapper;
+    }
+    @Autowired
+    public void setMessageService(MessageService messageService) {
+        this.messageService = messageService;
     }
 
     /**
@@ -29,6 +35,7 @@ public class GroupServiceImpl implements GroupService {
      * @param hostId
      * @return
      */
+    @Transactional(readOnly = true)
     @Override
     public List<Group> doGetMyGroups(Integer hostId) {
 
@@ -121,6 +128,7 @@ public class GroupServiceImpl implements GroupService {
      * @param uId
      * @return
      */
+    @Transactional(readOnly = true)
     @Override
     public List<Group> doGetMyEnteredGroups(Integer uId) {
         return groupMapper.selectMyEnteredGroups(uId);
@@ -131,6 +139,7 @@ public class GroupServiceImpl implements GroupService {
      * @param data
      * @return
      */
+    @Transactional(readOnly = true)
     @Override
     public List<Group> doGetGroupsByFuzzyQuery(String data) {
         return groupMapper.selectGroupsByFuzzyQuery(data);
@@ -141,6 +150,7 @@ public class GroupServiceImpl implements GroupService {
      * @param gCode
      * @return
      */
+    @Transactional(readOnly = true)
     @Override
     public Group doGetGroupByGCode(String gCode) {
         return groupMapper.selectGroupByGCode(gCode);
@@ -152,6 +162,7 @@ public class GroupServiceImpl implements GroupService {
      * @param uId
      * @return
      */
+
     @Override
     public GroupUser doCheckUserIsInGroup(Integer gId, Integer uId) {
         List<GroupUser> groupUsers = doGetGroupsUsersById(gId, uId);
@@ -167,6 +178,7 @@ public class GroupServiceImpl implements GroupService {
      * @param uId：查询指定uId用户加入的所有群聊信息
      * @return
      */
+    @Transactional(readOnly = true)
     @Override
     public List<GroupUser> doGetGroupsUsersById(Integer gId, Integer uId) {
         return groupMapper.selectGroupsUsersById(gId, uId);
@@ -179,6 +191,7 @@ public class GroupServiceImpl implements GroupService {
      * @param groupUser
      * @return
      */
+    @Override
     public Integer doUpdateUserInGroup(GroupUser groupUser, boolean isEnterGroup) {
         if (isEnterGroup) {
             // 同意用户进入群组
@@ -194,10 +207,8 @@ public class GroupServiceImpl implements GroupService {
 
         return groupMapper.updateGroupUserStatus(groupUser);
     }
-
     /**
      * 更新群组信息
-     *  如：解散群聊
      * @param group
      * @return
      */
@@ -205,5 +216,44 @@ public class GroupServiceImpl implements GroupService {
     public Integer doUpdateGroup(Group group) {
 
         return groupMapper.updateGroup(group);
+    }
+
+    /**
+     * 解散群组
+     * @param dissolveGroup
+     * @return
+     */
+    @Transactional
+    @Override
+    public Integer doDissolveGroup(Group dissolveGroup) {
+
+        int result = 0;
+        // 1、删除群组的群聊消息记录
+        final String pubMsgType = MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG);
+        PublicMessage publicMessage = new PublicMessage();
+        publicMessage.setMessageType(pubMsgType);
+        publicMessage.setReceiveGroup(dissolveGroup);
+
+        // 1.1、获取群组的群聊记录信息
+        List<? extends Message> messages = messageService.doGetChatMessage(publicMessage);
+        // 1.2、删除群组的群聊消息记录信息
+        if (!messages.isEmpty())
+            result = messageService.doDestroyMessage(pubMsgType, messages);
+
+        // 2、将该群中所有的用户都先踢掉
+
+        // 2.1、获取到该群所有用户的信息
+        List<GroupUser> groupUsers = doGetGroupsUsersById(dissolveGroup.getGId(), null);
+        for (GroupUser groupUser : groupUsers) {
+            // 2.2、依次将用户踢出该群聊
+            result += doUpdateUserInGroup(groupUser, false);
+        }
+
+        // 3、解散此群聊
+        dissolveGroup.setModifiedTime(new Date(System.currentTimeMillis()));
+        dissolveGroup.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.ABNORMAL));
+        result += doUpdateGroup(dissolveGroup);
+
+        return result;
     }
 }

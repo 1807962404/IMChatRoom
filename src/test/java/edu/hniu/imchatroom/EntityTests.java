@@ -2,13 +2,16 @@ package edu.hniu.imchatroom;
 
 import edu.hniu.imchatroom.filter.SystemFilter;
 import edu.hniu.imchatroom.interceptor.LoginInterceptor;
+import edu.hniu.imchatroom.model.bean.Message;
 import edu.hniu.imchatroom.model.enums.ResponseCodeEnum;
 import edu.hniu.imchatroom.model.enums.RoleEnum;
 import edu.hniu.imchatroom.util.EncryptUtil;
+import edu.hniu.imchatroom.util.MoreUtil;
 import edu.hniu.imchatroom.util.StringUtil;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static edu.hniu.imchatroom.util.VariableUtil.ADMIN_USER_NAME;
 
@@ -67,5 +70,24 @@ public class EntityTests {
         System.arraycopy(strings, 0, newString, 0, strings.length);
         System.arraycopy(strings1, 0, newString, strings.length, strings1.length);
         System.out.println(Arrays.toString(newString));*/
+    }
+
+    @Test
+    void testExcludeHiddenItems() {
+        List<Object> objects = MoreUtil.excludeItems(
+                List.of(
+                        new Message("asd", "asdasdf", null, "1"),
+                        new Message("gdhj", "fghgfd", null, "1"),
+                        new Message("fghgj", "hgvbcvsd", null, "0"),
+                        new Message("dfhghjgh", "ghjcvbn", null, "1"),
+                        new Message("xcuiofd", "3dsfcgv", null, "0")
+                ), true
+        );
+        objects.forEach(obj -> System.out.println(obj));
+
+        objects = MoreUtil.excludeItems(
+                new Message("fghgj", "hgvbcvsd", null, "0"), true
+        );
+        objects.forEach(obj -> System.out.println(obj));
     }
 }

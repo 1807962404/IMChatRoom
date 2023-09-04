@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.server.standard.ServerEndpointExporter;
@@ -60,5 +61,18 @@ public class CoreWebConfig implements WebMvcConfigurer {
         registrationBean.addInitParameter("excludedUris", StringUtil.getExclusivesPath(SystemFilter.class));
 
         return registrationBean;
+    }
+
+    /**
+     * 视图控制跳转器
+     * @param registry
+     */
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/signin").setViewName("sign");
+        registry.addViewController("/login").setViewName("sign");
+        registry.addViewController("/").setViewName("main");
+        registry.addViewController("/main").setViewName("main");
+        registry.addViewController("/error").setViewName("error");
     }
 }

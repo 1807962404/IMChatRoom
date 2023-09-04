@@ -1,13 +1,12 @@
 package edu.hniu.imchatroom.service.impl;
 
 import edu.hniu.imchatroom.mapper.EntityMapper;
-import edu.hniu.imchatroom.model.bean.ArticleMessage;
-import edu.hniu.imchatroom.model.bean.BroadcastMessage;
 import edu.hniu.imchatroom.model.bean.Feedback;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.EntityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -24,6 +23,7 @@ public class EntityServiceImpl implements EntityService {
      * 处理 获取所有的意见反馈内容 的业务逻辑
      * @return
      */
+    @Transactional(readOnly = true)
     @Override
     public List<Feedback> doGetAllFeedbacks(String keyword) {
         return entityMapper.selectAllFeedbacks(keyword);
@@ -45,35 +45,13 @@ public class EntityServiceImpl implements EntityService {
      * @param fbId
      * @return
      */
+    @Transactional(readOnly = true)
     @Override
     public Feedback doGetFeedback(Integer fbId) {
         if (null == fbId || 0 >= fbId)
             fbId = null;
+
         return entityMapper.selectFeedback(fbId);
     }
 
-    /**
-     * 处理 【根据用户id（管理员）】获取【其发布的】所有系统广播信息 的业务逻辑
-     * @return
-     */
-    @Override
-    public List<BroadcastMessage> doGetBroadcasts(Integer uId) {
-        if (null == uId || 0 >= uId)
-            uId = null;
-
-        return entityMapper.selectBroadcasts(uId);
-    }
-
-    /**
-     * 处理 【根据用户id（管理员）】获取【其发布的】所有优文摘要信息 的业务逻辑
-     * @param uId
-     * @return
-     */
-    @Override
-    public List<ArticleMessage> doGetArticles(Integer uId) {
-        if (null == uId || 0 >= uId)
-            uId = null;
-
-        return entityMapper.selectArticles(uId);
-    }
 }

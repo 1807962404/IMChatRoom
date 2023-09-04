@@ -8,6 +8,12 @@
     <sql id="public_message_column">
         `pu_id`, `send_id`, `g_id`, `content`, `send_time`
     </sql>
+    <sql id="broadcast_column">
+        `b_id`, `u_id`, `content`, `send_time`
+    </sql>
+    <sql id="article_column">
+        `a_id`, `u_id`, `content`, `send_time`
+    </sql>
 
     <resultMap id="PrivateMessageResultMap" type="edu.hniu.imchatroom.model.bean.PrivateMessage">
         <id column="pr_id" property="prId" />
@@ -22,6 +28,18 @@
         <result column="send_time" property="sendTime" />
         <association property="sendUser" column="send_id" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById" />
         <association property="receiveGroup" column="g_id" select="edu.hniu.imchatroom.mapper.GroupMapper.selectGroupById" />
+    </resultMap>
+    <resultMap id="BroadcastResultMap" type="edu.hniu.imchatroom.model.bean.BroadcastMessage">
+        <id column="b_id" property="bId" />
+        <result column="content" property="content" />
+        <result column="send_time" property="sendTime" />
+        <association column="u_id" property="publisher" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById"/>
+    </resultMap>
+    <resultMap id="ArticleResultMap" type="edu.hniu.imchatroom.model.bean.ArticleMessage">
+        <id column="a_id" property="aId" />
+        <result column="content" property="content" />
+        <result column="send_time" property="sendTime" />
+        <association column="u_id" property="publisher" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById"/>
     </resultMap>
 
 <!--    List<PrivateMessage> selectPrivateMessages(@Param("privateMessage") PrivateMessage privateMessage);-->
@@ -43,6 +61,50 @@
             <include refid="public_message_column" />, `display_status`
         FROM `public_message`
         WHERE `display_status` = '0' AND `g_id` = #{publicMessage.receiveGroup.gId }
+        AND `send_time` > (
+            SELECT
+                `join_time`
+            FROM `group_user`
+            WHERE `display_status` = '0'
+                AND `member_id` = #{publicMessage.sendUser.uId } AND `g_id` = #{publicMessage.receiveGroup.gId }
+            LIMIT 1
+        )
+        ORDER BY `send_time` ASC
+    </select>
+
+<!--    List<BroadcastMessage> selectBroadcastMessage(@Param("broadcastMessage") BroadcastMessage broadcastMessage);-->
+    <select id="selectBroadcastMessage" resultMap="BroadcastResultMap">
+        SELECT
+            <include refid="broadcast_column" />, `display_status`
+        FROM `broadcast_message`
+        WHERE `display_status` = '0'
+        <if test="broadcastMessage.publisher != null">
+            AND `u_id` = #{broadcastMessage.publisher.uId }
+            AND `send_time` > (
+                SELECT
+                    `active_time`
+                FROM `user`
+                WHERE `display_status` = '0' AND `u_id` = #{broadcastMessage.publisher.uId }
+            )
+        </if>
+        ORDER BY `send_time` ASC
+    </select>
+
+<!--    List<ArticleMessage> selectArticleMessage(@Param("articleMessage") ArticleMessage articleMessage);-->
+    <select id="selectArticleMessage" resultMap="ArticleResultMap">
+        SELECT
+            <include refid="article_column" />, `display_status`
+        FROM `article_message`
+        WHERE `display_status` = '0'
+        <if test="articleMessage.publisher != null">
+            AND `u_id` = #{articleMessage.publisher.uId }
+            AND `send_time` > (
+                SELECT
+                    `active_time`
+                FROM `user`
+                WHERE `display_status` = '0' AND `u_id` = #{articleMessage.publisher.uId }
+            )
+        </if>
         ORDER BY `send_time` ASC
     </select>
 
@@ -88,6 +150,39 @@
                 `display_status` = '1'
             </set>
             WHERE `pr_id` = #{msg.prId }
+        </foreach>
+    </update>
+
+<!--    Integer deletePubMsg(@Param("publicMessages") List<PublicMessage> publicMessages);-->
+    <update id="deletePubMsg">
+        <foreach collection="publicMessages" item="msg" separator=";">
+            UPDATE `public_message`
+            <set>
+                `display_status` = '1'
+            </set>
+            WHERE `pu_id` = #{msg.puId }
+        </foreach>
+    </update>
+
+<!--    int deleteBroMsg(@Param("broadcastMessages") List<BroadcastMessage> broadcastMessages);-->
+    <update id="deleteBroMsg">
+        <foreach collection="broadcastMessages" item="msg" separator=";">
+            UPDATE `broadcast_message`
+            <set>
+                `display_status` = '1'
+            </set>
+            WHERE `b_id` = #{msg.bId }
+        </foreach>
+    </update>
+
+<!--    int deleteArtMsg(@Param("articleMessages") List<ArticleMessage> articleMessages);-->
+    <update id="deleteArtMsg">
+        <foreach collection="articleMessages" item="msg" separator=";">
+            UPDATE `article_message`
+            <set>
+                `display_status` = '1'
+            </set>
+            WHERE `a_id` = #{msg.aId }
         </foreach>
     </update>
 </mapper>

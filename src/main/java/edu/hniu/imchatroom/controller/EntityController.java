@@ -9,7 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.imageio.ImageIO;
@@ -23,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static edu.hniu.imchatroom.util.VariableUtil.*;
 
 @Slf4j
-@Controller
+@RestController
 @RequestMapping("/entity")
 public class EntityController {
 
@@ -89,7 +88,6 @@ public class EntityController {
      * 查询所有意见反馈内容
      * @return
      */
-    @ResponseBody
     @GetMapping("/all-feedbacks")
     public List<Feedback> doGetAllFeedbacks() {
 
@@ -104,17 +102,13 @@ public class EntityController {
      * @param request
      * @return
      */
-    @ResponseBody
     @PostMapping("/send-feedback")
     public ResultVO<Feedback> doSendFeedback(Feedback feedback, HttpServletRequest request) {
 
-        ResultVO<Feedback> resultVO = new ResultVO<>();
         // 1、检查传入的feedback（即需要反馈的意见内容）是否为空
         if (null == feedback || StringUtil.isEmpty(feedback.getFbContent())) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("反馈内容不能为空！");
             log.warn("反馈内容不能为空！");
-            return resultVO;
+            return Result.failed("反馈内容不能为空！");
         }
 
         // 新增意见反馈信息
@@ -123,73 +117,12 @@ public class EntityController {
         int result = entityService.doAddFeedback(feedback);
 
         if (result != 1) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("意见反馈失败！");
             log.warn("意见反馈失败！");
-            return resultVO;
+            return Result.failed("意见反馈失败！");
         }
 
-        resultVO.setCode(RESPONSE_SUCCESS_CODE);
-        // 设置data为新增的意见反馈内容
-        resultVO.setData(entityService.doGetFeedback(feedback.getFbId()));
-        resultVO.setMsg("您已操作成功，感谢您的反馈！");
         log.warn("用户 {} 反馈意见成功！", thisUser.getNickname());
-        return resultVO;
-    }
-
-    /**
-     * 获取用户管理员发布过的所有系统广播信息
-     * @param request
-     * @return
-     */
-    @ResponseBody
-    @GetMapping("/admin-published-broadcasts")
-    public ResultVO<List<BroadcastMessage>> doGetPublishedBroadcasts(HttpServletRequest request) {
-        User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
-        ResultVO<List<BroadcastMessage>> resultVO = new ResultVO<>();
-
-        // 1、检查此用户是否为管理员
-        if (!thisUser.getRole().equals(RoleEnum.getRoleName(RoleEnum.ADMIN))) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("用户权限不够，无法访问！");
-            log.warn("用户权限不够，无法访问！");
-            return resultVO;
-        }
-
-        // 2、查询此管理员用户发布过的系统广播
-        List<BroadcastMessage> myPublishedBroadcasts = entityService.doGetBroadcasts(thisUser.getUId());
-        resultVO.setCode(RESPONSE_SUCCESS_CODE);
-        resultVO.setData(myPublishedBroadcasts);
-        log.info("已查询出管理员用户：{} 发布过的所有广播信息！", thisUser.getNickname());
-
-        return resultVO;
-    }
-
-    /**
-     * 获取用户管理员发布过的所有优文摘要信息
-     * @param request
-     * @return
-     */
-    @ResponseBody
-    @GetMapping("/admin-published-articles")
-    public ResultVO<List<ArticleMessage>> doGetPublishedArticles(HttpServletRequest request) {
-        User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
-        ResultVO<List<ArticleMessage>> resultVO = new ResultVO<>();
-
-        // 1、检查此用户是否为管理员
-        if (!thisUser.getRole().equals(RoleEnum.getRoleName(RoleEnum.ADMIN))) {
-            resultVO.setCode(RESPONSE_FAILED_CODE);
-            resultVO.setMsg("用户权限不够，无法访问！");
-            log.warn("用户权限不够，无法访问！");
-            return resultVO;
-        }
-
-        // 2、查询此管理员用户发布过的优文摘要
-        List<ArticleMessage> myPublishedArticles = entityService.doGetArticles(thisUser.getUId());
-        resultVO.setCode(RESPONSE_SUCCESS_CODE);
-        resultVO.setData(myPublishedArticles);
-        log.info("已查询出管理员用户：{} 发布过的所有优文摘要信息！", thisUser.getNickname());
-
-        return resultVO;
+        // 设置data为新增的意见反馈内容
+        return Result.ok("您已发送成功，感谢您的反馈！", entityService.doGetFeedback(feedback.getFbId()));
     }
 }

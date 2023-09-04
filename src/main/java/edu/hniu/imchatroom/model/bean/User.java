@@ -38,8 +38,6 @@ public class User implements Serializable {
     private Date modifiedTime;
     // 展示状态。0：显示，1：隐藏
     private String displayStatus;
-    // 管理员发布的系统公告
-    private List<BroadcastMessage> myPublishedBroadcasts;
 
     /**
      * 若uid、account 以及 email 都相等则看作是同一个对象

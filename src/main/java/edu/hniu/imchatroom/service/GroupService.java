@@ -84,4 +84,11 @@ public interface GroupService {
      * @return
      */
     Integer doUpdateGroup(Group group);
+
+    /**
+     * 解散群组
+     * @param dissolveGroup
+     * @return
+     */
+    Integer doDissolveGroup(Group dissolveGroup);
 }

@@ -1,8 +1,15 @@
 package edu.hniu.imchatroom.util;
 
+import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
+
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * 更多工具类
@@ -67,6 +74,80 @@ public class MoreUtil {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
+            }
+        }
+    }
+
+    /**
+     * 排除【隐藏】数据
+     * @param item：排除非隐藏数据
+     * @param isExcludeHiddenItem：排除隐藏数据
+     * @return
+     */
+    public static List<Object> excludeItems(Object item, boolean isExcludeHiddenItem) {
+
+        List<Object> results = new ArrayList<>();
+        if (item instanceof List) {
+            List<Object> tempItems = (List<Object>) item;
+            Iterator<Object> iterator = tempItems.iterator();
+            while (iterator.hasNext()) {
+                Object nextItem = iterator.next();
+                String displayStatus = resolveIsExcludedItem(nextItem);
+                storeToResultItems(results, nextItem, displayStatus, isExcludeHiddenItem);
+            }
+
+        } else {
+            String displayStatus = resolveIsExcludedItem(item);
+            storeToResultItems(results, item, displayStatus, isExcludeHiddenItem);
+        }
+
+        return results;
+    }
+
+    /**
+     * 解析数据
+     * @param item
+     * @return
+     */
+    private static String resolveIsExcludedItem(Object item) {
+        Class<?> aClass = item.getClass();
+        Field[] declaredFields = aClass.getDeclaredFields();
+        Iterator<Field> iterator = Arrays.stream(declaredFields).iterator();
+        while (iterator.hasNext()) {
+            Field nextFiled = iterator.next();
+            nextFiled.setAccessible(true);
+
+            if (nextFiled.getName().equals("displayStatus")) {
+                try {
+                    String displayStatus = String.valueOf(nextFiled.get(item));
+                    return displayStatus;
+
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 存储数据
+     * @param results
+     * @param item
+     * @param displayStatus
+     * @param isExcludeHiddenItem
+     */
+    private static void storeToResultItems(List<Object> results, Object item,
+                                           String displayStatus, boolean isExcludeHiddenItem) {
+
+        if (null != results && null != item) {
+            if (isExcludeHiddenItem) {  // 排除隐藏数据
+                if (displayStatus.equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL)))
+                    results.add(item);
+
+            } else {
+                if (displayStatus.equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ABNORMAL)))
+                    results.add(item);
             }
         }
     }

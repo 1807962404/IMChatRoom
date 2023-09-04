@@ -53,22 +53,33 @@ ws.onerror = (evt) => {
 ws.onmessage = (evt) => {
     if (checkWSIsNull()) {
         console.log("尚未建立WebSocket连接！")
-        return ;
+        return;
     }
 
     // console.log(evt);
     let message = JSON.parse(evt.data);
     console.log("message: ", message);
     if (message.messageType === 'private-message') {
-        let priFriendId = document.querySelector('#my-friend-list a[class="my-friend content-active"]').dataset.id;
-        if (Number(priFriendId) != Number(message.receiveUser.uId)) {   // 若好友Id不等于消息接收者id
-            setMessageToPriMsgBoard(message, message.sendUser.uId);     // 则将消息记录设置到发送者id中
-        } else {
-            setMessageToPriMsgBoard(message, priFriendId);
+        let myFriends = document.querySelectorAll('#my-friend-list a');
+        for (let i = 0; i < myFriends.length; i++) {
+            let myFriend = myFriends[i];
+            let myFriendId = Number(myFriend.dataset.id);
+            // 判断我的好友列表中，哪个好友是属于这条消息的发送者或接收者
+            if (myFriendId === Number(message.receiveUser.uId) || myFriendId === Number(message.sendUser.uId)) {
+                if (myFriendId !== Number(message.receiveUser.uId)) {   // 若好友Id不等于消息接收者id
+                    setMessageToPriMsgBoard(message, message.sendUser.uId);     // 则将消息记录设置到发送者id中
+                    callMessage(0, "好友通知：" + message.sendUser.nickname + " 发来一条消息！");
+                } else {
+                    setMessageToPriMsgBoard(message, myFriendId);
+                }
+            }
         }
 
     } else if (message.messageType === 'public-message') {
         setMessageToPubMsgBoard(message, message.receiveGroup.gCode);
+        if (Number(thisUserId) !== Number(message.sendUser.uId)) {
+            callMessage(0, "群通知：" + message.sendUser.nickname + " 发来一条消息！");
+        }
 
     } else if (message.messageType === 'system-message') {
         callMessage(0, "管理员：" + message.publisher.nickname + " 发布了一则系统公告！");
@@ -102,7 +113,6 @@ window.onbeforeunload = () => {
 }
 
 window.onunload = () => {
-    // clearInterval(onlineCountsEvt);     // 清除获取在线人数的间隔定时器
     clearInterval(curTimeEvt);     // 清除获取当前时间的间隔定时器
 }
 
@@ -116,7 +126,6 @@ function realTimeUpdateOnlineCount() {
         type: 'GET',
         success: (resp) => {
             // console.log(resp);
-            // 成功处理逻辑
 
             if (resp.code === 0) {
                 // console.log('当前用户总在线数为' + resp.data);
@@ -167,7 +176,7 @@ function callSendMessage(evt) {
     let contentVal = content.value;     // 发送内容
     if (contentVal === '' | contentVal.length === 0) {
         callMessage(1, "发送内容不能为空！");
-        return ;
+        return;
     }
     console.log(contentVal);
 
@@ -234,7 +243,7 @@ function callSendMessage(evt) {
 
     } else {
         alert('错误的消息框面板！');
-        return ;
+        return;
     }
 
     // 每次发送一条消息后消息栏置为空
@@ -256,6 +265,7 @@ function setMessageToSystemInfoBoard(msg) {
         systemInfoShow.appendChild(newSystemInfoElement);
     }
 }
+
 // 监听 发布系统广播 的button
 var broadcastBtn = document.querySelector('#publish-system-broadcast button[type="button"]');
 if (broadcastBtn) {
@@ -265,7 +275,8 @@ if (broadcastBtn) {
         if (publishBroadcastVal === '' | publishBroadcastVal.length === 0) {
             callMessage(1, "发布内容不能为空！");
             return;
-        };
+        }
+        ;
 
         // console.log(doMessageJsonData(publishBroadcastVal, 'system-message'))
         $.ajax({
@@ -304,6 +315,7 @@ function setMessageToArticleBoard(msg) {
         articleInfoShow.appendChild(newArticleInfoElem);
     }
 }
+
 // 监听 发布优文摘要 的button
 var articleBtn = document.querySelector('#publish-excellent-abstract button[type="button"]');
 if (articleBtn) {
@@ -313,7 +325,8 @@ if (articleBtn) {
         if (publishArticleVal === '' | publishArticleVal.length === 0) {
             callMessage(1, "发表优文摘要文章内容不能为空！");
             return;
-        };
+        }
+        ;
 
         $.ajax({
             url: getProjectPath() + '/user/chat/communicate/0',

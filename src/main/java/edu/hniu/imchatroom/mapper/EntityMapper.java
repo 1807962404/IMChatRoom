@@ -1,7 +1,5 @@
 package edu.hniu.imchatroom.mapper;
 
-import edu.hniu.imchatroom.model.bean.ArticleMessage;
-import edu.hniu.imchatroom.model.bean.BroadcastMessage;
 import edu.hniu.imchatroom.model.bean.Feedback;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -29,18 +27,4 @@ public interface EntityMapper {
      * @return
      */
     Feedback selectFeedback(@Param("fbId") Integer fbId);
-
-    /**
-     * 【根据用户id（管理员）】获取【其发布的】所有系统广播信息
-     * @param uId
-     * @return
-     */
-    List<BroadcastMessage> selectBroadcasts(@Param("uId") Integer uId);
-
-    /**
-     * 【根据用户id（管理员）】获取【其发布的】所有优文摘要信息
-     * @param uId
-     * @return
-     */
-    List<ArticleMessage> selectArticles(@Param("uId") Integer uId);
 }

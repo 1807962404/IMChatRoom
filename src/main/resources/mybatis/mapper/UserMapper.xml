@@ -87,7 +87,10 @@
                 `last_signin_time` = #{user.lastSigninTime },
             </if>
             <if test="null != user.modifiedTime">
-                `modified_time` = #{user.modifiedTime }
+                `modified_time` = #{user.modifiedTime },
+            </if>
+            <if test="null != user.displayStatus">
+                `display_status` = #{user.displayStatus }
             </if>
         </trim>
         WHERE `display_status` = '0' AND `u_id` = #{user.uId }

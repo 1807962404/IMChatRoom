@@ -30,4 +30,3 @@ lux:
         auth: true
       user: loveislonging@163.com   # 发件人
       password: WKNISGLATBNFPZEW    # 邮箱的SMTP授权码
-#    project-name: 'IM 聊天室'

@@ -1,13 +1,14 @@
 package edu.hniu.imchatroom.service.impl;
 
 import edu.hniu.imchatroom.mapper.FriendMapper;
-import edu.hniu.imchatroom.model.bean.Friend;
-import edu.hniu.imchatroom.model.bean.FriendShip;
-import edu.hniu.imchatroom.model.bean.User;
+import edu.hniu.imchatroom.model.bean.*;
+import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.FriendService;
+import edu.hniu.imchatroom.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
@@ -16,10 +17,15 @@ import java.util.List;
 public class FriendServiceImpl implements FriendService {
 
     private FriendMapper friendMapper;
+    private MessageService messageService;
 
     @Autowired
     public void setFriendMapper(FriendMapper friendMapper) {
         this.friendMapper = friendMapper;
+    }
+    @Autowired
+    public void setMessageService(MessageService messageService) {
+        this.messageService = messageService;
     }
 
     /**
@@ -29,6 +35,7 @@ public class FriendServiceImpl implements FriendService {
      * @param fsStatus
      * @return
      */
+    @Transactional(readOnly = true)
     @Override
     public FriendShip doCheckIsFriend(User hostUser, User friendUser, String fsStatus) {
         FriendShip friendShip = new FriendShip();
@@ -62,6 +69,7 @@ public class FriendServiceImpl implements FriendService {
         return friendMapper.insertFriendShip(friendShip);
     }
 
+    @Transactional
     @Override
     public Integer doMakeFriend(Integer fsId) {
 
@@ -93,6 +101,7 @@ public class FriendServiceImpl implements FriendService {
      * @param uId
      * @return
      */
+    @Transactional(readOnly = true)
     @Override
     public List<Friend> doGetFriendsByUId(Integer uId) {
         return friendMapper.selectFriendsByUId(uId);
@@ -103,25 +112,42 @@ public class FriendServiceImpl implements FriendService {
      * @param friendShip
      * @return
      */
+    @Transactional
     @Override
     public Integer doDelMyFriend(FriendShip friendShip) {
-        // 1、设置友谊记录
-        // 1.1、设置友谊状态为：非好友状态
-        friendShip.setFsStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.NOTFRIEND));
-        // 1.2、设置显示状态为隐藏
-        friendShip.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.ABNORMAL));
-        // 1.3、更新友谊表记录
-        int result = friendMapper.updateFriendShip(friendShip);
 
-        // 2、设置好友表状态
+        int result = 0;
+
+        // 1、删除双方的聊天记录
+        final String priMsgType = MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG);
+        PrivateMessage privateMessage = new PrivateMessage();
+        privateMessage.setMessageType(priMsgType);
+        privateMessage.setSendUser(friendShip.getHostUser());
+        privateMessage.setReceiveUser(friendShip.getFriendUser());
+
+        // 1.1、获取双方的聊天记录信息
+        List<? extends Message> messages = messageService.doGetChatMessage(privateMessage);
+        // 1.2、删除双方的私聊消息记录信息
+        if (!messages.isEmpty())
+            result = messageService.doDestroyMessage(priMsgType, messages);
+
+        // 2、设置友谊记录
+        // 2.1、设置友谊状态为：非好友状态
+        friendShip.setFsStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.NOTFRIEND));
+        // 2.2、设置显示状态为隐藏
+        friendShip.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.ABNORMAL));
+        // 2.3、更新友谊表记录
+        result += friendMapper.updateFriendShip(friendShip);
+
+        // 3、设置好友表状态
         Friend delFriend = new Friend();
-        // 2.1、设置fsId
+        // 3.1、设置fsId
         delFriend.setFriendShip(friendShip);
-        // 2.2、设置好友状态为：非好友状态
+        // 3.2、设置好友状态为：非好友状态
         delFriend.setFStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.ABNORMAL));
-        // 2.3、设置显示状态为隐藏
+        // 3.3、设置显示状态为隐藏
         delFriend.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.ABNORMAL));
-        // 2.4、更新好友表记录
+        // 3.4、更新好友表记录
         result += friendMapper.updateFriend(delFriend);
 
         return result;
@@ -132,6 +158,8 @@ public class FriendServiceImpl implements FriendService {
      * @param uId
      * @return
      */
+    @Transactional(readOnly = true)
+    @Override
     public List<FriendShip> doGetOwnFriendship(Integer uId) {
         return friendMapper.selectOwnFriendship(uId);
     }
