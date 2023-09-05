@@ -755,7 +755,7 @@ function setContentToOwnPublishedArticle(publishedArticle) {
 document.getElementById('all-feedbacks').addEventListener('click', (evt) => {
     evt.preventDefault();
     $.ajax({
-        url: getProjectPath() + '/entity/all-feedbacks',
+        url: getProjectPath() + '/user/chat/feedback-history-msg',
         type: 'GET',
         success: (resp) => {
             console.log(resp);
@@ -797,11 +797,11 @@ function setContentToFeedbackList(feedbackContent) {
 
     let timeElem = document.createElement('div');
     timeElem.classList.add('apply-time');
-    timeElem.innerText = FormatDate(feedbackContent.publishTime);
+    timeElem.innerText = FormatDate(feedbackContent.sendTime);
 
     let feedbackContentElem = document.createElement('div');
     feedbackContentElem.classList.add('feedback-content');
-    feedbackContentElem.innerText = feedbackContent.fbContent;
+    feedbackContentElem.innerText = feedbackContent.content;
 
     if (feedbackContent.publisher && feedbackContent.publisher !== null && feedbackContent.publisher !== undefined) {
         avatarElem.style.background = 'url(' + getProjectPath() + '/images' + feedbackContent.publisher.avatarUrl + ') no-repeat';
@@ -820,37 +820,6 @@ function setContentToFeedbackList(feedbackContent) {
         feedbackPreviewElem.appendChild(feedbackPreviewContentElem);
     }
 }
-// 监听 意见反馈 栏的提交按钮
-var feedbackElem = document.querySelector('#feedback .feedback-opt');
-feedbackElem.querySelector('button[type="button"]').addEventListener('click', (evt) => {
-    let feedbackContent = feedbackElem.querySelector('textarea[id="feedback-content"]');
-    if (feedbackContent.value === '' || feedbackContent.value.length === 0) {
-        callMessage(1, "反馈内容不能为空！");
-        return ;
-    }
-
-    let data = {
-        'fbContent': feedbackContent.value,
-        'publishTime': getDateTime()
-    }
-    $.ajax({
-        url: getProjectPath() + "/entity/send-feedback",
-        type: 'POST',
-        data: JSON.parse(JSON.stringify(data)),
-        success: (resp) => {        // 意见反馈成功
-            callMessage(resp.code, resp.msg);
-            if (resp.code === 0) {
-                feedbackContent.value = '';
-                // 写入至意见反馈中
-                setContentToFeedbackList(resp.data);
-            }
-        },
-        error: (resp) => {
-            console.log(resp);
-            callMessage(-1, "***出错啦，请稍后再试！");
-        }
-    });
-});
 
 // 查询我创建的所有群组、以及这些群组中所有的用户信息
 function fingMyCreatedGroups() {

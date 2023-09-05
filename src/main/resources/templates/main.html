@@ -388,10 +388,11 @@
                         <!--                    系统广播-->
                         <div id="system-message">
                             <p class="expand ellipsis">系统广播</p>
-                            <div id="system-message-show"
-                                 th:if="!${#lists.isEmpty(session.BROADCAST_MESSAGE) }">
-                                <div th:each="index: ${#numbers.sequence(session.BROADCAST_MESSAGE.size() - 1, 0, -1) }">
-                                    <p class="info-all infos" th:text="${session.BROADCAST_MESSAGE[index].content }"></p>
+                            <div id="system-message-show">
+                                <div th:if="!${#lists.isEmpty(session.BROADCAST_MESSAGE) }">
+                                    <div th:each="index: ${#numbers.sequence(session.BROADCAST_MESSAGE.size() - 1, 0, -1) }">
+                                        <p class="info-all infos" th:text="${session.BROADCAST_MESSAGE[index].content }"></p>
+                                    </div>
                                 </div>
                             </div>
                             <div th:if="${#lists.isEmpty(session.BROADCAST_MESSAGE) }">
@@ -411,10 +412,11 @@
                             <ul class="box">
                                 <!--                                优文摘要栏-->
                                 <li id="article-list" class="active">
-                                    <div id="article-message-show"
-                                        th:if="!${#lists.isEmpty(session.ARTICLE_MESSAGE) }">
-                                        <div th:each="index: ${#numbers.sequence(session.ARTICLE_MESSAGE.size() - 1, 0, -1)}">
-                                            <p class="default-msg-p" th:text="${session.ARTICLE_MESSAGE[index].content }"></p>
+                                    <div id="article-message-show">
+                                        <div th:if="!${#lists.isEmpty(session.ARTICLE_MESSAGE) }">
+                                            <div th:each="index: ${#numbers.sequence(session.ARTICLE_MESSAGE.size() - 1, 0, -1)}">
+                                                <p class="default-msg-p" th:text="${session.ARTICLE_MESSAGE[index].content }"></p>
+                                            </div>
                                         </div>
                                     </div>
                                     <div th:if="${#lists.isEmpty(session.ARTICLE_MESSAGE) }">

@@ -163,7 +163,8 @@ function doMessageJsonData(content, messageType) {
     let sendMsg = {
         "content": content,
         "messageType": messageType,
-        "sendTime": getDateTime()
+        "sendTime": getDateTime(),
+        "displayStatus": "0"
     };
 
     return JSON.parse(JSON.stringify(sendMsg));
@@ -347,3 +348,32 @@ if (articleBtn) {
         publishArticleElem.value = '';
     });
 }
+
+// 监听 意见反馈 栏的提交按钮
+var feedbackElem = document.querySelector('#feedback .feedback-opt');
+feedbackElem.querySelector('button[type="button"]').addEventListener('click', (evt) => {
+    let feedbackContent = feedbackElem.querySelector('textarea[id="feedback-content"]');
+    if (feedbackContent.value === '' || feedbackContent.value.length === 0) {
+        callMessage(1, "反馈内容不能为空！");
+        return ;
+    }
+
+    let feedbackContentVal = feedbackContent.value;
+    $.ajax({
+        url: getProjectPath() + "/user/chat/communicate/0",
+        type: 'POST',
+        data: doMessageJsonData(feedbackContentVal, 'feedback-message'),
+        success: (resp) => {        // 意见反馈成功
+            callMessage(resp.code, resp.msg);
+            if (resp.code === 0) {
+                feedbackContent.value = '';
+                // 写入至意见反馈中
+                setContentToFeedbackList(resp.data);
+            }
+        },
+        error: (resp) => {
+            console.log(resp);
+            callMessage(-1, "***出错啦，请稍后再试！");
+        }
+    });
+});

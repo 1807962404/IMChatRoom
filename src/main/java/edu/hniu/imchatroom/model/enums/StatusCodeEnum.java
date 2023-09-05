@@ -14,7 +14,6 @@ public enum StatusCodeEnum {
     NORMAL('0'), ABNORMAL('1'),
     INGROUP('0'), NOTINGROUP('2');
 
-
     private final char status;
 
     StatusCodeEnum(char status) {

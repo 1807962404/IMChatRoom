@@ -3,7 +3,6 @@ package edu.hniu.imchatroom.controller;
 import edu.hniu.imchatroom.model.bean.*;
 import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
-import edu.hniu.imchatroom.service.EntityService;
 import edu.hniu.imchatroom.service.MessageService;
 import edu.hniu.imchatroom.service.UserService;
 import edu.hniu.imchatroom.util.EncryptUtil;
@@ -115,8 +114,8 @@ public class UserController {
         // 4、注册一个新用户
         int result = userService.doSignUp(user);
         if (1 != result) {
-            log.warn("账号注册失败，请检查邮箱地址是否有误！");
-            return Result.warn("账号注册失败，请检查邮箱地址是否有误！");
+            log.warn("账号注册失败，请稍后再试，邮箱服务暂不可用或者请检查邮箱地址是否有误！");
+            return Result.warn("账号注册失败，请稍后再试！");
         }
 
         log.info("账号激活已发送至您的邮箱，请检查邮箱并点击链接激活账号！");
@@ -454,7 +453,7 @@ public class UserController {
                         return Result.ok("已成功发送重置密码邮件，请检查您的邮箱！");
 
                     } else {
-                        log.warn("未能成功发送重置密码邮件，请稍后再试！");
+                        log.warn("未能成功发送重置密码邮件，请稍后再试，邮箱服务暂不可用或者请检查邮箱地址是否有误！");
                         return Result.failed("未能成功发送重置密码邮件，请稍后再试！");
                     }
 

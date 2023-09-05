@@ -79,10 +79,20 @@ public final class StringUtil {
         return null != exclusivesPath ? exclusivesPath.split(", ") : null;
     }
 
+    /**
+     * 判断子串是否为空
+     * @param str
+     * @return
+     */
     public static boolean isEmpty(String str) {
         return null == str || str.length() == 0;
     }
 
+    /**
+     * 判断子串是否不为空
+     * @param str
+     * @return
+     */
     public static boolean isNotEmpty(String str) {
         return !isEmpty(str);
     }

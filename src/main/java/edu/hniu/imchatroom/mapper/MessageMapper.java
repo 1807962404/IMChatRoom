@@ -42,6 +42,12 @@ public interface MessageMapper {
     List<ArticleMessage> selectArticleMessage(@Param("articleMessage") ArticleMessage articleMessage);
 
     /**
+     * 获取所有的意见反馈信息
+     * @return
+     */
+    List<FeedbackMessage> selectFeedbackMessage(@Param("feedbackMessage") FeedbackMessage feedbackMessage);
+
+    /**
      * 插入私聊消息
      * @param privateMessage
      * @return
@@ -68,6 +74,12 @@ public interface MessageMapper {
      * @return
      */
     Integer insertArticleMsg(@Param("articleMessage") ArticleMessage articleMessage);
+
+    /**
+     * 新增意见反馈内容
+     * @param feedbackMessage
+     */
+    Integer insertFeedbackMsg(@Param("feedbackMessage") FeedbackMessage feedbackMessage);
 
     /**
      * 根据prId批量删除私聊信息

@@ -4,15 +4,15 @@ import edu.hniu.imchatroom.model.bean.Friend;
 import edu.hniu.imchatroom.model.bean.Message;
 import edu.hniu.imchatroom.model.bean.PrivateMessage;
 import edu.hniu.imchatroom.service.FriendService;
+import edu.hniu.imchatroom.service.EmailService;
 import edu.hniu.imchatroom.service.impl.UserServiceImpl;
-import edu.hniu.imchatroom.util.MailUtil;
 import edu.hniu.imchatroom.util.StringUtil;
+import jakarta.mail.MessagingException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import edu.hniu.imchatroom.model.bean.User;
 
-import javax.mail.MessagingException;
 import java.util.List;
 
 import static edu.hniu.imchatroom.util.VariableUtil.CHATROOM_NAME;
@@ -57,21 +57,22 @@ class ImChatRoomApplicationTests {
         }
     }
 
-    private MailUtil mailUtil;
+    private EmailService emailService;
     @Autowired
-    public void setMailUtils(MailUtil mailUtil) {
-        this.mailUtil = mailUtil;
+    public void setMailService(EmailService emailService) {
+        this.emailService = emailService;
     }
 
     @Test
     void testRegisterUser() {
 
-        String targetEmail = "1359599193@qq.com";
+        String targetEmail = "1807962404@qq.com";
         // 发送邮件
         String content = "<a href='http://localhost:8080/chatroom/user/active-user-account?code=" +
                 StringUtil.getRandomCode(true) + "'>点击激活【" + CHATROOM_NAME + "】账户！</a>";
         try {
-            System.out.println(mailUtil.sendEmail(targetEmail, content, CHATROOM_NAME + "激活邮件") ? "发送成功！" : "发送失败");
+            emailService.sendEmail(targetEmail, CHATROOM_NAME + "激活邮件", content);
+            System.out.println("邮件发送成功！");
         } catch (MessagingException e) {
             System.out.println("邮件发送失败！" + e);
         }

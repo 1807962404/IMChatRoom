@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import static edu.hniu.imchatroom.util.VariableUtil.*;
+import static edu.hniu.imchatroom.util.VariableUtil.SIGNINED_USER;
 
 @Slf4j
 public class LoginInterceptor implements HandlerInterceptor {
@@ -26,7 +26,6 @@ public class LoginInterceptor implements HandlerInterceptor {
         if (null == session || null == session.getAttribute(SIGNINED_USER)) {
             log.info("拦截的请求为：{}", request.getRequestURI());
             // 未登录则跳转至登陆页
-//            ResultVO resultVO = new ResultVO<>(-1, "请先登陆！");
             request.setAttribute("msg", "请先登陆！");
             request.getRequestDispatcher("/login").forward(request, response);
             return false; // 拦截

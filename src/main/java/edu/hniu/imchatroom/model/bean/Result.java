@@ -1,8 +1,10 @@
 package edu.hniu.imchatroom.model.bean;
 
-import edu.hniu.imchatroom.model.enums.ResponseCodeEnum;
-
 import java.io.Serializable;
+
+import static edu.hniu.imchatroom.util.VariableUtil.RESPONSE_SUCCESS_CODE;
+import static edu.hniu.imchatroom.util.VariableUtil.RESPONSE_WARNING_CODE;
+import static edu.hniu.imchatroom.util.VariableUtil.RESPONSE_FAILED_CODE;
 
 public final class Result implements Serializable {
     private static final long serialVersionUID = 459845634834583L;
@@ -20,14 +22,9 @@ public final class Result implements Serializable {
 
     /**
      * 清空ResultVO，然后设置ResultVO中返回值，并将结果返回
-     * @param code
      * @return
      */
-    private static ResultVO setResultData(Integer code) {
-        clearResultVO();
-        resultVO.setCode(code);
-        return resultVO;
-    }
+
     private static ResultVO setResultData(Integer code, String msg) {
         clearResultVO();
         resultVO.setCode(code);
@@ -55,13 +52,13 @@ public final class Result implements Serializable {
      */
     public static ResultVO ok(String msg) {
 
-        return setResultData(ResponseCodeEnum.getCode(ResponseCodeEnum.SUCCESS), msg);
+        return setResultData(RESPONSE_SUCCESS_CODE, msg);
     }
     public static ResultVO ok(Object data) {
-        return setResultData(ResponseCodeEnum.getCode(ResponseCodeEnum.SUCCESS), data);
+        return setResultData(RESPONSE_SUCCESS_CODE, data);
     }
     public static ResultVO ok(String msg, Object data) {
-        return setResultData(ResponseCodeEnum.getCode(ResponseCodeEnum.SUCCESS), msg, data);
+        return setResultData(RESPONSE_SUCCESS_CODE, msg, data);
     }
 
     /**
@@ -70,7 +67,7 @@ public final class Result implements Serializable {
      * @return
      */
     public static ResultVO warn(String msg) {
-        return setResultData(ResponseCodeEnum.getCode(ResponseCodeEnum.WARNING), msg);
+        return setResultData(RESPONSE_WARNING_CODE, msg);
     }
 
     /**
@@ -79,6 +76,6 @@ public final class Result implements Serializable {
      * @return
      */
     public static ResultVO failed(String msg) {
-        return setResultData(ResponseCodeEnum.getCode(ResponseCodeEnum.FAILED), msg);
+        return setResultData(RESPONSE_FAILED_CODE, msg);
     }
 }

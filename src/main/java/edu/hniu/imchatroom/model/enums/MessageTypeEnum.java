@@ -4,9 +4,10 @@ package edu.hniu.imchatroom.model.enums;
  * 消息类型枚举类
  */
 public enum MessageTypeEnum {
-    // 私聊、群聊、系统、优文摘要、在线人数 消息
+    // 私聊、群聊、系统、优文摘要、意见反馈、在线人数 消息
     PRI_MSG("private-message"), PUB_MSG("public-message"),
     SYSTEM_MSG("system-message"), ABSTRACT_MSG("abstract-message"),
+    FEEDBACK_MSG("feedback-message"),
     ONLINE_COUNT_MSG("online-count-message");
 
     private final String msgType;

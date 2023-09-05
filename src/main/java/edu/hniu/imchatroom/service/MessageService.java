@@ -28,4 +28,26 @@ public interface MessageService {
      * @return
      */
     Integer doDestroyMessage(String msgType, List<? extends Message> messages);
+
+    /**
+     * 消息加密
+     * @param message
+     */
+    boolean encryptMessage(Message message);
+    /**
+     * 消息加密
+     * @param messages
+     */
+    boolean encryptMessages(List<? extends Message> messages);
+
+    /**
+     * 消息解密
+     * @param message
+     */
+    boolean decryptMessage(Message message);
+    /**
+     * 消息解密
+     * @param messages
+     */
+    boolean decryptMessages(List<? extends Message> messages);
 }

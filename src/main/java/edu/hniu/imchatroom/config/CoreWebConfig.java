@@ -19,7 +19,6 @@ import java.util.Arrays;
  * Web核心配置类
  */
 @Configuration
-//@EnableWebSocket        // 开启WebSocket支持
 public class CoreWebConfig implements WebMvcConfigurer {
 
     /**
@@ -53,8 +52,7 @@ public class CoreWebConfig implements WebMvcConfigurer {
     public FilterRegistrationBean systemFilterRegistrationBean() {
         FilterRegistrationBean<SystemFilter> registrationBean = new FilterRegistrationBean<>();
         registrationBean.setOrder(1);
-        registrationBean.setUrlPatterns(Arrays.asList("/*"));
-//        registrationBean.addUrlPatterns("/*");
+        registrationBean.addUrlPatterns("/*");
 
         registrationBean.setFilter(new SystemFilter());
         // 定义排除指定路径（注意：此处需要的是一个字符串参数，须在过滤器内部对排除路径进行处理）

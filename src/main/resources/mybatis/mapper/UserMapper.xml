@@ -99,9 +99,10 @@
 <!--    Integer insertUser(@Param("user") User user);-->
     <insert id="insertUser">
         INSERT INTO `user`
-            (`account`, `password`, `nickname`, `email`, `active_code`, `modified_time`)
+            (`account`, `password`, `nickname`, `email`, `active_code`, `modified_time`, `display_status`)
         VALUES
-            (#{user.account }, #{user.password }, #{user.nickname }, #{user.email }, #{user.activeCode}, #{user.modifiedTime })
+            (#{user.account }, #{user.password }, #{user.nickname }, #{user.email },
+             #{user.activeCode}, #{user.modifiedTime }, #{user.displayStatus })
     </insert>
 
 <!--    Integer activeUserAccount(@Param("activeUser") User activeUser);-->

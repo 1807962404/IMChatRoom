@@ -29,27 +29,24 @@ public class ChatController {
 
     private UserService userService;
     private FriendService friendService;
-    private MessageService messageService;
     private GroupService groupService;
+    private MessageService messageService;
 
     @Autowired
     public void setUserService(UserService userService) {
         this.userService = userService;
     }
-
     @Autowired
     public void setFriendService(FriendService friendService) {
         this.friendService = friendService;
     }
-
-    @Autowired
-    public void setChatService(MessageService messageService) {
-        this.messageService = messageService;
-    }
-
     @Autowired
     public void setGroupService(GroupService groupService) {
         this.groupService = groupService;
+    }
+    @Autowired
+    public void setChatService(MessageService messageService) {
+        this.messageService = messageService;
     }
 
 
@@ -68,12 +65,17 @@ public class ChatController {
     ) {
         log.info("Let us chat's or communicate Message: {}", message);
 
+        // 1、检查消息是否为空
+        if (null == message || StringUtil.isEmpty(String.valueOf(message.getContent()))) {
+            return Result.failed("发送失败，消息不能为空！");
+        }
+
         // 本人
         final User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
 
         // 匹配该消息类型
         final String thisMsgType = message.getMessageType();
-        // 1、判断消息类型是否能够匹配
+        // 2、判断消息类型是否能够匹配
         if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {  // 私聊消息
 
             return doChatToPersonal(message, id, thisUser);
@@ -86,6 +88,10 @@ public class ChatController {
                 thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
             // 系统公告消息、优文摘要消息
             return doChatToEveryone(message, thisUser);
+
+        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.FEEDBACK_MSG))) {
+            // 意见反馈消息
+            return doChatToSystem(message, thisUser);
         }
 
         log.warn("消息类型匹配不上：{} not equal to '{}'！", thisMsgType, MessageTypeEnum.values());
@@ -100,21 +106,18 @@ public class ChatController {
     @GetMapping("/online-user-count")
     public ResultVO<Message> doGetOnlineUserCount() {
 
-        ResultVO<Message> resultVO = new ResultVO<>();
-        resultVO.setCode(RESPONSE_SUCCESS_CODE);
         int onlineUserCount = UserController.getOnlineCount();
         log.info("当前用户在线数为：{}", onlineUserCount);
 
         Message message = new Message();
         message.setMessageType(MessageTypeEnum.getMessageType(ONLINE_COUNT_MSG));
         message.setContent(onlineUserCount);
-        resultVO.setData(message);
 
-        return resultVO;
+        return Result.ok(message);
     }
 
     /**
-     * 处理消息类型：以获取真正的消息类型
+     * 处理匹配消息类型：获取真正的消息类型
      *
      * @param message
      * @return
@@ -139,6 +142,10 @@ public class ChatController {
         } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
             // 优文摘要消息
             messageToUse = new ArticleMessage();
+
+        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.FEEDBACK_MSG))) {
+            // 意见反馈消息
+            messageToUse = new FeedbackMessage();
 
         } else {
             return null;
@@ -280,6 +287,7 @@ public class ChatController {
             result = messageService.doChat(broadcastMessage);
             if (1 != result) {
                 return Result.failed("系统公告发布失败！");
+
             } else {
                 return Result.ok("系统公告发布成功！", broadcastMessage);
             }
@@ -294,12 +302,35 @@ public class ChatController {
             result = messageService.doChat(articleMessage);
             if (1 != result) {
                 return Result.failed("优文摘要信息发表失败！");
+
             } else {
                 return Result.ok("优文摘要信息发表成功！", articleMessage);
             }
         }
 
         return Result.failed("管理员发布广播信息过程中出现未知错误！");
+    }
+
+    private ResultVO<? extends Message> doChatToSystem(Message message, User thisUser) {
+
+        String thisMsgType = message.getMessageType();
+        // 根据消息类别分别操作
+        if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.FEEDBACK_MSG))) {
+            // ·意见反馈信息
+            FeedbackMessage feedbackMessage = (FeedbackMessage) doDispatchMessage(message);
+            // 设置意见反馈 反馈人
+            feedbackMessage.setPublisher(thisUser);
+
+            int result = messageService.doChat(feedbackMessage);
+            if (1 != result) {
+                return Result.failed("意见反馈失败！");
+
+            } else {
+                return Result.ok("意见反馈成功！", feedbackMessage);
+            }
+        }
+
+        return Result.failed("用户操作意见反馈过程中出现未知错误！");
     }
 
     /**
@@ -339,7 +370,7 @@ public class ChatController {
 
         // 6、查询二人间的 历史私聊消息
         List<? extends Message> privateMessages = messageService.doGetChatMessage(privateMessage);
-        /*System.out.println("getPrivateMessage: ");
+        /*System.out.println("doGetPrivateMessage: ");
         privateMessages.forEach(message -> System.out.println(message));*/
 
         log.info("已查询出本人：{} 与用户：{} 间的历史私聊消息！", thisUser.getNickname(), friendUser.getNickname());
@@ -383,7 +414,7 @@ public class ChatController {
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
         publicMessage.setSendUser(thisUser);
         List<? extends Message> publicMessages = messageService.doGetChatMessage(publicMessage);
-        /*System.out.println("getPublicMessage: ");
+        /*System.out.println("doGetPublicMessage: ");
         publicMessages.forEach(message -> System.out.println(message));*/
 
         log.info("已查询出群组：{} 的历史群聊消息！", group.getGName());
@@ -438,5 +469,23 @@ public class ChatController {
         log.info("已查询出管理员用户：{} 发布过的所有优文摘要信息！", thisUser.getNickname());
 
         return Result.ok(messages);
+    }
+
+    /**
+     * 获取系统中所有的意见反馈信息
+     * @return
+     */
+    @GetMapping("/feedback-history-msg")
+    public List<? extends Message> doGetFeedbackMessage() {
+
+        FeedbackMessage feedbackMessage = new FeedbackMessage();
+        feedbackMessage.setMessageType(MessageTypeEnum.getMessageType(MessageTypeEnum.FEEDBACK_MSG));
+        List<? extends Message> feedbackMessages = messageService.doGetChatMessage(feedbackMessage);
+
+        /*System.out.println("doGetFeedbackMessage: ");
+        feedbackMessages.forEach(message -> System.out.println(message));*/
+
+        log.info("已查询出系统所有的意见反馈信息！");
+        return feedbackMessages;
     }
 }

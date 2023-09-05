@@ -7,16 +7,16 @@ import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
 import edu.hniu.imchatroom.model.enums.RoleEnum;
 import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.GroupService;
+import edu.hniu.imchatroom.service.EmailService;
 import edu.hniu.imchatroom.service.MessageService;
 import edu.hniu.imchatroom.service.UserService;
-import edu.hniu.imchatroom.util.MailUtil;
 import edu.hniu.imchatroom.util.EncryptUtil;
 import edu.hniu.imchatroom.util.StringUtil;
+import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.mail.MessagingException;
 import java.util.Date;
 import java.util.List;
 
@@ -29,7 +29,7 @@ public class UserServiceImpl implements UserService {
     private UserMapper userMapper;
     private MessageService messageService;
     private GroupService groupService;
-    private MailUtil mailUtil;
+    private EmailService emailService;
 
     @Autowired
     public void setUserMapper(UserMapper userMapper) {
@@ -44,8 +44,8 @@ public class UserServiceImpl implements UserService {
         this.groupService = groupService;
     }
     @Autowired
-    public void setMailUtil(MailUtil mailUtil) {
-        this.mailUtil = mailUtil;
+    public void setMailService(EmailService emailService) {
+        this.emailService = emailService;
     }
 
     /**
@@ -131,7 +131,8 @@ public class UserServiceImpl implements UserService {
                 try {
                     user.setPassword(EncryptUtil.encodeByMd5(password));
                 } catch (Exception e) {
-                    System.out.println("MD5加密过程中发生错误: " + e.getMessage());
+                    System.out.println("（检查）MD5加密过程中发生错误: " + e.getMessage());
+                    return null;
                 }
             }
         }
@@ -160,7 +161,8 @@ public class UserServiceImpl implements UserService {
         try {
             user.setPassword(EncryptUtil.encodeByMd5(user.getPassword()));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            System.out.println("（注册）MD5加密过程中发生错误: " + e.getMessage());
+            return 0;
         }
 
         // 3、为该用户创建一个唯一的 账号激活码
@@ -170,14 +172,17 @@ public class UserServiceImpl implements UserService {
         // 4、修改时间设置为当前时间
         user.setModifiedTime(new Date(System.currentTimeMillis()));
 
-        // 5、发送邮件
+        // 5、设置展示状态
+        user.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL));
+
+        // 6、发送邮件
         String content = "<h1 style='color: #f00'>欢迎注册“" + CHATROOM_NAME + "”账户，点击下面链接激活账户，以便获取更多惊喜体验！</h1>" +
                 "<a href='http://localhost:8080/chatroom/user/active-user-account/" + activeCode
                 + "'>点击此链接激活【" + CHATROOM_NAME + "】账户！</a>";
         try {
-            mailUtil.sendEmail(user.getEmail(), content, CHATROOM_NAME + "激活邮件");
+            emailService.sendEmail(user.getEmail(), CHATROOM_NAME + "激活邮件", content);
         } catch (MessagingException e) {
-            System.out.println("发送邮件失败：" + e.getMessage());
+            System.out.println("邮件发送失败：" + e.getMessage());
             return 0;
         }
 
@@ -262,9 +267,12 @@ public class UserServiceImpl implements UserService {
                     "<a href='http://localhost:8080/chatroom/user/reset-password/" + user.getActiveCode()
                     + "'>点击此链接重置【" + CHATROOM_NAME + "】账户密码为默认密码（" + DEFAULT_PASSWORD + "）！</a>";
             try {
-                success = mailUtil.sendEmail(user.getEmail(), content, CHATROOM_NAME + "重置密码邮件");
+                emailService.sendEmail(user.getEmail(), CHATROOM_NAME + "重置密码邮件", content);
+                success = true;
+                System.out.println("邮件发送成功！");
             } catch (MessagingException e) {
-                System.out.println("发送邮件失败：" + e.getMessage());
+                System.out.println("邮件发送失败：" + e.getMessage());
+                return 1;
             }
 
         } else if (2 == step) {
@@ -272,7 +280,8 @@ public class UserServiceImpl implements UserService {
             try {
                 user.setPassword(EncryptUtil.encodeByMd5(DEFAULT_PASSWORD));
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                System.out.println("（重置密码）MD5加密过程中发生错误: " + e.getMessage());
+                return 1;
             }
             success = doUpdateUser(user) == 1;
         }

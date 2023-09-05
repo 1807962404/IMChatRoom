@@ -15,7 +15,6 @@ import static edu.hniu.imchatroom.util.VariableUtil.COMMON_USER_NAME;
 @Slf4j
 public class SystemFilter implements Filter {
 
-    private HttpServletRequest request;
     private String[] excludedUris;
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -25,7 +24,7 @@ public class SystemFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-        request = (HttpServletRequest) servletRequest;
+        HttpServletRequest request = (HttpServletRequest) servletRequest;
 
         // 定义flag变量，用于记录请求路径是否在 白名单（排除路径）中
         boolean flag = false;
@@ -42,14 +41,5 @@ public class SystemFilter implements Filter {
 //            log.info("SystemFilter：过滤的请求路径：{}", request.getRequestURI());
         }
         filterChain.doFilter(servletRequest, servletResponse);
-    }
-
-    @Override
-    public void destroy() {
-        if (null != request) {
-            log.info("已销毁本次会话：{}", request.getSession().getId());
-            request.getSession().invalidate();
-        }
-        Filter.super.destroy();
     }
 }

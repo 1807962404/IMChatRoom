@@ -3,7 +3,9 @@ package edu.hniu.imchatroom.service.impl;
 import edu.hniu.imchatroom.mapper.MessageMapper;
 import edu.hniu.imchatroom.model.bean.*;
 import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
+import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
 import edu.hniu.imchatroom.service.MessageService;
+import edu.hniu.imchatroom.util.EncryptUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,8 +51,16 @@ public class MessageServiceImpl implements MessageService {
         } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
             // 优文摘要消息（会根据系优文摘要消息发表者uId进行查询）
             messages = messageMapper.selectArticleMessage((ArticleMessage) message);
+
+        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.FEEDBACK_MSG))) {
+            // 意见反馈消息
+            messages = messageMapper.selectFeedbackMessage((FeedbackMessage) message);
         }
 
+        // 解密数据
+        if (!decryptMessages(messages)) {
+            return null;
+        }
         return messages;
     }
 
@@ -62,30 +72,46 @@ public class MessageServiceImpl implements MessageService {
     @Override
     public Integer doChat(Message message) {
 
+        int result = -1;
+        // 加密消息
+        if (!encryptMessage(message))
+            return result;
+
         // 根据消息类型进行分类处理
         String msgType = message.getMessageType();
+        message.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL));
+
         if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
             // 发送私聊消息
             PrivateMessage privateMessage = (PrivateMessage) message;
-            return messageMapper.insertPriMsg(privateMessage);
+            result = messageMapper.insertPriMsg(privateMessage);
 
         } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG))) {
             // 发送群聊消息
             PublicMessage publicMessage = (PublicMessage) message;
-            return messageMapper.insertPubMsg(publicMessage);
+            result = messageMapper.insertPubMsg(publicMessage);
 
         } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
             // 发送系统消息
             BroadcastMessage broadcastMessage = (BroadcastMessage) message;
-            return messageMapper.insertSystemMsg(broadcastMessage);
+            result = messageMapper.insertSystemMsg(broadcastMessage);
 
         } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
             // 发送优文摘要消息
             ArticleMessage articleMessage = (ArticleMessage) message;
-            return messageMapper.insertArticleMsg(articleMessage);
+            result = messageMapper.insertArticleMsg(articleMessage);
+
+        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.FEEDBACK_MSG))) {
+            // 发送意见反馈消息
+            FeedbackMessage feedbackMessage = (FeedbackMessage) message;
+            result = messageMapper.insertFeedbackMsg(feedbackMessage);
         }
 
-        return -1;
+        // 解密消息
+        if (!decryptMessage(message))
+            return -1;
+
+        return result;
     }
 
     /**
@@ -121,5 +147,79 @@ public class MessageServiceImpl implements MessageService {
         }
 
         return result;
+    }
+
+    /**
+     * 消息加密
+     * @param message
+     */
+    @Override
+    public boolean encryptMessage(Message message) {
+        if (null != message) {
+            String encryptedText = null;
+            try {
+                encryptedText = EncryptUtil.encryptText(String.valueOf(message.getContent()));
+                message.setContent(encryptedText);
+            } catch (Exception e) {
+                System.out.println("Encrypt processing failed: " + e.getMessage());
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+    /**
+     * 消息加密
+     * @param messages
+     */
+    @Override
+    public boolean encryptMessages(List<? extends Message> messages) {
+        if (null != messages) {
+            if (!messages.isEmpty()) {
+                for (Message message : messages) {
+                    boolean isSuccess = encryptMessage(message);    // 加密消息
+                    if (!isSuccess)     // 若在加密过程中有一次不成功则返回false
+                        return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 消息解密
+     * @param message
+     */
+    @Override
+    public boolean decryptMessage(Message message) {
+        if (null != message) {
+            String decryptedText = null;
+            try {
+                decryptedText = EncryptUtil.decryptText(String.valueOf(message.getContent()));
+                message.setContent(decryptedText);
+            } catch (Exception e) {
+                System.out.println("Decrypt processing failed: " + e.getMessage());
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+    /**
+     * 消息解密
+     * @param messages
+     */
+    @Override
+    public boolean decryptMessages(List<? extends Message> messages) {
+        if (null != messages) {
+            if (!messages.isEmpty()) {
+                for (Message message : messages) {
+                    boolean isSuccess = decryptMessage(message);    // 解密消息
+                    if (!isSuccess)     // 若在解密过程中有一次不成功则返回false
+                        return false;
+                }
+            }
+        }
+        return true;
     }
 }
