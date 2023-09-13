@@ -92,7 +92,8 @@ function callMessage(flag, msg) {
             message.show({
                 type: 'success',
                 text: msg,
-                duration: 1500,    // 1.5s后消失
+                // duration: 1500,    // 1.5s后消失
+                duration: 2000,    // 2s后消失
                 closeable: true, // 可手动关闭
             });
             break;

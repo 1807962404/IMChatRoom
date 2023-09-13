@@ -1,22 +1,23 @@
 package edu.hniu.imchatroom.controller;
 
 import edu.hniu.imchatroom.model.bean.*;
-import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
-import edu.hniu.imchatroom.model.enums.RoleEnum;
-import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
+import edu.hniu.imchatroom.model.bean.messages.*;
+import edu.hniu.imchatroom.model.bean.response.Result;
+import edu.hniu.imchatroom.model.bean.response.ResultVO;
 import edu.hniu.imchatroom.service.MessageService;
 import edu.hniu.imchatroom.service.FriendService;
 import edu.hniu.imchatroom.service.GroupService;
 import edu.hniu.imchatroom.service.UserService;
+import edu.hniu.imchatroom.util.MoreUtil;
 import edu.hniu.imchatroom.util.StringUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.*;
 
-import static edu.hniu.imchatroom.model.enums.MessageTypeEnum.ONLINE_COUNT_MSG;
 import static edu.hniu.imchatroom.util.VariableUtil.*;
 
 /**
@@ -45,10 +46,9 @@ public class ChatController {
         this.groupService = groupService;
     }
     @Autowired
-    public void setChatService(MessageService messageService) {
+    public void setMessageService(MessageService messageService) {
         this.messageService = messageService;
     }
-
 
     /**
      * 处理消息转发
@@ -76,44 +76,26 @@ public class ChatController {
         // 匹配该消息类型
         final String thisMsgType = message.getMessageType();
         // 2、判断消息类型是否能够匹配
-        if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {  // 私聊消息
+        if (thisMsgType.equals(MessageType.getPrivateMessageType())) {  // 私聊消息
 
             return doChatToPersonal(message, id, thisUser);
 
-        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG))) {
+        } else if (thisMsgType.equals(MessageType.getPublicMessageType())) {
             // 群聊消息
             return doChatToGroup(message, id, thisUser);
 
-        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG)) ||
-                thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
+        } else if (thisMsgType.equals(MessageType.getSystemMessageType()) ||
+                thisMsgType.equals(MessageType.getAbstractMessageType())) {
             // 系统公告消息、优文摘要消息
-            return doChatToEveryone(message, thisUser);
+            return doChatToEveryone(message, thisUser, request);
 
-        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.FEEDBACK_MSG))) {
+        } else if (thisMsgType.equals(MessageType.getFeedbackMessageType())) {
             // 意见反馈消息
             return doChatToSystem(message, thisUser);
         }
 
-        log.warn("消息类型匹配不上：{} not equal to '{}'！", thisMsgType, MessageTypeEnum.values());
-        return Result.failed("消息类型匹配不上：" + thisMsgType + " not equal to " + MessageTypeEnum.values() + "！");
-    }
-
-    /**
-     * 获取用户在线数量
-     *
-     * @return
-     */
-    @GetMapping("/online-user-count")
-    public ResultVO<Message> doGetOnlineUserCount() {
-
-        int onlineUserCount = UserController.getOnlineCount();
-        log.info("当前用户在线数为：{}", onlineUserCount);
-
-        Message message = new Message();
-        message.setMessageType(MessageTypeEnum.getMessageType(ONLINE_COUNT_MSG));
-        message.setContent(onlineUserCount);
-
-        return Result.ok(message);
+        log.warn("消息类型匹配不上：{} not equal to '{}'！", thisMsgType, MessageType.getAllMessageTypes());
+        return Result.failed("未匹配上消息类型：" + thisMsgType + " ！");
     }
 
     /**
@@ -128,22 +110,22 @@ public class ChatController {
         final String thisMsgType = message.getMessageType();
 
         // 1、判断消息类型是否能够匹配
-        if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {  // 私聊消息
+        if (thisMsgType.equals(MessageType.getPrivateMessageType())) {  // 私聊消息
             messageToUse = new PrivateMessage();
 
-        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG))) {
+        } else if (thisMsgType.equals(MessageType.getPublicMessageType())) {
             // 群聊消息
             messageToUse = new PublicMessage();
 
-        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
+        } else if (thisMsgType.equals(MessageType.getSystemMessageType())) {
             // 系统公告消息
             messageToUse = new BroadcastMessage();
 
-        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
+        } else if (thisMsgType.equals(MessageType.getAbstractMessageType())) {
             // 优文摘要消息
             messageToUse = new ArticleMessage();
 
-        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.FEEDBACK_MSG))) {
+        } else if (thisMsgType.equals(MessageType.getFeedbackMessageType())) {
             // 意见反馈消息
             messageToUse = new FeedbackMessage();
 
@@ -175,15 +157,14 @@ public class ChatController {
         }
 
         // 2、查找该用户id是否存在
-        User friendUser = userService.doGetUserById(Integer.valueOf(friendId));
+        User friendUser = userService.doGetUserById(Long.valueOf(friendId));
         if (null == friendUser) {
             log.warn("消息发送失败，发送消息的用户对象不存在！");
             return Result.failed("消息发送失败，发送消息的用户对象不存在！");
         }
 
         // 3、检查本人与该用户id好友 的友谊状况（即双方是否处于好友阶段）
-        FriendShip friendShip = friendService.doCheckIsFriend(thisUser, friendUser,
-                StatusCodeEnum.getStatusCode(StatusCodeEnum.ISFRIEND));
+        FriendShip friendShip = friendService.doCheckIsFriend(thisUser, friendUser, StatusCode.getIsFriendStatusCode());
         if (null == friendShip) {
             log.warn("您已不是id为：{} 用户 {} 的好友，无法向对方发送消息！", friendId, friendUser.getNickname());
             return Result.failed("您已不是对方的好友，无法向对方发送消息！");
@@ -266,18 +247,20 @@ public class ChatController {
      * @param thisUser
      * @return
      */
-    private ResultVO<Message> doChatToEveryone(Message message, User thisUser) {
+    private ResultVO<Message> doChatToEveryone(Message message, User thisUser, HttpServletRequest request) {
 
         // 1、检查此用户是否为管理员
-        if (!thisUser.getRole().equals(RoleEnum.getRoleName(RoleEnum.ADMIN))) {
+        if (!thisUser.getRole().equals(ADMIN_USER_NAME)) {
             log.warn("用户权限不够，无法操作此功能！");
             return Result.failed("用户权限不够，无法操作此功能！");
         }
 
+        HttpSession session = request.getSession();
+
         int result = 0;
         String thisMsgType = message.getMessageType();
         // 根据消息类别分别操作
-        if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
+        if (thisMsgType.equals(MessageType.getSystemMessageType())) {
             // ·系统广播公告信息
             BroadcastMessage broadcastMessage = (BroadcastMessage) doDispatchMessage(message);
             // 设置系统公告发布人
@@ -289,10 +272,28 @@ public class ChatController {
                 return Result.failed("系统公告发布失败！");
 
             } else {
+                // 检查系统广播消息是否为空，若true则放入session中
+                boolean isEmpty = false;
+                Object broadcastsSessionMessages = session.getAttribute(BROADCAST_MESSAGE_NAME);
+                if (null != broadcastsSessionMessages && broadcastsSessionMessages instanceof List) {
+                    List messages = (List) broadcastsSessionMessages;
+                    if (messages.isEmpty())
+                        isEmpty = true;
+                    else {
+                        // 不为空，则添加至系统广播消息列表中
+                        List list = Arrays.asList(MoreUtil.mergeArrays(messages.toArray(),
+                                new BroadcastMessage[]{broadcastMessage}));
+                        session.setAttribute(BROADCAST_MESSAGE_NAME, list);
+                    }
+                } else
+                    isEmpty = true;
+
+                if (isEmpty)
+                    session.setAttribute(BROADCAST_MESSAGE_NAME, List.of(broadcastMessage));
                 return Result.ok("系统公告发布成功！", broadcastMessage);
             }
 
-        } else if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
+        } else if (thisMsgType.equals(MessageType.getAbstractMessageType())) {
             // ·优文摘要信息
             ArticleMessage articleMessage = (ArticleMessage) doDispatchMessage(message);
             // 设置优文摘要发表人
@@ -304,6 +305,25 @@ public class ChatController {
                 return Result.failed("优文摘要信息发表失败！");
 
             } else {
+                // 检查优文摘要消息是否为空，若true则放入session中
+                boolean isEmpty = false;
+                Object articleSessionMessages = session.getAttribute(ARTICLE_MESSAGE_NAME);
+                if (null != articleSessionMessages && articleSessionMessages instanceof List) {
+                    List messages = (List) articleSessionMessages;
+                    if (messages.isEmpty())
+                        isEmpty = true;
+                    else {
+                        // 不为空，则添加至优文摘要消息列表中
+                        List list = Arrays.asList(MoreUtil.mergeArrays(messages.toArray(),
+                                new ArticleMessage[]{articleMessage}));
+                        session.setAttribute(ARTICLE_MESSAGE_NAME, list);
+                    }
+                } else
+                    isEmpty = true;
+
+                if (isEmpty)
+                    session.setAttribute(ARTICLE_MESSAGE_NAME, List.of(articleMessage));
+
                 return Result.ok("优文摘要信息发表成功！", articleMessage);
             }
         }
@@ -315,7 +335,7 @@ public class ChatController {
 
         String thisMsgType = message.getMessageType();
         // 根据消息类别分别操作
-        if (thisMsgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.FEEDBACK_MSG))) {
+        if (thisMsgType.equals(MessageType.getFeedbackMessageType())) {
             // ·意见反馈信息
             FeedbackMessage feedbackMessage = (FeedbackMessage) doDispatchMessage(message);
             // 设置意见反馈 反馈人
@@ -354,7 +374,7 @@ public class ChatController {
         }
 
         // 2、检查是否存在该uId的用户
-        User friendUser = userService.doGetUserById(Integer.valueOf(friendId));
+        User friendUser = userService.doGetUserById(Long.valueOf(friendId));
         if (null == friendUser) {
             log.warn("friendId为：{} 的用户不存在，无法获取聊天信息！", friendId);
             return Result.failed("friendId为：" + friendId + " 的用户不存在，无法获取聊天信息！");
@@ -366,7 +386,7 @@ public class ChatController {
         // 4、设置消息接收者为好友（对方）
         privateMessage.setReceiveUser(friendUser);
         // 5、设置消息类型为：private-message
-        privateMessage.setMessageType(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG));
+        privateMessage.setMessageType(MessageType.getPrivateMessageType());
 
         // 6、查询二人间的 历史私聊消息
         List<? extends Message> privateMessages = messageService.doGetChatMessage(privateMessage);
@@ -408,7 +428,7 @@ public class ChatController {
         // 3、设置消息接收者为该群组（对方）
         publicMessage.setReceiveGroup(group);
         // 4、设置消息类型为：public-message
-        publicMessage.setMessageType(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG));
+        publicMessage.setMessageType(MessageType.getPublicMessageType());
 
         // 5、查询指定群组的历史群聊消息（获取该用户加入该群组的时间后的群聊消息）
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
@@ -431,14 +451,14 @@ public class ChatController {
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
 
         // 1、检查此用户是否为管理员
-        if (!thisUser.getRole().equals(RoleEnum.getRoleName(RoleEnum.ADMIN))) {
+        if (!thisUser.getRole().equals(ADMIN_USER_NAME)) {
             log.warn("用户权限不够，无法访问！");
             return Result.failed("用户权限不够，无法访问！");
         }
 
         // 2、查询此管理员用户发布过的系统广播
         BroadcastMessage broadcastMessage = new BroadcastMessage();
-        broadcastMessage.setMessageType(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG));
+        broadcastMessage.setMessageType(MessageType.getSystemMessageType());
         broadcastMessage.setPublisher(thisUser);
         List<? extends Message> messages = messageService.doGetChatMessage(broadcastMessage);
         log.info("已查询出管理员用户：{} 发布过的所有广播信息！", thisUser.getNickname());
@@ -456,14 +476,14 @@ public class ChatController {
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
 
         // 1、检查此用户是否为管理员
-        if (!thisUser.getRole().equals(RoleEnum.getRoleName(RoleEnum.ADMIN))) {
+        if (!thisUser.getRole().equals(ADMIN_USER_NAME)) {
             log.warn("用户权限不够，无法访问！");
             return Result.failed("用户权限不够，无法访问！");
         }
 
         // 2、查询此管理员用户发布过的优文摘要
         ArticleMessage articleMessage = new ArticleMessage();
-        articleMessage.setMessageType(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG));
+        articleMessage.setMessageType(MessageType.getAbstractMessageType());
         articleMessage.setPublisher(thisUser);
         List<? extends Message> messages = messageService.doGetChatMessage(articleMessage);
         log.info("已查询出管理员用户：{} 发布过的所有优文摘要信息！", thisUser.getNickname());
@@ -479,7 +499,7 @@ public class ChatController {
     public List<? extends Message> doGetFeedbackMessage() {
 
         FeedbackMessage feedbackMessage = new FeedbackMessage();
-        feedbackMessage.setMessageType(MessageTypeEnum.getMessageType(MessageTypeEnum.FEEDBACK_MSG));
+        feedbackMessage.setMessageType(MessageType.getFeedbackMessageType());
         List<? extends Message> feedbackMessages = messageService.doGetChatMessage(feedbackMessage);
 
         /*System.out.println("doGetFeedbackMessage: ");

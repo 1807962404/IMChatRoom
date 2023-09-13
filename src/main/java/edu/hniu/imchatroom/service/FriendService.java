@@ -28,14 +28,14 @@ public interface FriendService {
      * @param fsId
      * @return
      */
-    Integer doMakeFriend(Integer fsId);
+    Integer doMakeFriend(Long fsId);
 
     /**
      * 通过uId获取他所有的好友信息
      * @param uId
      * @return
      */
-    List<Friend> doGetFriendsByUId(Integer uId);
+    List<Friend> doGetFriendsByUId(Long uId);
 
     /**
      * 删除好友关系 friendShip
@@ -49,5 +49,5 @@ public interface FriendService {
      * @param uId
      * @return
      */
-    List<FriendShip> doGetOwnFriendship(Integer uId);
+    List<FriendShip> doGetOwnFriendship(Long uId);
 }

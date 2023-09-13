@@ -53,13 +53,13 @@
         </if>
     </select>
 
-<!--    FriendShip selectFriendShipByFsId(@Param("fsId") Integer fsId);-->
+<!--    FriendShip selectFriendShipByFsId(@Param("fsId") Long fsId);-->
     <select id="selectFriendShipByFsId" resultMap="FriendShipResultMap">
         <include refid="AllFriendShipResult" />
         WHERE `fs_id` = #{fsId } AND `display_status` = '0'
     </select>
 
-<!--    List<Friend> selectFriendsByUId(@Param("uId") Integer uId);-->
+<!--    List<Friend> selectFriendsByUId(@Param("uId") Long uId);-->
     <select id="selectFriendsByUId" resultMap="FriendResultMap">
         SELECT
             *
@@ -125,9 +125,9 @@
         `fs_id` = #{friend.friendShip.fsId }
     </update>
 
-<!--    List<FriendShip> selectOwnFriendship(@Param("uId") Integer uId);-->
+<!--    List<FriendShip> selectOwnFriendship(@Param("uId") Long uId);-->
     <select id="selectOwnFriendship" resultMap="FriendShipResultMap">
         <include refid="AllFriendShipResult" />
-        WHERE `display_status` = '0' AND `friend_id` = #{uId }
+        WHERE `display_status` = '0' AND (`friend_id` = #{uId } OR `host_id` = #{uId })
     </select>
 </mapper>

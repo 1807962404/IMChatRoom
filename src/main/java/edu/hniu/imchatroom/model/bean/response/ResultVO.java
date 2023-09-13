@@ -1,4 +1,4 @@
-package edu.hniu.imchatroom.model.bean;
+package edu.hniu.imchatroom.model.bean.response;
 
 import lombok.Data;
 

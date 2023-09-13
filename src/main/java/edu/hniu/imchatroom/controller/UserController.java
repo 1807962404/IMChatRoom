@@ -1,13 +1,14 @@
 package edu.hniu.imchatroom.controller;
 
 import edu.hniu.imchatroom.model.bean.*;
-import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
-import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
+import edu.hniu.imchatroom.model.bean.messages.*;
+import edu.hniu.imchatroom.model.bean.response.Result;
+import edu.hniu.imchatroom.model.bean.response.ResultVO;
+import edu.hniu.imchatroom.service.FriendService;
 import edu.hniu.imchatroom.service.MessageService;
 import edu.hniu.imchatroom.service.UserService;
 import edu.hniu.imchatroom.util.EncryptUtil;
 import edu.hniu.imchatroom.util.StringUtil;
-import edu.hniu.imchatroom.util.VariableUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -18,12 +19,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static edu.hniu.imchatroom.util.VariableUtil.*;
-import static edu.hniu.imchatroom.util.VariableUtil.SIGNINED_USER;
 
 @Slf4j
 @RestController
@@ -31,22 +33,40 @@ import static edu.hniu.imchatroom.util.VariableUtil.SIGNINED_USER;
 public class UserController {
 
     private UserService userService;
+    private FriendService friendService;
     private MessageService messageService;
 
     // 记录在线用户
-    public static final Map<String, User> onlineUserToUseMap = new ConcurrentHashMap<>();
-    // 静态变量，用于记录当前在线连接数
-    private static int onlineCount = 0;
+    private static final Map<String, User> onlineUserToUseMap = new ConcurrentHashMap<>();
+    // 记录在线用户人数
+    private static Integer onlineUserCount = 0;
 
     @Autowired
     public void setUserService(UserService userService) {
         this.userService = userService;
     }
     @Autowired
+    public void setFriendService(FriendService friendService) {
+        this.friendService = friendService;
+    }
+    @Autowired
     public void setMessageService(MessageService messageService) {
         this.messageService = messageService;
     }
 
+    private void printOnlineUsers() {
+        if (null == onlineUserToUseMap || onlineUserToUseMap.isEmpty()) {
+            log.warn("No online users!");
+            return;
+        }
+
+        Set<Map.Entry<String, User>> entries = onlineUserToUseMap.entrySet();
+        Iterator<Map.Entry<String, User>> iterator = entries.iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, User> next = iterator.next();
+            log.info("{}= {}", next.getKey(), next.getValue().getNickname());
+        }
+    }
     /**
      * 用户注册
      *
@@ -68,7 +88,7 @@ public class UserController {
         }
 
         // 1、获取服务端中对应时间戳的验证码的验证码，并将其与提交的表单中输入的验证码内容 进行忽略大小写比对
-        Map<String, String> verifyCodeMap = (Map<String, String>) request.getSession().getAttribute(VariableUtil.CHECK_CODE);
+        Map<String, String> verifyCodeMap = (Map<String, String>) request.getSession().getAttribute(CHECK_CODE);
         log.info("时间戳：{}，时间戳对应验证码：{}，验证码：{}", identify, verifyCodeMap.get(identify), verifyCode);
         boolean flag = userService.doCheckVerifyCode(verifyCodeMap.get(identify), verifyCode);
         if (!flag) {
@@ -92,12 +112,12 @@ public class UserController {
                 notExists = true;
 
             } else {
-                if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ACTIVATED))) {
+                if (userByIdentified.getAccountStatus().equals(StatusCode.getActivatedStatusCode())) {
                     // 如果账号是已激活状态
                     log.warn("账号已存在，请直接登陆即可！");
                     return Result.warn("账号已存在，请直接登陆即可！");
 
-                } else if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.INACTIVE))) {
+                } else if (userByIdentified.getAccountStatus().equals(StatusCode.getInActiveStatusCode())) {
                     // 如果账号是未激活状态
                     log.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
                     return Result.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
@@ -147,7 +167,7 @@ public class UserController {
         response.setContentType("text/html; charset=UTF-8");
         response.getWriter().write(
                 "<h1 style='color: #f00'>" + content +
-                        "</h1><a href='http://localhost:8080/chatroom/login'>点击跳转至登陆页面</a>");
+                        "</h1><a href='" + ADDRESS + ":" + PORT + "/chatroom/login'>点击跳转至登陆页面</a>");
     }
 
     /**
@@ -171,7 +191,12 @@ public class UserController {
         }
 
         // 1、获取服务端中对应时间戳的验证码的验证码，并将其与提交的表单中输入的验证码内容 进行忽略大小写比对
-        Map<String, String> verifyCodeMap = (Map<String, String>) request.getSession().getAttribute(VariableUtil.CHECK_CODE);
+        Map<String, String> verifyCodeMap = (Map<String, String>) request.getSession().getAttribute(CHECK_CODE);
+        if (null == verifyCodeMap || verifyCodeMap.isEmpty()) {
+            log.warn("请刷新页面，否则无法登陆！");
+            return Result.failed("登陆页面失效，请刷新页面，否则无法登陆！");
+        }
+
         boolean flag = userService.doCheckVerifyCode(verifyCodeMap.get(identify), verifyCode);
         if (!flag) {
             log.warn("验证码有误！");
@@ -186,7 +211,7 @@ public class UserController {
             log.warn("账号信息有误，请检查后重新登陆！");
             return Result.failed("账号信息有误，请检查后重新登陆！");
 
-        } else if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.INACTIVE))) {
+        } else if (userByIdentified.getAccountStatus().equals(StatusCode.getInActiveStatusCode())) {
             // 如果账号是未激活状态
             log.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
             return Result.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
@@ -199,39 +224,34 @@ public class UserController {
             return Result.failed("登陆失败，请稍后再试！");
         }
 
-        // 4、用户登陆之后初始化资源操作
+        // 4、设置本人所有的好友列表
+        userByIdentified.setMyFriends(friendService.doGetFriendsByUId(userByIdentified.getUId()));
+
+        // 5、用户登陆之后初始化资源操作
         doLoginInitResources(request, userByIdentified);
 
         log.info("登陆成功！");
-        return Result.ok("登陆成功，欢迎回来：" + userByIdentified.getNickname() + "！");
+        return Result.ok("登陆成功，欢迎回来：" + userByIdentified.getNickname() + "！", userByIdentified);
     }
 
     private void doLoginInitResources(HttpServletRequest request, User userByIdentified) {
-
-        log.info("用户信息：{}", userByIdentified);
 
         // 1、设置资源-->
         HttpSession session = request.getSession();
 
         // 1.1、设置系统通告供所有用户查看
         Message broadcastMessage = new BroadcastMessage();
-        broadcastMessage.setMessageType(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG));
+        broadcastMessage.setMessageType(MessageType.getSystemMessageType());
         List<? extends Message> messages = messageService.doGetChatMessage(broadcastMessage);
         session.setAttribute(BROADCAST_MESSAGE_NAME, messages);
 
         // 1.2、设置优文摘要供所有用户查看
         Message articleMessage = new ArticleMessage();
-        articleMessage.setMessageType(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG));
+        articleMessage.setMessageType(MessageType.getAbstractMessageType());
         messages = messageService.doGetChatMessage(articleMessage);
         session.setAttribute(ARTICLE_MESSAGE_NAME, messages);
 
-        // 1.3、设置用户唯一标识码：建立WebSocket连接时需要使用
-        String uniqueUserCode = StringUtil.getRandomCode(false);
-        log.info("doSignin() uniqueUserCode: {}", uniqueUserCode);
-        session.setAttribute(SIGNINED_USER_WS_CODE, uniqueUserCode);       // 用户的唯一标识码
-        userService.doSetUserToUse(userByIdentified, uniqueUserCode);     // 给本次登陆的用户设置唯一标识码
-
-        // 1.4、设置管理员和普通用户名称，用于前端校验
+        // 1.3、设置管理员和普通用户名称，用于前端校验
         if (null == session.getAttribute(ADMIN_USER_NAME)) {
             session.setAttribute("ADMIN_USER_NAME", ADMIN_USER_NAME);
         }
@@ -239,12 +259,21 @@ public class UserController {
             session.setAttribute("COMMON_USER_NAME", COMMON_USER_NAME);
         }
 
+        // 1.4、设置用户唯一标识码：建立WebSocket连接时需要使用
+        String uniqueUserCode = StringUtil.getRandomCode(false);
+        log.info("doSignin() uniqueUserCode: {}", uniqueUserCode);
+        userByIdentified.setUniqueUserCode(uniqueUserCode);       // 用户的唯一标识码
+        userService.doSetUserToUse(userByIdentified);             // 设置可用用户
+        // 给本次登陆的用户设置唯一标识码
+        onlineUserToUseMap.put(uniqueUserCode, userByIdentified);
+
+        // 1.5、在线人数 +1
+        onlineUserCount++;
+        log.info("当前在线总人数为：{}", onlineUserCount);
+
         // 2、将登陆的用户信息存入至session中，以及存入在线人数中
         session.setAttribute(SIGNINED_USER, userByIdentified);
-
-        // 3、记录在线人数 +1
-        addOnlineCount();       // 在线人数 +1
-        log.info("当前在线总人数为：{}", getOnlineCount());
+        log.info("用户信息：{}", userByIdentified);
     }
 
     /**
@@ -274,19 +303,12 @@ public class UserController {
     public ResultVO<List<User>> doGetAllUsers() {
 
         // 获取所有已激活账号的用户信息
-        List<User> allUsers = userService.doGetAllUsers(StatusCodeEnum.getStatusCode(StatusCodeEnum.ACTIVATED));
+        List<User> allUsers = userService.doGetAllUsers(StatusCode.getActivatedStatusCode());
         for (User user : allUsers)
-            userService.doSetUserToUse(user, null);
+            userService.doSetUserToUse(user);
 
         return Result.ok(allUsers);
     }
-
-    /**
-     * 获取所有的在线用户信息
-     * @return
-     */
-    /*@GetMapping("/online-user-count")
-    public Set<User> doGetOnlineUsers() { return onlineUsers; }*/
 
     /**
      * 修改用户个人信息
@@ -444,7 +466,7 @@ public class UserController {
 
             } else {
                 // 如果账号是已激活状态
-                if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ACTIVATED))) {
+                if (userByIdentified.getAccountStatus().equals(StatusCode.getActivatedStatusCode())) {
                     // 处理忘记密码的逻辑（使用用户激活码作为凭证）
                     int result = userService.doForgetPassword(userByIdentified, 1);
                     if (0 == result) {
@@ -457,7 +479,7 @@ public class UserController {
                         return Result.failed("未能成功发送重置密码邮件，请稍后再试！");
                     }
 
-                } else if (userByIdentified.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.INACTIVE))) {
+                } else if (userByIdentified.getAccountStatus().equals(StatusCode.getInActiveStatusCode())) {
                     // 如果账号是未激活状态
                     log.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
                     return Result.warn("该账号处于未激活状态，请先激活账号再享受更多体验！");
@@ -529,27 +551,24 @@ public class UserController {
     public ResultVO doSignOut(HttpServletRequest request) {
 
         // 1、检查用户是否已登陆（可省）
-        User logoutUser = (User) request.getSession().getAttribute(SIGNINED_USER);
-        if (null == logoutUser) {
+        User signOutUser = (User) request.getSession().getAttribute(SIGNINED_USER);
+        if (null == signOutUser) {
             log.warn("请先登陆！");
             return Result.warn("请先登陆！");
         }
 
-        // 2、修改该用户为离线状态
-        logoutUser.setOnlineStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.OFFLINE));
-        int result = userService.doUpdateUser(logoutUser);
-        log.info("用户 {} 注销会话情况：{}", logoutUser.getNickname(), result == 1 ? "已成功退出登陆！" : "注销会话失败！");
+        int result = userService.doSignOut(signOutUser);
         if (1 != result) {
-            log.warn("注销会话失败！");
-            return Result.failed("注销会话失败！");
+            log.warn("未能成功退出登陆！");
+            return Result.failed("未能成功退出登陆，注销会话失败！");
         }
 
         // 在线用户数量-1
-        onlineUserToUseMap.remove(logoutUser);
-        subOnlineCount();
+        subOnlineUser(signOutUser);
+        printOnlineUsers();
         request.getSession().invalidate();
 
-        log.info("已成功退出登陆！当前在线总人数为：{}", getOnlineCount());
+        log.info("用户：{} 已成功退出登陆！当前在线总人数为：{}", signOutUser.getNickname(), onlineUserCount);
         return Result.ok("已成功退出登陆！");
     }
 
@@ -568,34 +587,39 @@ public class UserController {
             return Result.failed("账号注销失败！");
         }
 
-        onlineUserToUseMap.remove(loggoutUser);     // 在线用户数量-1
-        subOnlineCount();
+        // 在线用户数量-1
+        subOnlineUser(loggoutUser);
+        printOnlineUsers();
         request.getSession().invalidate();
 
-        log.info("已成功注销用户 {} 的账号！当前在线总人数为：{}", loggoutUser.getNickname(), getOnlineCount());
+        log.info("已成功注销用户 {} 的账号！当前在线总人数为：{}", loggoutUser.getNickname(), onlineUserCount);
         return Result.ok("已成功注销账号！");
     }
 
+    // 在线用户数量-1
+    private static void subOnlineUser(User user) {
+        if (null == user)
+            return ;
+
+        Set<Map.Entry<String, User>> entries = onlineUserToUseMap.entrySet();
+        Iterator<Map.Entry<String, User>> iterator = entries.iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, User> next = iterator.next();
+            User thisOnlineUser = next.getValue();
+            if (thisOnlineUser.getUniqueUserCode().equals(user.getUniqueUserCode())) {
+                iterator.remove();
+                break;
+            }
+        }
+
+        onlineUserCount--;
+    }
+
     /**
-     * 获取在线人数
-     *
+     * 获取在线用户人数
      * @return
      */
-    public static synchronized int getOnlineCount() {
-        return onlineCount;
-    }
-
-    /**
-     * 在线人数 +1
-     */
-    public static synchronized void addOnlineCount() {
-        onlineCount++;
-    }
-
-    /**
-     * 在线人数 -1
-     */
-    public static synchronized void subOnlineCount() {
-        onlineCount--;
+    public static Integer getOnlineUserCount() {
+        return onlineUserCount;
     }
 }

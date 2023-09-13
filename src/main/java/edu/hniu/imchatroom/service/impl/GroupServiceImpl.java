@@ -2,8 +2,10 @@ package edu.hniu.imchatroom.service.impl;
 
 import edu.hniu.imchatroom.mapper.GroupMapper;
 import edu.hniu.imchatroom.model.bean.*;
-import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
-import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
+import edu.hniu.imchatroom.model.bean.messages.Message;
+import edu.hniu.imchatroom.model.bean.messages.MessageType;
+import edu.hniu.imchatroom.model.bean.messages.PublicMessage;
+import edu.hniu.imchatroom.model.bean.messages.StatusCode;
 import edu.hniu.imchatroom.service.GroupService;
 import edu.hniu.imchatroom.service.MessageService;
 import edu.hniu.imchatroom.util.StringUtil;
@@ -37,7 +39,7 @@ public class GroupServiceImpl implements GroupService {
      */
     @Transactional(readOnly = true)
     @Override
-    public List<Group> doGetMyGroups(Integer hostId) {
+    public List<Group> doGetMyGroups(Long hostId) {
 
         // 1、先查询出该用户所创建的所有群组信息
         List<Group> myGroups = groupMapper.selectMyGroups(hostId);
@@ -49,7 +51,7 @@ public class GroupServiceImpl implements GroupService {
 //            System.out.println("myGroupUsers size: " + myGroupUsers.size());
             List<GroupUser> thisGroupUsers = new ArrayList<>();
             for (GroupUser groupUser : myGroupUsers) {
-                if (groupUser.getGuStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.INGROUP))) {
+                if (groupUser.getGuStatus().equals(StatusCode.getInGroupStatusCode())) {
                     // 判断用户是否在群组中
                     thisGroupUsers.add(groupUser);  // 添加进集合中
                 }
@@ -65,6 +67,7 @@ public class GroupServiceImpl implements GroupService {
      * @param newGroup
      * @return
      */
+    @Transactional
     @Override
     public Integer doAddGroup(Group newGroup) {
 
@@ -76,13 +79,13 @@ public class GroupServiceImpl implements GroupService {
         // 1.3、设置群聊修改时间
         newGroup.setModifiedTime(new Date(System.currentTimeMillis()));
         // 1.4、设置群聊显示状态
-        newGroup.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL));
+        newGroup.setDisplayStatus(StatusCode.getNormalStatusCode());
 
         // 2、新增群聊
         int result = groupMapper.insertGroup(newGroup);
 
         // 3、为新增的群聊设置默认用户（即群主）
-        result += doAddGroupUser(newGroup, newGroup.getHostUser(), StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL));
+        result += doAddGroupUser(newGroup, newGroup.getHostUser(), StatusCode.getNormalStatusCode());
 
         return result;
     }
@@ -108,17 +111,17 @@ public class GroupServiceImpl implements GroupService {
         Date nowTime = new Date(System.currentTimeMillis());
         // 4、设置申请入群时间
         groupUser.setApplyTime(nowTime);
-        if (guStatus.equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL))) {
+        if (guStatus.equals(StatusCode.getNormalStatusCode())) {
             // 排除是新建群聊时，添加的默认用户（群主）
             // 5、设置成员加入群聊时间
             groupUser.setJoinTime(nowTime);
 
-        } else if (guStatus.equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.CONFIRMING))){
+        } else if (guStatus.equals(StatusCode.getConfirmingStatusCode())){
             // 5、否则是用户发送入群申请，不用设置成员加入群聊时间
             groupUser.setJoinTime(null);
         }
         // 6、设置群聊显示状态
-        groupUser.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL));
+        groupUser.setDisplayStatus(StatusCode.getNormalStatusCode());
 
         return groupMapper.insertGroupUser(groupUser);
     }
@@ -130,7 +133,7 @@ public class GroupServiceImpl implements GroupService {
      */
     @Transactional(readOnly = true)
     @Override
-    public List<Group> doGetMyEnteredGroups(Integer uId) {
+    public List<Group> doGetMyEnteredGroups(Long uId) {
         return groupMapper.selectMyEnteredGroups(uId);
     }
 
@@ -164,7 +167,7 @@ public class GroupServiceImpl implements GroupService {
      */
 
     @Override
-    public GroupUser doCheckUserIsInGroup(Integer gId, Integer uId) {
+    public GroupUser doCheckUserIsInGroup(Long gId, Long uId) {
         List<GroupUser> groupUsers = doGetGroupsUsersById(gId, uId);
         if (null != groupUsers && groupUsers.size() > 0)
             return groupUsers.get(0);
@@ -180,7 +183,7 @@ public class GroupServiceImpl implements GroupService {
      */
     @Transactional(readOnly = true)
     @Override
-    public List<GroupUser> doGetGroupsUsersById(Integer gId, Integer uId) {
+    public List<GroupUser> doGetGroupsUsersById(Long gId, Long uId) {
         return groupMapper.selectGroupsUsersById(gId, uId);
     }
 
@@ -195,14 +198,14 @@ public class GroupServiceImpl implements GroupService {
     public Integer doUpdateUserInGroup(GroupUser groupUser, boolean isEnterGroup) {
         if (isEnterGroup) {
             // 同意用户进入群组
-            groupUser.setGuStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.INGROUP));
+            groupUser.setGuStatus(StatusCode.getInGroupStatusCode());
             groupUser.setJoinTime(new Date(System.currentTimeMillis()));
-            groupUser.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL));
+            groupUser.setDisplayStatus(StatusCode.getNormalStatusCode());
 
         } else {
             // 用户退出群组
-            groupUser.setGuStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.NOTINGROUP));
-            groupUser.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.ABNORMAL));
+            groupUser.setGuStatus(StatusCode.getNotInGroupStatusCode());
+            groupUser.setDisplayStatus(StatusCode.getAbnormalStatusCode());
         }
 
         return groupMapper.updateGroupUserStatus(groupUser);
@@ -229,7 +232,7 @@ public class GroupServiceImpl implements GroupService {
 
         int result = 0;
         // 1、删除群组的群聊消息记录
-        final String pubMsgType = MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG);
+        final String pubMsgType = MessageType.getPublicMessageType();
         PublicMessage publicMessage = new PublicMessage();
         publicMessage.setMessageType(pubMsgType);
         publicMessage.setReceiveGroup(dissolveGroup);
@@ -248,10 +251,11 @@ public class GroupServiceImpl implements GroupService {
             // 2.2、依次将用户踢出该群聊
             result += doUpdateUserInGroup(groupUser, false);
         }
+        dissolveGroup.setMembers(groupUsers);
 
         // 3、解散此群聊
         dissolveGroup.setModifiedTime(new Date(System.currentTimeMillis()));
-        dissolveGroup.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.ABNORMAL));
+        dissolveGroup.setDisplayStatus(StatusCode.getAbnormalStatusCode());
         result += doUpdateGroup(dissolveGroup);
 
         return result;

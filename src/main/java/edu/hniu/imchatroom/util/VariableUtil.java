@@ -1,6 +1,5 @@
 package edu.hniu.imchatroom.util;
 
-import edu.hniu.imchatroom.model.enums.ResponseCodeEnum;
 import edu.hniu.imchatroom.model.enums.RoleEnum;
 
 /**
@@ -8,12 +7,17 @@ import edu.hniu.imchatroom.model.enums.RoleEnum;
  */
 public final class VariableUtil {
 
+    // 项目名称
     public static final String CHATROOM_NAME = "IM";
+    // 端口号
+    public static final Integer PORT = 80;
+    // 网络连接地址
+    public static final String ADDRESS = "http://127.0.0.1";
+//    public static final String ADDRESS = "http://8.130.104.52";
     // 默认密码
     public static final String DEFAULT_PASSWORD = "123456";
+    // 登陆用户
     public static final String SIGNINED_USER = "SIGNINED_USER";
-    // 建立WebSocket连接时用
-    public static final String SIGNINED_USER_WS_CODE = "SIGNINED_USER_WS_CODE";
 
     // 系统广播名称
     public static final String BROADCAST_MESSAGE_NAME = "BROADCAST_MESSAGE";
@@ -24,11 +28,6 @@ public final class VariableUtil {
     public static final String BASE_CODE = "0123456789ABCDEFGHIJKMLNOPQRSTUVWXYZabcdefghijkmlnopqrstuvwxyz";
     // 验证码变量
     public static final String CHECK_CODE = "CHECKCODE_SERVER";
-
-    // 响应状态码（成功、警告、失败）
-    public static final Integer RESPONSE_SUCCESS_CODE = ResponseCodeEnum.getCode(ResponseCodeEnum.SUCCESS);
-    public static final Integer RESPONSE_WARNING_CODE = ResponseCodeEnum.getCode(ResponseCodeEnum.WARNING);
-    public static final Integer RESPONSE_FAILED_CODE = ResponseCodeEnum.getCode(ResponseCodeEnum.FAILED);
 
     // 管理员名称
     public static final String ADMIN_USER_NAME = RoleEnum.getRoleName(RoleEnum.ADMIN);

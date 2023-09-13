@@ -25,12 +25,12 @@ public interface FriendMapper {
      * @param fsId
      * @return
      */
-    FriendShip selectFriendShipByFsId(@Param("fsId") Integer fsId);
+    FriendShip selectFriendShipByFsId(@Param("fsId") Long fsId);
 
     /**
      * 根据uId查询他所有的 好友信息
      */
-    List<Friend> selectFriendsByUId(@Param("uId") Integer uId);
+    List<Friend> selectFriendsByUId(@Param("uId") Long uId);
 
     /**
      * 新增 友谊信息
@@ -60,5 +60,5 @@ public interface FriendMapper {
      */
     int updateFriend(@Param("friend") Friend friend);
 
-    List<FriendShip> selectOwnFriendship(@Param("uId") Integer uId);
+    List<FriendShip> selectOwnFriendship(@Param("uId") Long uId);
 }

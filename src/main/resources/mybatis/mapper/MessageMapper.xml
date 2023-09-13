@@ -18,7 +18,7 @@
         `fb_id`, `u_id`, `content`, `send_time`
     </sql>
 
-    <resultMap id="PrivateMessageResultMap" type="edu.hniu.imchatroom.model.bean.PrivateMessage">
+    <resultMap id="PrivateMessageResultMap" type="edu.hniu.imchatroom.model.bean.messages.PrivateMessage">
         <id column="pr_id" property="prId" />
         <result column="content" property="content" />
         <result column="send_time" property="sendTime" />
@@ -26,7 +26,7 @@
         <association property="sendUser" column="send_id" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById" />
         <association property="receiveUser" column="receive_id" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById" />
     </resultMap>
-    <resultMap id="PublicMessageResultMap" type="edu.hniu.imchatroom.model.bean.PublicMessage">
+    <resultMap id="PublicMessageResultMap" type="edu.hniu.imchatroom.model.bean.messages.PublicMessage">
         <id column="pu_id" property="puId" />
         <result column="content" property="content" />
         <result column="send_time" property="sendTime" />
@@ -34,21 +34,21 @@
         <association property="sendUser" column="send_id" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById" />
         <association property="receiveGroup" column="g_id" select="edu.hniu.imchatroom.mapper.GroupMapper.selectGroupById" />
     </resultMap>
-    <resultMap id="BroadcastResultMap" type="edu.hniu.imchatroom.model.bean.BroadcastMessage">
+    <resultMap id="BroadcastResultMap" type="edu.hniu.imchatroom.model.bean.messages.BroadcastMessage">
         <id column="b_id" property="bId" />
         <result column="content" property="content" />
         <result column="send_time" property="sendTime" />
         <result column="display_status" property="displayStatus" />
         <association column="u_id" property="publisher" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById"/>
     </resultMap>
-    <resultMap id="ArticleResultMap" type="edu.hniu.imchatroom.model.bean.ArticleMessage">
+    <resultMap id="ArticleResultMap" type="edu.hniu.imchatroom.model.bean.messages.ArticleMessage">
         <id column="a_id" property="aId" />
         <result column="content" property="content" />
         <result column="send_time" property="sendTime" />
         <result column="display_status" property="displayStatus" />
         <association column="u_id" property="publisher" select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById"/>
     </resultMap>
-    <resultMap id="FeedbackMessageResultMap" type="edu.hniu.imchatroom.model.bean.FeedbackMessage">
+    <resultMap id="FeedbackMessageResultMap" type="edu.hniu.imchatroom.model.bean.messages.FeedbackMessage">
         <id column="fb_id" property="fbId" />
         <result column="content" property="content" />
         <result column="send_time" property="sendTime" />
@@ -140,7 +140,7 @@
     <insert id="insertPriMsg" useGeneratedKeys="true" keyProperty="prId">
         INSERT INTO `private_message`
             (`send_id`, `receive_id`, `content`, `send_time`, `display_status`)
-        VALUES
+        VALUE
             (#{privateMessage.sendUser.uId }, #{privateMessage.receiveUser.uId },
              #{privateMessage.content }, #{privateMessage.sendTime }, #{privateMessage.displayStatus })
     </insert>
@@ -149,7 +149,7 @@
     <insert id="insertPubMsg" useGeneratedKeys="true" keyProperty="puId">
         INSERT INTO `public_message`
             (`send_id`, `g_id`, `content`, `send_time`, `display_status`)
-        VALUES
+        VALUE
             (#{publicMessage.sendUser.uId }, #{publicMessage.receiveGroup.gId },
              #{publicMessage.content }, #{publicMessage.sendTime }, #{publicMessage.displayStatus })
     </insert>
@@ -158,7 +158,7 @@
     <insert id="insertSystemMsg" useGeneratedKeys="true" keyProperty="bId">
         INSERT INTO `broadcast_message`
             (`u_id`, `content`, `send_time`, `display_status`)
-        VALUES
+        VALUE
             (#{broadcastMessage.publisher.uId }, #{broadcastMessage.content },
              #{broadcastMessage.sendTime }, #{broadcastMessage.displayStatus })
     </insert>
@@ -167,7 +167,7 @@
     <insert id="insertArticleMsg" useGeneratedKeys="true" keyProperty="aId">
         INSERT INTO `article_message`
             (`u_id`, `content`, `send_time`, `display_status`)
-        VALUES
+        VALUE
             (#{articleMessage.publisher.uId }, #{articleMessage.content },
              #{articleMessage.sendTime }, #{articleMessage.displayStatus })
     </insert>
@@ -176,7 +176,7 @@
     <insert id="insertFeedbackMsg" useGeneratedKeys="true" keyProperty="fbId">
         INSERT INTO `feedback_message`
             (`u_id`, `content`, `send_time`, `display_status`)
-        VALUES
+        VALUE
             (#{feedbackMessage.publisher.uId }, #{feedbackMessage.content },
              #{feedbackMessage.sendTime }, #{feedbackMessage.displayStatus })
     </insert>

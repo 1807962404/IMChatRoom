@@ -2,8 +2,10 @@ package edu.hniu.imchatroom.service.impl;
 
 import edu.hniu.imchatroom.mapper.FriendMapper;
 import edu.hniu.imchatroom.model.bean.*;
-import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
-import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
+import edu.hniu.imchatroom.model.bean.messages.Message;
+import edu.hniu.imchatroom.model.bean.messages.MessageType;
+import edu.hniu.imchatroom.model.bean.messages.PrivateMessage;
+import edu.hniu.imchatroom.model.bean.messages.StatusCode;
 import edu.hniu.imchatroom.service.FriendService;
 import edu.hniu.imchatroom.service.MessageService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,23 +62,23 @@ public class FriendServiceImpl implements FriendService {
         // 设置朋友
         friendShip.setFriendUser(friendUser);
         // 设置好友关系状态为：正待确认中
-        friendShip.setFsStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.CONFIRMING));
+        friendShip.setFsStatus(StatusCode.getConfirmingStatusCode());
         // 设置申请时间
         friendShip.setApplyTime(new Date(System.currentTimeMillis()));
         // 设置展示状态
-        friendShip.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL));
+        friendShip.setDisplayStatus(StatusCode.getNormalStatusCode());
 
         return friendMapper.insertFriendShip(friendShip);
     }
 
     @Transactional
     @Override
-    public Integer doMakeFriend(Integer fsId) {
+    public Integer doMakeFriend(Long fsId) {
 
         FriendShip friendShip = new FriendShip();
         friendShip.setFsId(fsId);
         // 1.1、修改友谊表中好友状态为：正常状态
-        friendShip.setFsStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.ISFRIEND));
+        friendShip.setFsStatus(StatusCode.getIsFriendStatusCode());
         // 1.2、更新友谊表数据的状态
         int result = friendMapper.updateFriendShip(friendShip);
 
@@ -85,11 +87,11 @@ public class FriendServiceImpl implements FriendService {
         // 设置好友友谊
         newFriend.setFriendShip(friendShip);
         // 设置好友状态
-        newFriend.setFStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL));
+        newFriend.setFStatus(StatusCode.getNormalStatusCode());
         // 设置友情结交时间
         newFriend.setMakeTime(new Date(System.currentTimeMillis()));
         // 设置展示状态
-        newFriend.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL));
+        newFriend.setDisplayStatus(StatusCode.getNormalStatusCode());
         // 2.2、插入好友表数据
         result += friendMapper.insertFriend(newFriend);
 
@@ -103,7 +105,7 @@ public class FriendServiceImpl implements FriendService {
      */
     @Transactional(readOnly = true)
     @Override
-    public List<Friend> doGetFriendsByUId(Integer uId) {
+    public List<Friend> doGetFriendsByUId(Long uId) {
         return friendMapper.selectFriendsByUId(uId);
     }
 
@@ -119,7 +121,7 @@ public class FriendServiceImpl implements FriendService {
         int result = 0;
 
         // 1、删除双方的聊天记录
-        final String priMsgType = MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG);
+        final String priMsgType = MessageType.getPrivateMessageType();
         PrivateMessage privateMessage = new PrivateMessage();
         privateMessage.setMessageType(priMsgType);
         privateMessage.setSendUser(friendShip.getHostUser());
@@ -133,9 +135,9 @@ public class FriendServiceImpl implements FriendService {
 
         // 2、设置友谊记录
         // 2.1、设置友谊状态为：非好友状态
-        friendShip.setFsStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.NOTFRIEND));
+        friendShip.setFsStatus(StatusCode.getNotFriendStatusCode());
         // 2.2、设置显示状态为隐藏
-        friendShip.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.ABNORMAL));
+        friendShip.setDisplayStatus(StatusCode.getAbnormalStatusCode());
         // 2.3、更新友谊表记录
         result += friendMapper.updateFriendShip(friendShip);
 
@@ -144,9 +146,9 @@ public class FriendServiceImpl implements FriendService {
         // 3.1、设置fsId
         delFriend.setFriendShip(friendShip);
         // 3.2、设置好友状态为：非好友状态
-        delFriend.setFStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.ABNORMAL));
+        delFriend.setFStatus(StatusCode.getAbnormalStatusCode());
         // 3.3、设置显示状态为隐藏
-        delFriend.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.ABNORMAL));
+        delFriend.setDisplayStatus(StatusCode.getAbnormalStatusCode());
         // 3.4、更新好友表记录
         result += friendMapper.updateFriend(delFriend);
 
@@ -160,7 +162,7 @@ public class FriendServiceImpl implements FriendService {
      */
     @Transactional(readOnly = true)
     @Override
-    public List<FriendShip> doGetOwnFriendship(Integer uId) {
+    public List<FriendShip> doGetOwnFriendship(Long uId) {
         return friendMapper.selectOwnFriendship(uId);
     }
 }

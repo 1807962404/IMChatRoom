@@ -18,12 +18,9 @@ public interface UserService {
 
     /**
      * 设置可用 用户
-     * 一个唯一的uniqueUserCode 对应一个用户（不区分在线或否）
-     *
      * @param user
-     * @param uniqueUserCode
      */
-    void doSetUserToUse(User user, String uniqueUserCode);
+    void doSetUserToUse(User user);
 
     /**
      * 模糊查询用户信息
@@ -43,7 +40,7 @@ public interface UserService {
     /**
      * 根据uId查询用户信息
      */
-    User doGetUserById(Integer uId);
+    User doGetUserById(Long uId);
 
     /**
      * 注册用户信息
@@ -59,6 +56,14 @@ public interface UserService {
      * @return
      */
     Integer doSignIn(User user);
+
+    /**
+     * 处理 用户退出登陆 的业务逻辑
+     *
+     * @param logoutUser
+     * @return
+     */
+    Integer doSignOut(User logoutUser);
 
     /**
      * 激活账户操作

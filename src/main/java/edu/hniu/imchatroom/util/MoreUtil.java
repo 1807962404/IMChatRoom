@@ -1,6 +1,6 @@
 package edu.hniu.imchatroom.util;
 
-import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
+import edu.hniu.imchatroom.model.bean.messages.StatusCode;
 
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
@@ -140,11 +140,11 @@ public class MoreUtil {
 
         if (null != results && null != item) {
             if (isExcludeHiddenItem) {  // 排除隐藏数据
-                if (displayStatus.equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL)))
+                if (displayStatus.equals(StatusCode.getNormalStatusCode()))
                     results.add(item);
 
             } else {
-                if (displayStatus.equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ABNORMAL)))
+                if (displayStatus.equals(StatusCode.getAbnormalStatusCode()))
                     results.add(item);
             }
         }

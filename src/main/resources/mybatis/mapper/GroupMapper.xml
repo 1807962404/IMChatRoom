@@ -46,14 +46,14 @@
         FROM `group_user`
     </sql>
 
-<!--    List<Group> selectMyGroups(@Param("hostId") Integer hostId);-->
+<!--    List<Group> selectMyGroups(@Param("hostId") Long hostId);-->
     <select id="selectMyGroups" resultMap="GroupsResultMap">
         <include refid="AllGroups" />
         WHERE `display_status` = '0'
             AND `host_id` = #{hostId }
     </select>
 
-<!--    Group selectGroupById(@Param("gId") Integer gId);-->
+<!--    Group selectGroupById(@Param("gId") Long gId);-->
     <select id="selectGroupById" resultMap="GroupsResultMap">
         <include refid="AllGroups" />
         WHERE `display_status` = '0'
@@ -80,7 +80,7 @@
              <if test="null != groupUser.joinTime">#{groupUser.joinTime }</if>)
     </insert>
 
-<!--    List<Group> selectMyEnteredGroups(@Param("uId") Integer uId);-->
+<!--    List<Group> selectMyEnteredGroups(@Param("uId") Long uId);-->
     <select id="selectMyEnteredGroups" resultMap="GroupsResultMap">
         <include refid="AllGroups" />
         WHERE `display_status` = '0'
@@ -109,12 +109,13 @@
             AND `g_code` = #{gCode }
     </select>
 
-<!--    GroupUser selectGroupsUsersById(@Param("gId") Integer gId, @Param("uId") Integer uId);-->
+<!--    List<GroupUser> selectGroupsUsersById(@Param("gId") Long gId, @Param("uId") Long uId);-->
     <select id="selectGroupsUsersById" resultMap="GroupUserResultMap">
         <include refid="AllGroupsUsers" />
         WHERE `display_status` = '0'
             <if test="null != gId">AND `g_id` = #{gId }</if>
             <if test="null != uId">AND `member_id` = #{uId }</if>
+--         ORDER BY `apply_time` DESC, `join_time` DESC
     </select>
 
 <!--    Integer updateGroupUserStatus(@Param("groupUser") GroupUser groupUser);-->

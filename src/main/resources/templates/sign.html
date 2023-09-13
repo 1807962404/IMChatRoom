@@ -6,44 +6,17 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>登陆/注册页</title>
-  <link rel="icon" th:href="@{/images/favicon.ico }" type="image/x-icon">
   <link rel="stylesheet" th:href="@{/css/sign.css }">
-  <link rel="stylesheet" th:href="@{/css/common.css }">
 
-  <!--用于消息弹窗
-    该css是引用 iconfont.cn 的一些字体图标。官方地址： https://www.iconfont.cn/ -->
-  <link rel="stylesheet" href="http://at.alicdn.com/t/font_1117508_wxidm5ry7od.css">
-  <link rel="stylesheet" th:href="@{/css/message.css }">
-  <script th:src="@{/js/message.js }"></script>
-
-  <!--ajax实现form表单提交所需js库-->
-  <script src="http://libs.baidu.com/jquery/2.1.4/jquery.min.js"></script>
+  <div th:insert="~{common :: commonheader}"></div>
 </head>
 
 <body>
 
-<div id="customized-modal" class="modal">
-  <div class="modal-content">
-    <!--    默认模块显示内容-->
-    <div class="default-modal-content">
-      <span class="close" onclick="closeModal();">&times;</span>
-      <h2>温馨提醒您！</h2>
-      <p>此操作不可逆，请确认无误后再进行操作！</p>
-    </div>
-
-    <!--    用户自定义模块显示内容-->
-    <div class="custom-modal-content hidden-el"></div>
-  </div>
-</div>
+<div data-th-replace="~{common :: modal-content}"></div>
 
 <!-- login/register container -->
 <div class="container">
-  <script type="text/javascript">
-    window.onload = () => {
-      var verifyCodeToSignIn = document.getElementsByClassName('verifyCode')[1];
-      changeCheckCode(verifyCodeToSignIn, true)   // 加载验证码
-    }
-  </script>
 
   <!-- register -->
   <div class="form-container sign-up-container">
@@ -59,7 +32,7 @@
       <input name="verifyCode" type="text" onblur="checkVerifyCodeVal(this.value, false)" placeholder="请输入验证码..." autocomplete="off" required>
       <!--        时间戳标识符-->
       <input type="hidden" name="identify" class="identify" />
-      <span><img class="verifyCode shrink" src="verifyCode" alt="点击切换验证码" onclick="changeCheckCode(this, false)"></span><br />
+      <span><img class="verifyCode shrink" alt="点击切换验证码" onclick="changeCheckCode(this, false)"></span><br />
       <button class="signUp shrink" onclick="return doSignUp()">注册</button>
     </div>
   </div>
@@ -76,7 +49,7 @@
       <input name="verifyCode" type="text" onblur="checkVerifyCodeVal(this.value, true)" placeholder="请输入验证码..." autocomplete="off" required>
       <!--        时间戳标识符-->
       <input type="hidden" name="identify" class="identify" />
-      <span><img class="verifyCode shrink" src="verifyCode" alt="点击切换验证码" onclick="changeCheckCode(this, true)"></span><br />
+      <span><img class="verifyCode shrink" alt="点击切换验证码" onclick="changeCheckCode(this, true)"></span><br />
       <a href="#" class="forget-password shrink" onclick="doForgetPasswordBtnListener()">忘记密码？</a><br />
       <button class="signIn shrink" onclick="return doSignIn();">登陆</button>
     </div>
@@ -98,14 +71,7 @@
       </div>
     </div>
   </div>
-  <!-- 消息外层容器，因为消息提醒基本上是全局的，所以这里用id，所有的弹出消息都是需要插入到这个容器里边的 -->
-  <div id="message-container"></div>
 </div>
-<!-- move-in：弹出消息框， move-out：隐藏消息框-->
-<!--<button class="msg_success" onclick="callMessage(0, '操作成功！')">成功消息提醒</button>
-<button class="msg_warning" onclick="callMessage(1, '请谨慎操作！')">警告消息提醒</button>
-<button class="msg_failed" onclick="callMessage(-1, '操作失败！')">失败消息提醒</button>-->
 </body>
-
-<script th:src="@{/js/sign.js }"></script>
+<div th:insert="~{common :: #commonscripts}"></div>
 </html>

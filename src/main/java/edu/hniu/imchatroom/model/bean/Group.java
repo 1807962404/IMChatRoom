@@ -20,7 +20,7 @@ public class Group implements Serializable {
 
     private static final long serialVersionUID = 345465734234645L;
     @JsonProperty("gId")
-    private Integer gId;
+    private Long gId;
 //    群聊码
     @JsonProperty("gCode")
     private String gCode;

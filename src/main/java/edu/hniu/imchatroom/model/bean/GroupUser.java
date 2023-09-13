@@ -15,7 +15,7 @@ import java.util.Date;
 @AllArgsConstructor
 public class GroupUser implements Serializable {
     private static final long serialVersionUID = 843723723498238L;
-    private Integer guId;
+    private Long guId;
     // 0：仍在群聊，1：尚待群主确认，2：已退出群聊
     private String guStatus;
     // 入群申请时间

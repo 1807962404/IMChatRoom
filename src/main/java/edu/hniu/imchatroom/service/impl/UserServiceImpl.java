@@ -1,11 +1,8 @@
 package edu.hniu.imchatroom.service.impl;
 
-import edu.hniu.imchatroom.controller.UserController;
 import edu.hniu.imchatroom.mapper.UserMapper;
 import edu.hniu.imchatroom.model.bean.*;
-import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
-import edu.hniu.imchatroom.model.enums.RoleEnum;
-import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
+import edu.hniu.imchatroom.model.bean.messages.*;
 import edu.hniu.imchatroom.service.GroupService;
 import edu.hniu.imchatroom.service.EmailService;
 import edu.hniu.imchatroom.service.MessageService;
@@ -22,6 +19,9 @@ import java.util.List;
 
 import static edu.hniu.imchatroom.util.VariableUtil.CHATROOM_NAME;
 import static edu.hniu.imchatroom.util.VariableUtil.DEFAULT_PASSWORD;
+import static edu.hniu.imchatroom.util.VariableUtil.PORT;
+import static edu.hniu.imchatroom.util.VariableUtil.ADDRESS;
+import static edu.hniu.imchatroom.util.VariableUtil.ADMIN_USER_NAME;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -63,21 +63,14 @@ public class UserServiceImpl implements UserService {
 
     /**
      * 设置可用 用户
-     * 一个唯一的uniqueUserCode 对应一个用户（不区分在线或否）
-     *
      * @param user
-     * @param uniqueUserCode
      */
     @Override
-    public void doSetUserToUse(User user, String uniqueUserCode) {
+    public void doSetUserToUse(User user) {
         if (null != user) {
             // 将用户的密码和激活码设为空
             user.setPassword(null);
             user.setActiveCode(null);
-
-            if (null != uniqueUserCode)
-                // 唯一用户码对应在线用户
-                UserController.onlineUserToUseMap.put(uniqueUserCode, user);
         }
     }
 
@@ -109,7 +102,7 @@ public class UserServiceImpl implements UserService {
      */
     @Transactional(readOnly = true)
     @Override
-    public User doGetUserById(Integer uId) {
+    public User doGetUserById(Long uId) {
         return userMapper.selectUserById(uId);
     }
 
@@ -141,7 +134,7 @@ public class UserServiceImpl implements UserService {
         User userByIdentified = userMapper.selectUserToVerify(user, hasPwd);
         if (!hasPwd) {
             // 不需要密码
-            doSetUserToUse(userByIdentified, null);
+            doSetUserToUse(userByIdentified);
         }
         return userByIdentified;
     }
@@ -173,11 +166,11 @@ public class UserServiceImpl implements UserService {
         user.setModifiedTime(new Date(System.currentTimeMillis()));
 
         // 5、设置展示状态
-        user.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL));
+        user.setDisplayStatus(StatusCode.getNormalStatusCode());
 
         // 6、发送邮件
         String content = "<h1 style='color: #f00'>欢迎注册“" + CHATROOM_NAME + "”账户，点击下面链接激活账户，以便获取更多惊喜体验！</h1>" +
-                "<a href='http://localhost:8080/chatroom/user/active-user-account/" + activeCode
+                "<a href='" + ADDRESS + ":" + PORT + "/chatroom/user/active-user-account/" + activeCode
                 + "'>点击此链接激活【" + CHATROOM_NAME + "】账户！</a>";
         try {
             emailService.sendEmail(user.getEmail(), CHATROOM_NAME + "激活邮件", content);
@@ -202,13 +195,28 @@ public class UserServiceImpl implements UserService {
     public Integer doSignIn(User user) {
 
         // 1、修改该用户为在线状态，并修改其 上次登陆时间 以及 最近修改时间
-        Date nowTime = new Date(System.currentTimeMillis());
-        user.setOnlineStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.ONLINE));
-        user.setLastSigninTime(nowTime);
-        user.setModifiedTime(nowTime);
+        user.setOnlineStatus(StatusCode.getOnlineStatusCode());
 
-        // 2、用户登陆（需要修改其在线状态）
-        return userMapper.updateUser(user);
+        // 2、更新用户信息（设置账号修改时间）
+        return doUpdateUser(user);
+    }
+
+    /**
+     * 处理 用户退出登陆 的业务逻辑
+     *
+     * @param logoutUser
+     * @return
+     */
+    @Override
+    public Integer doSignOut(User logoutUser) {
+
+        // 1、修改该用户为离线状态
+        logoutUser.setOnlineStatus(StatusCode.getOfflineStatusCode());
+        // 2、设置上次登陆时间
+        logoutUser.setLastSigninTime(new Date(System.currentTimeMillis()));
+
+        // 3、更新用户信息（设置账号修改时间）
+        return doUpdateUser(logoutUser);
     }
 
     /**
@@ -224,29 +232,25 @@ public class UserServiceImpl implements UserService {
         // 1、设置激活码
         activeUser.setActiveCode(activeCode);
         // 2、设置账号激活状态为：已激活
-        activeUser.setAccountStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.ACTIVATED));
+        activeUser.setAccountStatus(StatusCode.getActivatedStatusCode());
         // 3、设置账号激活时间
         activeUser.setActiveTime(new Date(System.currentTimeMillis()));
-        // 4、设置账号修改时间
-        activeUser.setModifiedTime(new Date(System.currentTimeMillis()));
 
-        return userMapper.activeUserAccount(activeUser);
+        // 4、设置账号修改时间
+        return doUpdateUser(activeUser);
     }
 
     /**
      * 更新账号信息
-     * 1、处理 用户会话注销 的业务逻辑
-     * 2、处理 注销用户账号 的业务逻辑
      *
      * @param user
      * @return
      */
+    @Override
     public Integer doUpdateUser(User user) {
 
-        // 2、设置账号修改时间
+        // 设置账号修改时间
         user.setModifiedTime(new Date(System.currentTimeMillis()));
-        // 3、不设置上次登陆时间
-        user.setLastSigninTime(null);
 
         return userMapper.updateUser(user);
     }
@@ -258,13 +262,14 @@ public class UserServiceImpl implements UserService {
      * @param step
      * @return
      */
+    @Override
     public Integer doForgetPassword(User user, int step) {
 
         boolean success = false;
         if (1 == step) {
             // 第一步：发送邮件
             String content = "<h1 style='color: #f00'>" + CHATROOM_NAME + "邮箱通知，点击下面链接重置账户密码！</h1>" +
-                    "<a href='http://localhost:8080/chatroom/user/reset-password/" + user.getActiveCode()
+                    "<a href='" + ADDRESS + ":" + PORT + "/chatroom/user/reset-password/" + user.getActiveCode()
                     + "'>点击此链接重置【" + CHATROOM_NAME + "】账户密码为默认密码（" + DEFAULT_PASSWORD + "）！</a>";
             try {
                 emailService.sendEmail(user.getEmail(), CHATROOM_NAME + "重置密码邮件", content);
@@ -312,9 +317,9 @@ public class UserServiceImpl implements UserService {
 
         int result = 0;
         // 1、判断需要注销的用户账号是否为管理员账号
-        if (loggoutUser.getRole().equals(RoleEnum.getRoleName(RoleEnum.ADMIN))) {
+        if (loggoutUser.getRole().equals(ADMIN_USER_NAME)) {
             // 2、删除此管理员账户发表的所有 优文摘要 信息
-            final String artMsgType = MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG);
+            final String artMsgType = MessageType.getAbstractMessageType();
             ArticleMessage articleMessage = new ArticleMessage();
             articleMessage.setMessageType(artMsgType);
             articleMessage.setPublisher(loggoutUser);
@@ -327,7 +332,7 @@ public class UserServiceImpl implements UserService {
                     result += messageService.doDestroyMessage(artMsgType, messages);
 
             // 3、删除此管理员账户发布的所有 系统广播 信息
-            final String broMsgType = MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG);
+            final String broMsgType = MessageType.getSystemMessageType();
             BroadcastMessage broadcastMessage = new BroadcastMessage();
             broadcastMessage.setMessageType(broMsgType);
             broadcastMessage.setPublisher(loggoutUser);
@@ -368,11 +373,10 @@ public class UserServiceImpl implements UserService {
         }
 
         // 5、设置该用户的账号为：已注销状态、隐藏状态
-        loggoutUser.setAccountStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.INVALID));
-        loggoutUser.setOnlineStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.OFFLINE));
-        loggoutUser.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.ABNORMAL));
+        loggoutUser.setAccountStatus(StatusCode.getInvalidStatusCode());
+        loggoutUser.setDisplayStatus(StatusCode.getAbnormalStatusCode());
         // 注销账户
-        result += doUpdateUser(loggoutUser);
+        result += doSignOut(loggoutUser);
 
         return result;
     }

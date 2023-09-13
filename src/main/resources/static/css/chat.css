@@ -86,14 +86,42 @@ a {
 }
 
 #chat-bg #chat-header #user-info {
+    position: relative;
     color: #fff;
     font-size: 16px;
 }
 
-#chat-bg #chat-header #user-info .show-name {
-    color: #f00;
+#chat-bg #chat-header #user-info .avatar {
+    margin-top: -10px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+#chat-bg #chat-header #user-info #nickname {
+    position: absolute;
+    left: 65px;
+    top: -10px;
+    width: 100px;
+    color: #fff;
     font-size: 20px;
     font-weight: bold;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+#chat-bg #chat-header #user-info #identity {
+    position: absolute;
+    left: 65px;
+    top: 20px;
+}
+#chat-bg #chat-header #user-info button {
+    width: 70px;
+    height: 30px;
+    color: #fff;
+    background-color: #0099ff
 }
 
 #chat-bg #chat-header #info-show #chat-obj {
@@ -126,7 +154,7 @@ a {
 #chat-bg #chat-header #info-show #online-user-count {
     clear: both;
     float: right;
-    margin-top: -15px;
+    margin-top: -30px;
     color: #fff;
     font-size: 16px;
 }

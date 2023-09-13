@@ -79,6 +79,7 @@ button {
     margin-top: 10px;
     outline: none;
     transition: transform 80;
+    cursor: pointer;
 }
 
 button:active {
@@ -156,4 +157,8 @@ button:active {
 
 .shrink {
     margin-bottom: -16px;
+}
+
+.form  img[class="verifyCode shrink"] {
+    cursor: pointer;
 }

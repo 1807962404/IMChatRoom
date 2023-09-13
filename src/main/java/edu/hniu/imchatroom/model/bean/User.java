@@ -20,7 +20,7 @@ public class User implements Serializable {
 
     private static final long serialVersionUID = 234783249212320L;
     @JsonProperty("uId")
-    private Integer uId;
+    private Long uId;
     private String account;
     private String password;
     private String nickname;
@@ -38,6 +38,11 @@ public class User implements Serializable {
     private Date modifiedTime;
     // 展示状态。0：显示，1：隐藏
     private String displayStatus;
+    // 用户登陆唯一码
+    private String uniqueUserCode;
+    // 我的好友列表
+    private List<Friend> myFriends;
+    private boolean hasSignIn = false;
 
     /**
      * 若uid、account 以及 email 都相等则看作是同一个对象

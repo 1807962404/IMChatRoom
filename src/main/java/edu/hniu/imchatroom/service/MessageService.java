@@ -1,6 +1,6 @@
 package edu.hniu.imchatroom.service;
 
-import edu.hniu.imchatroom.model.bean.Message;
+import edu.hniu.imchatroom.model.bean.messages.Message;
 
 import java.util.List;
 

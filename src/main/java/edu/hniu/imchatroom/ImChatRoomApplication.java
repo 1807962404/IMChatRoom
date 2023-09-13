@@ -7,6 +7,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class ImChatRoomApplication {
 
     public static void main(String[] args) {
+
+        /**
+         * SpringApplication：是SpringBoot应用的核心API入口
+         */
         SpringApplication.run(ImChatRoomApplication.class, args);
     }
 

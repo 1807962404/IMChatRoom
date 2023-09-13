@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="commonheader">
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <link rel="icon" th:href="@{/images/favicon.ico }" type="image/x-icon">
+    <!--用于消息弹窗
+  该css是引用 iconfont.cn 的一些字体图标。官方地址： https://www.iconfont.cn/ -->
+    <link rel="stylesheet" href="http://at.alicdn.com/t/font_1117508_wxidm5ry7od.css">
+    <link rel="stylesheet" th:href="@{/css/message.css }">
+    <link rel="stylesheet" th:href="@{/css/common.css }">
+    <script th:src="@{/js/message.js }"></script>
+
+    <script src="http://libs.baidu.com/jquery/2.1.4/jquery.min.js"></script>
+</head>
+<body>
+
+<div th:fragment="modal-content" id="customized-modal" class="modal">
+  <div class="modal-content">
+    <!--    默认模块显示内容-->
+    <div class="default-modal-content">
+      <span class="close" onclick="closeModal();">&times;</span>
+      <h2>温馨提醒您！</h2>
+      <p>此操作不可逆，请确认无误后再进行操作！</p>
+    </div>
+
+    <!--    用户自定义模块显示内容-->
+    <div class="custom-modal-content hidden-el"></div>
+  </div>
+</div>
+
+<div id="commonscripts">
+    <script th:src="@{/js/common.js }"></script>
+    <script th:src="@{/js/sign.js }"></script>
+</div>
+</body>
+</html>

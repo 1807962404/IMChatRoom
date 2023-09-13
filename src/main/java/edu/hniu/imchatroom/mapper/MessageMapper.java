@@ -1,6 +1,6 @@
 package edu.hniu.imchatroom.mapper;
 
-import edu.hniu.imchatroom.model.bean.*;
+import edu.hniu.imchatroom.model.bean.messages.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

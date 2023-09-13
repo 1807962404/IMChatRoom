@@ -1,9 +1,7 @@
 package edu.hniu.imchatroom.service.impl;
 
 import edu.hniu.imchatroom.mapper.MessageMapper;
-import edu.hniu.imchatroom.model.bean.*;
-import edu.hniu.imchatroom.model.enums.MessageTypeEnum;
-import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
+import edu.hniu.imchatroom.model.bean.messages.*;
 import edu.hniu.imchatroom.service.MessageService;
 import edu.hniu.imchatroom.util.EncryptUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,23 +34,23 @@ public class MessageServiceImpl implements MessageService {
         // 根据消息类型进行分类处理
         String msgType = message.getMessageType();
         List<? extends Message> messages = null;
-        if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
+        if (msgType.equals(MessageType.getPrivateMessageType())) {
             // 私聊消息（会根据消息发送者uId和消息接收者uId进行查询）
             messages = messageMapper.selectPrivateMessages((PrivateMessage) message);
 
-        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG))) {
+        } else if (msgType.equals(MessageType.getPublicMessageType())) {
             // 群聊消息（会根据群gId进行查询），查询的群聊消息是在该用户加入此群聊之后的消息
             messages = messageMapper.selectPublicMessage((PublicMessage) message);
 
-        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
+        } else if (msgType.equals(MessageType.getSystemMessageType())) {
             // 系统广播消息（会根据系统广播消息发布者uId进行查询）
             messages = messageMapper.selectBroadcastMessage((BroadcastMessage) message);
 
-        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
+        } else if (msgType.equals(MessageType.getAbstractMessageType())) {
             // 优文摘要消息（会根据系优文摘要消息发表者uId进行查询）
             messages = messageMapper.selectArticleMessage((ArticleMessage) message);
 
-        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.FEEDBACK_MSG))) {
+        } else if (msgType.equals(MessageType.getFeedbackMessageType())) {
             // 意见反馈消息
             messages = messageMapper.selectFeedbackMessage((FeedbackMessage) message);
         }
@@ -79,29 +77,29 @@ public class MessageServiceImpl implements MessageService {
 
         // 根据消息类型进行分类处理
         String msgType = message.getMessageType();
-        message.setDisplayStatus(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL));
+        message.setDisplayStatus(StatusCode.getNormalStatusCode());
 
-        if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
+        if (msgType.equals(MessageType.getPrivateMessageType())) {
             // 发送私聊消息
             PrivateMessage privateMessage = (PrivateMessage) message;
             result = messageMapper.insertPriMsg(privateMessage);
 
-        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG))) {
+        } else if (msgType.equals(MessageType.getPublicMessageType())) {
             // 发送群聊消息
             PublicMessage publicMessage = (PublicMessage) message;
             result = messageMapper.insertPubMsg(publicMessage);
 
-        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
+        } else if (msgType.equals(MessageType.getSystemMessageType())) {
             // 发送系统消息
             BroadcastMessage broadcastMessage = (BroadcastMessage) message;
             result = messageMapper.insertSystemMsg(broadcastMessage);
 
-        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
+        } else if (msgType.equals(MessageType.getAbstractMessageType())) {
             // 发送优文摘要消息
             ArticleMessage articleMessage = (ArticleMessage) message;
             result = messageMapper.insertArticleMsg(articleMessage);
 
-        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.FEEDBACK_MSG))) {
+        } else if (msgType.equals(MessageType.getFeedbackMessageType())) {
             // 发送意见反馈消息
             FeedbackMessage feedbackMessage = (FeedbackMessage) message;
             result = messageMapper.insertFeedbackMsg(feedbackMessage);
@@ -125,22 +123,22 @@ public class MessageServiceImpl implements MessageService {
 
         int result = 0;
         // 根据消息类型进行分类销毁（删除）处理
-        if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PRI_MSG))) {
+        if (msgType.equals(MessageType.getPrivateMessageType())) {
             // 私聊消息
             List<PrivateMessage> privateMessages = (List<PrivateMessage>) messages;
             result += messageMapper.deletePriMsg(privateMessages);
 
-        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.PUB_MSG))) {
+        } else if (msgType.equals(MessageType.getPublicMessageType())) {
             // 群聊消息
             List<PublicMessage> publicMessages = (List<PublicMessage>) messages;
             result += messageMapper.deletePubMsg(publicMessages);
 
-        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.SYSTEM_MSG))) {
+        } else if (msgType.equals(MessageType.getSystemMessageType())) {
             // 系统广播消息
             List<BroadcastMessage> broadcastMessages = (List<BroadcastMessage>) messages;
             result += messageMapper.deleteBroMsg(broadcastMessages);
 
-        } else if (msgType.equals(MessageTypeEnum.getMessageType(MessageTypeEnum.ABSTRACT_MSG))) {
+        } else if (msgType.equals(MessageType.getAbstractMessageType())) {
             // 优文摘要消息
             List<ArticleMessage> articleMessages = (List<ArticleMessage>) messages;
             result += messageMapper.deleteArtMsg(articleMessages);

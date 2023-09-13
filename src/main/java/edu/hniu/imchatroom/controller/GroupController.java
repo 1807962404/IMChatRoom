@@ -1,7 +1,9 @@
 package edu.hniu.imchatroom.controller;
 
 import edu.hniu.imchatroom.model.bean.*;
-import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
+import edu.hniu.imchatroom.model.bean.messages.StatusCode;
+import edu.hniu.imchatroom.model.bean.response.Result;
+import edu.hniu.imchatroom.model.bean.response.ResultVO;
 import edu.hniu.imchatroom.service.GroupService;
 import edu.hniu.imchatroom.util.StringUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import static edu.hniu.imchatroom.util.VariableUtil.*;
@@ -165,12 +168,12 @@ public class GroupController {
         // 3、检查此用户是否存在于该群组中
         GroupUser userIsInGroup = groupService.doCheckUserIsInGroup(enterGroup.getGId(), thisUser.getUId());
         if (null != userIsInGroup) {
-            if (userIsInGroup.getGuStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL))) {
+            if (userIsInGroup.getGuStatus().equals(StatusCode.getNormalStatusCode())) {
                 // 该用户仍在该群组中
                 log.warn("您已在：{} 群组中，无法发送入群申请！", userIsInGroup.getGroup().getGName());
                 return Result.warn("您已在：" + userIsInGroup.getGroup().getGName() + " 群组中！");
 
-            } else if (userIsInGroup.getGuStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.CONFIRMING))) {
+            } else if (userIsInGroup.getGuStatus().equals(StatusCode.getConfirmingStatusCode())) {
                 // 该用户已发送过入群申请
                 log.warn("您已向群组：{} 发送过入群申请，请勿重复发送请求！", userIsInGroup.getGroup().getGName());
                 return Result.warn("您已向群组：" + userIsInGroup.getGroup().getGName() + " 发送过入群申请，请勿重复发送请求！");
@@ -178,14 +181,16 @@ public class GroupController {
         }
 
         // 4、用户发送入群申请给此群群主
-        int result = groupService.doAddGroupUser(enterGroup, thisUser, StatusCodeEnum.getStatusCode(StatusCodeEnum.CONFIRMING));
+        int result = groupService.doAddGroupUser(enterGroup, thisUser, StatusCode.getConfirmingStatusCode());
         if (1 != result) {
             log.warn("无法向群组：{} 发送入群申请，请稍后再试！", enterGroup.getGName());
             return Result.failed("无法向群组：" + enterGroup.getGName() + " 发送入群申请，请稍后再试！");
         }
 
+        // 5、获取此用户发送的入群申请信息
+        GroupUser enteredGroupUser = groupService.doCheckUserIsInGroup(enterGroup.getGId(), thisUser.getUId());
         log.info("已成功向群组：{} 发送入群申请，请敬候佳音！", enterGroup.getGName());
-        return Result.ok("已成功向群组：" + enterGroup.getGName() + " 发送入群申请，请敬候佳音！");
+        return Result.ok("已成功向群组：" + enterGroup.getGName() + " 发送入群申请，请敬候佳音！", enteredGroupUser);
     }
 
     /**
@@ -197,26 +202,39 @@ public class GroupController {
 
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
 
-        // 1、先查询我的所有群组信息
-        List<Group> groups = groupService.doGetMyGroups(thisUser.getUId());
+        // 查询我创建的群组 和 我加入的群组 下的用户信息
+        // 1、查询关于我的所有群组用户信息（包含我创建的群聊下的所有用户信息，以及我加入、申请加入的群聊下的所有用户信息）
 
-        List<GroupUser> groupsUsersToUse = new ArrayList<>();
-        // 2、循环遍历我的群组，查询是否有用户申请加入我创建的群组
-        for (Group group : groups) {
-            List<GroupUser> groupUsers = groupService.doGetGroupsUsersById(group.getGId(), null);
-            if (null != groupUsers && groupUsers.size() > 0) {
-                for (GroupUser groupUser : groupUsers) {
-                    // 判断该用户是否已在群聊中，或正待本人确认同意其加入群聊
-                    if (groupUser.getGuStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.NORMAL)) ||
-                            groupUser.getGuStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.CONFIRMING))) {
-                        groupsUsersToUse.add(groupUser);
+        List<GroupUser> groupUsersToUse = new ArrayList<>();
+
+        // 我加入的所有群组，只查询出各个群组和本人信息
+        List<Group> myEnteredGroups = groupService.doGetMyEnteredGroups(thisUser.getUId());
+        if (null != myEnteredGroups && !myEnteredGroups.isEmpty()) {
+            Iterator<Group> groupIterator = myEnteredGroups.iterator();
+            while (groupIterator.hasNext()) {
+                Group group = groupIterator.next();
+                List<GroupUser> groupUsers = groupService.doGetGroupsUsersById(group.getGId(), null);
+
+                if (null != groupUsers && !groupUsers.isEmpty()) {
+                    Iterator<GroupUser> groupUserIterator = groupUsers.iterator();
+                    while (groupUserIterator.hasNext()) {
+                        GroupUser groupUser = groupUserIterator.next();
+                        // 2、排除群主
+                        if (group.getHostUser().equals(groupUser.getMember()))
+                            groupUserIterator.remove();
+
+                        // 3、排除已不在此群组的用户
+                        else if (groupUser.getGuStatus().equals(StatusCode.getNotInGroupStatusCode()))
+                            groupUserIterator.remove();
                     }
+                    groupUsersToUse.addAll(groupUsers);
                 }
             }
         }
 
-        log.info("已查询出用户：{} 名下所有群聊以及群聊成员的信息：{}", thisUser.getNickname(), groupsUsersToUse);
-        return Result.ok(groupsUsersToUse);
+        log.info("已查询出关于用户：{} 的所有群组用户信息（包含我创建的群聊下的所有用户信息，" +
+                "以及我加入、申请加入的群聊下的所有用户信息）：{}", thisUser.getNickname(), groupUsersToUse);
+        return Result.ok(groupUsersToUse);
     }
 
     /**
@@ -238,7 +256,7 @@ public class GroupController {
         }
 
         // 2、查询出对应的GroupUser记录
-        GroupUser groupUser = groupService.doCheckUserIsInGroup(Integer.valueOf(gId), Integer.valueOf(uId));
+        GroupUser groupUser = groupService.doCheckUserIsInGroup(Long.valueOf(gId), Long.valueOf(uId));
         if (null == groupUser) {
             log.warn("未查到该用户的入群申请，同意失败！");
             return Result.failed("未查到该用户的入群申请，同意失败！");
@@ -262,11 +280,11 @@ public class GroupController {
 
         log.info("已同意用户：{} 进入您的群聊：{}！", groupUser.getMember().getNickname(), groupUser.getGroup().getGName());
         return Result.ok("已同意用户：" + groupUser.getMember().getNickname() +
-                " 进入您的群聊：" + groupUser.getGroup().getGName() + "！");
+                " 进入您的群聊：" + groupUser.getGroup().getGName() + "！", groupUser);
     }
 
     /**
-     * 将用户踢出群组
+     * 将用户移出群组
      * @param gId
      * @param uId
      * @return
@@ -284,7 +302,7 @@ public class GroupController {
         }
 
         // 2、查询出对应的GroupUser记录
-        GroupUser groupUser = groupService.doCheckUserIsInGroup(Integer.valueOf(gId), Integer.valueOf(uId));
+        GroupUser groupUser = groupService.doCheckUserIsInGroup(Long.valueOf(gId), Long.valueOf(uId));
         if (null == groupUser) {
             log.warn("未查到该用户的入群申请，无法踢出群聊！");
             return Result.warn("未查到该用户的入群记录，无法踢出群聊！");
@@ -308,49 +326,7 @@ public class GroupController {
 
         log.info("已将用户：{} 踢出您的群聊：{}！", groupUser.getMember().getNickname(), groupUser.getGroup().getGName());
         return Result.ok("已将用户：" + groupUser.getMember().getNickname() +
-                " 踢出您的群聊：" + groupUser.getGroup().getGName() + "！");
-    }
-
-    /**
-     * 解散群聊
-     * @param gCode
-     * @return
-     */
-    @GetMapping("/dissolve-group/{gCode}")
-    public ResultVO doDissolveGroup(@PathVariable("gCode") String gCode,
-                                  HttpServletRequest request) {
-
-        // 1、检查内容是否为空
-        if (StringUtil.isEmpty(gCode)) {
-            log.warn("解散群聊失败，群聊唯一码不能为空！");
-            return Result.failed("解散群聊失败，群聊唯一码不能为空！");
-        }
-
-        // 2、查询gCode对应的群组信息
-        Group dissolveGroup = groupService.doGetGroupByGCode(gCode);
-        if (null == dissolveGroup) {
-            log.warn("解散群聊失败，未找到群聊唯一码为：{} 的群组信息！", gCode);
-            return Result.failed("解散群聊失败，未找到群聊唯一码为：" + gCode + " 的群聊信息！");
-        }
-
-        log.info("Dissolve Group: {}", dissolveGroup);
-
-        // 3、检查本人是否为该群群主
-        User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
-        if (!thisUser.equals(dissolveGroup.getHostUser())) {
-            log.warn("您不是群聊：{} 的群主，没有权限解散群聊！", dissolveGroup.getGName());
-            return Result.failed("您不是群聊：" + dissolveGroup.getGName() + " 的群主，没有权限解散群聊！");
-        }
-
-        // 4、解散群聊
-        int result = groupService.doDissolveGroup(dissolveGroup);
-        if (2 > result) {
-            log.warn("未能解散群组：{}，请稍后再试！", dissolveGroup.getGName());
-            return Result.failed("未能解散群组：" + dissolveGroup.getGName() + "，请稍后再试！");
-        }
-
-        log.info("已成功解散群组：{}！", dissolveGroup.getGName());
-        return Result.ok("已成功解散群组：" + dissolveGroup.getGName() + "！");
+                " 踢出您的群聊：" + groupUser.getGroup().getGName() + "！", groupUser);
     }
 
     /**
@@ -392,13 +368,56 @@ public class GroupController {
         }
 
         // 6、退出此群聊
-        int result = groupService.doUpdateUserInGroup(groupUsers.get(0), false);
+        GroupUser exitGroupUser = groupUsers.get(0);
+        int result = groupService.doUpdateUserInGroup(exitGroupUser, false);
         if (1 != result) {
             log.warn("未能退出群组：{}，请稍后再试！", exitGroup.getGName());
             return Result.failed("未能退出群组：" + exitGroup.getGName() + "，请稍后再试！");
         }
 
         log.info("已成功退出群组：{}！", exitGroup.getGName());
-        return Result.ok("已成功退出群组：" + exitGroup.getGName() + "！");
+        return Result.ok("已成功退出群组：" + exitGroup.getGName() + "！", exitGroupUser);
+    }
+
+    /**
+     * 解散群聊
+     * @param gCode
+     * @return
+     */
+    @GetMapping("/dissolve-group/{gCode}")
+    public ResultVO doDissolveGroup(@PathVariable("gCode") String gCode,
+                                    HttpServletRequest request) {
+
+        // 1、检查内容是否为空
+        if (StringUtil.isEmpty(gCode)) {
+            log.warn("解散群聊失败，群聊唯一码不能为空！");
+            return Result.failed("解散群聊失败，群聊唯一码不能为空！");
+        }
+
+        // 2、查询gCode对应的群组信息
+        Group dissolveGroup = groupService.doGetGroupByGCode(gCode);
+        if (null == dissolveGroup) {
+            log.warn("解散群聊失败，未找到群聊唯一码为：{} 的群组信息！", gCode);
+            return Result.failed("解散群聊失败，未找到群聊唯一码为：" + gCode + " 的群聊信息！");
+        }
+
+        log.info("Dissolve Group: {}", dissolveGroup);
+
+        // 3、检查本人是否为该群群主
+        User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
+        if (!thisUser.equals(dissolveGroup.getHostUser())) {
+            log.warn("您不是群聊：{} 的群主，没有权限解散群聊！", dissolveGroup.getGName());
+            return Result.failed("您不是群聊：" + dissolveGroup.getGName() + " 的群主，没有权限解散群聊！");
+        }
+
+        // 4、解散群聊
+        int result = groupService.doDissolveGroup(dissolveGroup);
+        if (2 > result) {
+            log.warn("未能解散群组：{}，请稍后再试！", dissolveGroup.getGName());
+            return Result.failed("未能解散群组：" + dissolveGroup.getGName() + "，请稍后再试！");
+        }
+
+        log.info("已成功解散群组：{}！", dissolveGroup.getGName());
+        return Result.ok("已成功解散群组：" + dissolveGroup.getGName() + "！", dissolveGroup);
     }
 }

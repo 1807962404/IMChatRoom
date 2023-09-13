@@ -21,7 +21,7 @@ public interface UserMapper {
     /**
      * 根据uId查询用户信息
      */
-    User selectUserById(@Param("uId") Integer uId);
+    User selectUserById(@Param("uId") Long uId);
 
     /**
      * 根据指定条件查询用户信息

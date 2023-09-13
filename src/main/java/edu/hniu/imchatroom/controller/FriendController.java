@@ -1,9 +1,10 @@
 package edu.hniu.imchatroom.controller;
 
 import edu.hniu.imchatroom.model.bean.*;
-import edu.hniu.imchatroom.model.enums.StatusCodeEnum;
+import edu.hniu.imchatroom.model.bean.messages.StatusCode;
+import edu.hniu.imchatroom.model.bean.response.Result;
+import edu.hniu.imchatroom.model.bean.response.ResultVO;
 import edu.hniu.imchatroom.service.FriendService;
-import edu.hniu.imchatroom.service.MessageService;
 import edu.hniu.imchatroom.service.UserService;
 import edu.hniu.imchatroom.util.StringUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,7 +24,6 @@ public class FriendController {
 
     private UserService userService;
     private FriendService friendService;
-    private MessageService messageService;
     @Autowired
     public void setUserService(UserService userService) {
         this.userService = userService;
@@ -31,10 +31,6 @@ public class FriendController {
     @Autowired
     public void setFriendService(FriendService friendService) {
         this.friendService = friendService;
-    }
-    @Autowired
-    public void setMessageService(MessageService messageService) {
-        this.messageService = messageService;
     }
 
     /**
@@ -47,6 +43,11 @@ public class FriendController {
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
         // 获取本人所有的好友列表
         List<Friend> myFriends = friendService.doGetFriendsByUId(thisUser.getUId());
+        for (Friend friend : myFriends) {
+            FriendShip friendShip = friend.getFriendShip();
+            userService.doSetUserToUse(friendShip.getFriendUser());
+            userService.doSetUserToUse(friendShip.getHostUser());
+        }
         log.info("My Friends: {}", myFriends);
 
         return myFriends;
@@ -74,8 +75,8 @@ public class FriendController {
         while (iterator.hasNext()) {
             User next = iterator.next();
             // 该用户账号处于非激活状态
-            if (!next.getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ACTIVATED))) {
-                log.info("Invalid User: {}", next);
+            if (next.getAccountStatus().equals(StatusCode.getInActiveStatusCode())) {
+//                log.info("Invalid User: {}", next);
                 iterator.remove();
             }
         }
@@ -94,7 +95,7 @@ public class FriendController {
      * @param uId
      * @return
      */
-    @PostMapping("/add-friend/{uId}")
+    @GetMapping("/add-friend/{uId}")
     public ResultVO<FriendShip> doAddFriend(@PathVariable("uId") String uId, HttpServletRequest request) {
 
         log.info("添加好友的uId为：{}", uId);
@@ -106,7 +107,7 @@ public class FriendController {
         }
 
         // 2、检查是否存在该uId的用户
-        User friendUser = userService.doGetUserById(Integer.valueOf(uId));
+        User friendUser = userService.doGetUserById(Long.valueOf(uId));
         if (null == friendUser) {
             log.warn("添加好友失败，uId为：{} 的用户不存在！", uId);
             return Result.failed("添加好友失败，uId为：" + uId + "的用户不存在！");
@@ -126,16 +127,16 @@ public class FriendController {
 
         if (null != friendShip) {
             // 若对方账号尚未激活，也不可添加好友！
-            if (!friendShip.getFriendUser().getAccountStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ACTIVATED))) {
+            if (friendShip.getFriendUser().getAccountStatus().equals(StatusCode.getInActiveStatusCode())) {
                 log.warn("添加好友失败，uId为：{} 的用户 {} 的账号尚未激活！", uId, friendUser.getNickname());
                 return Result.failed("添加好友失败，uId为：" + uId + " 的用户 " + friendUser.getNickname() + " 的账号尚未激活！");
             }
 
-            if (friendShip.getFsStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.ISFRIEND))) {
+            if (friendShip.getFsStatus().equals(StatusCode.getIsFriendStatusCode())) {
                 log.warn("添加好友失败，uId为：{} 的用户 {} 已经是您的朋友了！", uId, friendUser.getNickname());
                 return Result.warn("添加好友失败，uId为：" + uId + " 的用户 " + friendUser.getNickname() + " 已经是您的好友了！");
 
-            } else if (friendShip.getFsStatus().equals(StatusCodeEnum.getStatusCode(StatusCodeEnum.CONFIRMING))) {
+            } else if (friendShip.getFsStatus().equals(StatusCode.getConfirmingStatusCode())) {
                 // 如果好友关系正在确认中，则判断 对方是否给我发送过好友申请。如果有则将两人的关系直接升为好友，否则提示错误信息
                 if (friendUser.getUId() == friendShip.getHostUser().getUId()) {
                     log.warn("对方已给我发送过好友请求，所以我们可以直接成为朋友！");
@@ -153,8 +154,7 @@ public class FriendController {
                     log.info("已成功与用户：{} 成为好友！", friendUser.getNickname());
                     // 设置二者友谊状况为：已是好友关系
                     return Result.ok("已成功与用户：" + friendUser.getNickname() + " 成为好友！",
-                            friendService.doCheckIsFriend(thisUser, friendUser,
-                                    StatusCodeEnum.getStatusCode(StatusCodeEnum.ISFRIEND)));
+                            friendService.doCheckIsFriend(thisUser, friendUser, StatusCode.getIsFriendStatusCode()));
 
                 } else {
                     log.warn("您已发送过此好友请求，请耐心等待好友确认！");
@@ -174,8 +174,7 @@ public class FriendController {
         log.info("已成功向用户 {} 发送好友请求，请敬候佳音！", friendUser.getNickname());
         // 设置二者友谊状况为：正在验证确认中
         return Result.ok("已成功向用户 " + friendUser.getNickname() + " 发送好友请求，请敬候佳音！",
-                friendService.doCheckIsFriend(thisUser, friendUser,
-                        StatusCodeEnum.getStatusCode(StatusCodeEnum.CONFIRMING)));
+                friendService.doCheckIsFriend(thisUser, friendUser, StatusCode.getConfirmingStatusCode()));
     }
 
     /**
@@ -184,7 +183,7 @@ public class FriendController {
      * @param request
      * @return
      */
-    @PostMapping("/del-friend/{friendId}")
+    @GetMapping("/del-friend/{friendId}")
     public ResultVO doDelMyFriend(@PathVariable("friendId") String friendId, HttpServletRequest request) {
 
         // 1、判断好友Id是否为空，若为空则报错
@@ -194,7 +193,7 @@ public class FriendController {
         }
 
         // 2、查询需要删除的好友是否存在
-        User friendUser = userService.doGetUserById(Integer.valueOf(friendId));
+        User friendUser = userService.doGetUserById(Long.valueOf(friendId));
         if (null == friendUser) {
             log.warn("需要删除的用户id为：{} 的好友不存在！", friendId);
             return Result.failed("需要删除的用户id为：" + friendId + " 的好友不存在！");
@@ -202,7 +201,7 @@ public class FriendController {
 
         // 3、检查 thisUser 和 friendUser 是否为好友关系状态
         final User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
-        FriendShip friendShip = friendService.doCheckIsFriend(thisUser, friendUser, StatusCodeEnum.getStatusCode(StatusCodeEnum.ISFRIEND));
+        FriendShip friendShip = friendService.doCheckIsFriend(thisUser, friendUser, StatusCode.getIsFriendStatusCode());
         if (null == friendShip) {
             log.warn("需要删除的用户id为：{} 的用户 {} 不是您的好友！", friendId, friendUser.getNickname());
             return Result.failed("需要删除的用户id为：" + friendId + " 的用户 " + friendUser.getNickname() + " 不是您的好友！");
@@ -229,17 +228,17 @@ public class FriendController {
         final User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
         // 获取其他用户给我发送过的好友请求
         List<FriendShip> ownFriendship = friendService.doGetOwnFriendship(thisUser.getUId());
-        /*if (null != ownFriendship) {
+        if (null != ownFriendship) {
             if (!ownFriendship.isEmpty()) {
                 // 排除新好友通知中新好友账号已注销的情况
                 Iterator<FriendShip> iterator = ownFriendship.iterator();
                 while (iterator.hasNext()) {
                     FriendShip next = iterator.next();
-                    if (null == next.getHostUser())
+                    if (null == next.getHostUser() || null == next.getFriendUser())
                         iterator.remove();
                 }
             }
-        }*/
+        }
         log.info("其他用户给我发送过的好友请求：{}", ownFriendship);
         return ownFriendship;
     }

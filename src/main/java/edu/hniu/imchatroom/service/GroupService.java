@@ -13,7 +13,7 @@ public interface GroupService {
      * @param hostId
      * @return
      */
-    List<Group> doGetMyGroups(Integer hostId);
+    List<Group> doGetMyGroups(Long hostId);
 
     /**
      * 处理 新增群组信息 的业务逻辑
@@ -36,7 +36,7 @@ public interface GroupService {
      * @param uId
      * @return
      */
-    List<Group> doGetMyEnteredGroups(Integer uId);
+    List<Group> doGetMyEnteredGroups(Long uId);
 
     /**
      * 处理 模糊查询群聊信息(gCode, gName) 的业务逻辑
@@ -58,7 +58,7 @@ public interface GroupService {
      * @param uId
      * @return
      */
-    GroupUser doCheckUserIsInGroup(Integer gId, Integer uId);
+    GroupUser doCheckUserIsInGroup(Long gId, Long uId);
 
     /**
      * gId+uId：查询uId用户存在于gId群组的相关信息
@@ -66,7 +66,7 @@ public interface GroupService {
      * @param uId：查询指定uId用户加入的所有群聊信息
      * @return
      */
-    List<GroupUser> doGetGroupsUsersById(Integer gId, Integer uId);
+    List<GroupUser> doGetGroupsUsersById(Long gId, Long uId);
 
     /**
      * 根据标识：更新 groupUser 的状态

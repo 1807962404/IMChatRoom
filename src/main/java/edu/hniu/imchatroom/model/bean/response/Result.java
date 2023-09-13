@@ -1,13 +1,19 @@
-package edu.hniu.imchatroom.model.bean;
+package edu.hniu.imchatroom.model.bean.response;
+
+import edu.hniu.imchatroom.model.enums.ResponseCodeEnum;
 
 import java.io.Serializable;
 
-import static edu.hniu.imchatroom.util.VariableUtil.RESPONSE_SUCCESS_CODE;
-import static edu.hniu.imchatroom.util.VariableUtil.RESPONSE_WARNING_CODE;
-import static edu.hniu.imchatroom.util.VariableUtil.RESPONSE_FAILED_CODE;
-
+/**
+ * 响应结果中间件类
+ */
 public final class Result implements Serializable {
     private static final long serialVersionUID = 459845634834583L;
+
+    // 响应状态码（成功、警告、失败）
+    private static final Integer RESPONSE_SUCCESS_CODE = ResponseCodeEnum.getCode(ResponseCodeEnum.SUCCESS);
+    private static final Integer RESPONSE_WARNING_CODE = ResponseCodeEnum.getCode(ResponseCodeEnum.WARNING);
+    private static final Integer RESPONSE_FAILED_CODE = ResponseCodeEnum.getCode(ResponseCodeEnum.FAILED);
 
     public static final ResultVO resultVO = new ResultVO();
 

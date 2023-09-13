@@ -124,7 +124,7 @@ public final class EncryptUtil {
 		byte[] encrypt = cipher.doFinal(text.getBytes(encoding));
 
 		String desEncryptedText = Base64.getEncoder().encodeToString(encrypt);
-		System.out.println("DES加密结果：" + desEncryptedText);
+//		System.out.println("DES加密结果：" + desEncryptedText);
 
 		return desEncryptedText;
 	}
@@ -143,7 +143,7 @@ public final class EncryptUtil {
 		byte[] decrypt = cipher.doFinal(Base64.getDecoder().decode(encryptedText));
 
 		String desDecryptedText = new String(decrypt, encoding);
-		System.out.println("DES解密结果：" + desDecryptedText);
+//		System.out.println("DES解密结果：" + desDecryptedText);
 
 		return desDecryptedText;
 	}

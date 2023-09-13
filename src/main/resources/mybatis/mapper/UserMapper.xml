@@ -44,7 +44,7 @@
         ORDER BY `last_signin_time` DESC
     </select>
 
-    <!--    User selectUserById(@Param("uId") Integer uId);-->
+    <!--    User selectUserById(@Param("uId") Long uId);-->
     <select id="selectUserById" resultMap="userResultMap">
         <include refid="AllUsersResult" />
         WHERE `display_status` = '0'
