@@ -79,7 +79,7 @@
     <insert id="insertFriendShip">
         INSERT INTO `friendship`
             (`host_id`, `friend_id`, `remark`, `fs_status`, `apply_time`, `display_status`)
-        VALUES
+        VALUE
             (#{friendShip.hostUser.uId }, #{friendShip.friendUser.uId }, #{friendShip.friendUser.nickname },
              #{friendShip.fsStatus }, #{friendShip.applyTime }, #{friendShip.displayStatus })
     </insert>
@@ -106,7 +106,7 @@
     <insert id="insertFriend">
         INSERT INTO `friend`
             (`fs_id`, `f_status`, `make_time`, `display_status`)
-        VALUES
+        VALUE
             (#{newFriend.friendShip.fsId }, #{newFriend.fStatus }, #{newFriend.makeTime }, #{newFriend.displayStatus })
     </insert>
 

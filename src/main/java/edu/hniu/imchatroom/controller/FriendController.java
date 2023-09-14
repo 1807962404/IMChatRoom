@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Iterator;
 import java.util.List;
 
-import static edu.hniu.imchatroom.util.VariableUtil.*;
+import static edu.hniu.imchatroom.util.VariableUtil.SIGNINED_USER;
 
 @Slf4j
 @RestController

@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 @Service
@@ -39,24 +40,16 @@ public class GroupServiceImpl implements GroupService {
      */
     @Transactional(readOnly = true)
     @Override
-    public List<Group> doGetMyGroups(Long hostId) {
+    public List<Group> doGetMyCreatedGroups(Long hostId) {
 
         // 1、先查询出该用户所创建的所有群组信息
-        List<Group> myGroups = groupMapper.selectMyGroups(hostId);
-//        System.out.println("myGroups size: " + myGroups.size());
+        List<Group> myGroups = groupMapper.selectMyCreatedGroups(hostId);
 
-        // 2、然后再挨个查询出该用户创建的所有群组中所对应的所有群组成员
+        // 2、然后再挨个查询出该用户创建的所有群组中所对应的所有群组成员（包括发送了入群申请的用户）
         for (Group myGroup : myGroups) {
-            List<GroupUser> myGroupUsers = groupMapper.selectGroupsUsersById(myGroup.getGId(), null);
-//            System.out.println("myGroupUsers size: " + myGroupUsers.size());
-            List<GroupUser> thisGroupUsers = new ArrayList<>();
-            for (GroupUser groupUser : myGroupUsers) {
-                if (groupUser.getGuStatus().equals(StatusCode.getInGroupStatusCode())) {
-                    // 判断用户是否在群组中
-                    thisGroupUsers.add(groupUser);  // 添加进集合中
-                }
-            }
-            myGroup.setMembers(thisGroupUsers);       // 最终将每个群组中所有的成员都挨个设置进去
+            List<GroupUser> myGroupUsers = doGetGroupUserById(myGroup.getGId(), null);
+            // 最终将每个群组中所有的成员都挨个设置进该群组中
+            myGroup.setMembers(myGroupUsers);
         }
 
         return myGroups;
@@ -85,7 +78,7 @@ public class GroupServiceImpl implements GroupService {
         int result = groupMapper.insertGroup(newGroup);
 
         // 3、为新增的群聊设置默认用户（即群主）
-        result += doAddGroupUser(newGroup, newGroup.getHostUser(), StatusCode.getNormalStatusCode());
+        result += doAddGroupUser(newGroup, newGroup.getHostUser(), StatusCode.getInGroupStatusCode());
 
         return result;
     }
@@ -111,7 +104,7 @@ public class GroupServiceImpl implements GroupService {
         Date nowTime = new Date(System.currentTimeMillis());
         // 4、设置申请入群时间
         groupUser.setApplyTime(nowTime);
-        if (guStatus.equals(StatusCode.getNormalStatusCode())) {
+        if (guStatus.equals(StatusCode.getInGroupStatusCode())) {
             // 排除是新建群聊时，添加的默认用户（群主）
             // 5、设置成员加入群聊时间
             groupUser.setJoinTime(nowTime);
@@ -127,14 +120,39 @@ public class GroupServiceImpl implements GroupService {
     }
 
     /**
+     * 处理 查询指定uId和入群状态获取 用户的所有群组用户信息 的业务逻辑
+     * @param uId
+     * @param guStatus
+     * @return
+     */
+    @Transactional(readOnly = true)
+    public List<GroupUser> doGetGroupUserByIdAndGuStatus(Long uId, String guStatus) {
+
+        return groupMapper.selectGroupUserByIdAndGuStatus(uId, guStatus);
+    }
+
+    /**
      * 处理 查询指定uId用户所加入的所有群组列表信息 的业务逻辑
      * @param uId
      * @return
      */
-    @Transactional(readOnly = true)
     @Override
     public List<Group> doGetMyEnteredGroups(Long uId) {
-        return groupMapper.selectMyEnteredGroups(uId);
+        // 1、根据uId和在群状态获取本人的群组用户信息
+        List<GroupUser> groupUsers = doGetGroupUserByIdAndGuStatus(uId, StatusCode.getInGroupStatusCode());
+
+        List<Group> groupsToUse = new ArrayList<>();
+        Iterator<GroupUser> iterator = groupUsers.iterator();
+        while (iterator.hasNext()) {
+            GroupUser next = iterator.next();
+            Group group = next.getGroup();
+            // 2、获取此群组中所有的成员
+            group.setMembers(doGetGroupUserById(group.getGId(), null));
+            // 3、将这些群组添加使用
+            groupsToUse.add(group);
+        }
+
+        return groupsToUse;
     }
 
     /**
@@ -168,8 +186,8 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public GroupUser doCheckUserIsInGroup(Long gId, Long uId) {
-        List<GroupUser> groupUsers = doGetGroupsUsersById(gId, uId);
-        if (null != groupUsers && groupUsers.size() > 0)
+        List<GroupUser> groupUsers = doGetGroupUserById(gId, uId);
+        if (null != groupUsers && !groupUsers.isEmpty())
             return groupUsers.get(0);
 
         return null;
@@ -183,8 +201,8 @@ public class GroupServiceImpl implements GroupService {
      */
     @Transactional(readOnly = true)
     @Override
-    public List<GroupUser> doGetGroupsUsersById(Long gId, Long uId) {
-        return groupMapper.selectGroupsUsersById(gId, uId);
+    public List<GroupUser> doGetGroupUserById(Long gId, Long uId) {
+        return groupMapper.selectGroupUserById(gId, uId);
     }
 
     /**
@@ -240,13 +258,13 @@ public class GroupServiceImpl implements GroupService {
         // 1.1、获取群组的群聊记录信息
         List<? extends Message> messages = messageService.doGetChatMessage(publicMessage);
         // 1.2、删除群组的群聊消息记录信息
-        if (!messages.isEmpty())
+        if (null != messages && !messages.isEmpty())
             result = messageService.doDestroyMessage(pubMsgType, messages);
 
-        // 2、将该群中所有的用户都先踢掉
+        // 2、将该群中所有的用户都先移出群聊
 
         // 2.1、获取到该群所有用户的信息
-        List<GroupUser> groupUsers = doGetGroupsUsersById(dissolveGroup.getGId(), null);
+        List<GroupUser> groupUsers = doGetGroupUserById(dissolveGroup.getGId(), null);
         for (GroupUser groupUser : groupUsers) {
             // 2.2、依次将用户踢出该群聊
             result += doUpdateUserInGroup(groupUser, false);

@@ -33,6 +33,7 @@ public class User implements Serializable {
     // 账号状态。0：已激活，1：未激活，2：已注销
     private String accountStatus;
     private String activeCode;
+    private String resetCode;
     private Date activeTime;
     private Date lastSigninTime;
     private Date modifiedTime;

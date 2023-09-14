@@ -14,7 +14,7 @@ public interface GroupMapper {
      * @param hostId
      * @return
      */
-    List<Group> selectMyGroups(@Param("hostId") Long hostId);
+    List<Group> selectMyCreatedGroups(@Param("hostId") Long hostId);
 
     /**
      * 根据gId查询指定群组
@@ -38,11 +38,12 @@ public interface GroupMapper {
     Integer insertGroupUser(@Param("groupUser") GroupUser groupUser);
 
     /**
-     * 查询指定uId用户所加入的所有群组列表信息
+     * 询指定uId和入群状态获取 用户的所有群组用户信息
      * @param uId
+     * @param guStatus
      * @return
      */
-    List<Group> selectMyEnteredGroups(@Param("uId") Long uId);
+    List<GroupUser> selectGroupUserByIdAndGuStatus(@Param("uId") Long uId, @Param("guStatus") String guStatus);
 
     /**
      * 查询data与gCode或gName相似的群聊信息
@@ -64,7 +65,7 @@ public interface GroupMapper {
      * @param uId：查询指定uId用户加入的所有群聊信息
      * @return
      */
-    List<GroupUser> selectGroupsUsersById(@Param("gId") Long gId, @Param("uId") Long uId);
+    List<GroupUser> selectGroupUserById(@Param("gId") Long gId, @Param("uId") Long uId);
 
     /**
      * 更新groupUser 的状态（用户在群组中的状态）

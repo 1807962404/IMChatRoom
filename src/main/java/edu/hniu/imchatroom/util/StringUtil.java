@@ -1,6 +1,5 @@
 package edu.hniu.imchatroom.util;
 
-import edu.hniu.imchatroom.filter.SystemFilter;
 import edu.hniu.imchatroom.interceptor.LoginInterceptor;
 import java.util.UUID;
 
@@ -50,10 +49,6 @@ public final class StringUtil {
         // 获取LoginInterceptor拦截器的排除路径
         if (LoginInterceptor.class.equals(clazz)) {
             staticResourcePath = STATIC_RESOURCES_PATH;
-
-        } else if (SystemFilter.class.equals(clazz)) {
-            // 获取SystemFilter过滤器的排除路径
-            staticResourcePath = new String[] {"/css/", "/js/", "/images/", "/favicon.ico"};
 
         } else {
             return null;

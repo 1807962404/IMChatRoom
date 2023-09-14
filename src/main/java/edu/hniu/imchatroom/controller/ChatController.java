@@ -223,7 +223,14 @@ public class ChatController {
         // 设置消息发送者为本人
         publicMessage.setSendUser(thisUser);
         // 设置消息接收群组的所有群成员
-        receiveGroup.setMembers(groupService.doGetGroupsUsersById(receiveGroup.getGId(), null));
+        List<GroupUser> groupUsers = groupService.doGetGroupUserById(receiveGroup.getGId(), null);
+        Iterator<GroupUser> iterator = groupUsers.iterator();
+        while (iterator.hasNext()) {
+            GroupUser next = iterator.next();
+            if (!next.getGuStatus().equals(StatusCode.getInGroupStatusCode()))
+                iterator.remove();
+        }
+        receiveGroup.setMembers(groupUsers);
         // 设置消息接收者为群组
         publicMessage.setReceiveGroup(receiveGroup);
         log.info("本次操作是：{} 向群组：{} 发送的群聊消息：{}",
@@ -255,8 +262,6 @@ public class ChatController {
             return Result.failed("用户权限不够，无法操作此功能！");
         }
 
-        HttpSession session = request.getSession();
-
         int result = 0;
         String thisMsgType = message.getMessageType();
         // 根据消息类别分别操作
@@ -272,7 +277,7 @@ public class ChatController {
                 return Result.failed("系统公告发布失败！");
 
             } else {
-                // 检查系统广播消息是否为空，若true则放入session中
+                /*// 检查系统广播消息是否为空，若true则放入session中
                 boolean isEmpty = false;
                 Object broadcastsSessionMessages = session.getAttribute(BROADCAST_MESSAGE_NAME);
                 if (null != broadcastsSessionMessages && broadcastsSessionMessages instanceof List) {
@@ -289,7 +294,7 @@ public class ChatController {
                     isEmpty = true;
 
                 if (isEmpty)
-                    session.setAttribute(BROADCAST_MESSAGE_NAME, List.of(broadcastMessage));
+                    session.setAttribute(BROADCAST_MESSAGE_NAME, List.of(broadcastMessage));*/
                 return Result.ok("系统公告发布成功！", broadcastMessage);
             }
 
@@ -305,7 +310,7 @@ public class ChatController {
                 return Result.failed("优文摘要信息发表失败！");
 
             } else {
-                // 检查优文摘要消息是否为空，若true则放入session中
+                /*// 检查优文摘要消息是否为空，若true则放入session中
                 boolean isEmpty = false;
                 Object articleSessionMessages = session.getAttribute(ARTICLE_MESSAGE_NAME);
                 if (null != articleSessionMessages && articleSessionMessages instanceof List) {
@@ -322,7 +327,7 @@ public class ChatController {
                     isEmpty = true;
 
                 if (isEmpty)
-                    session.setAttribute(ARTICLE_MESSAGE_NAME, List.of(articleMessage));
+                    session.setAttribute(ARTICLE_MESSAGE_NAME, List.of(articleMessage));*/
 
                 return Result.ok("优文摘要信息发表成功！", articleMessage);
             }

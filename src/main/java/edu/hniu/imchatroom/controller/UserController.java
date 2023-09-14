@@ -167,7 +167,7 @@ public class UserController {
         response.setContentType("text/html; charset=UTF-8");
         response.getWriter().write(
                 "<h1 style='color: #f00'>" + content +
-                        "</h1><a href='" + ADDRESS + ":" + PORT + "/chatroom/login'>点击跳转至登陆页面</a>");
+                        "</h1><a href='" + ADDRESS + ":" + PORT + CONTEXT_PATH + "/login'>点击跳转至登陆页面</a>");
     }
 
     /**
@@ -351,8 +351,6 @@ public class UserController {
         }
 
         // 更新此用户信息
-        thisUser = userService.doGetUserById(thisUser.getUId());
-        request.getSession().setAttribute(SIGNINED_USER, thisUser);
         log.info("成功修改个人信息！");
         return Result.ok("成功修改个人信息！");
     }
@@ -417,14 +415,14 @@ public class UserController {
                 return resultVO;
             }*/
         try {
-                avatarFile.transferTo(saveFile);    // 实现文件下载（本质上是字节流输入，即文件复制）
+            avatarFile.transferTo(saveFile);    // 实现文件下载（本质上是字节流输入，即文件复制）
         } catch (IOException e) {
             String errMsg = "无法保存头像文件错误：{}" + e.getMessage();
             log.error(errMsg);
             return Result.failed(errMsg);
         }
 
-        // 3、设置本人的头像路径
+        // 3、设置本人的头像路径，并更新头像信息
         User thisUser = (User) request.getSession().getAttribute(SIGNINED_USER);
         thisUser.setAvatarUrl(avatarFilePath);
         int result = userService.doUpdateUser(thisUser);
@@ -434,8 +432,6 @@ public class UserController {
             return Result.failed("上传头像失败！");
         }
 
-        // 更新该登陆用户的资源
-        request.getSession().setAttribute(SIGNINED_USER, thisUser);
         log.info("已成功上传头像！");
         return Result.ok("已成功上传头像！");
     }
@@ -497,28 +493,30 @@ public class UserController {
 
     /**
      * 重置密码最终操作
-     *
-     * @param code
+     * @param resetCode
      * @return
      */
-    @GetMapping("/reset-password/{code}")
+    @GetMapping("/reset-password/{resetCode}")
     public void doFinalResetPassword(
-            @PathVariable("code") String code,
+            @PathVariable("resetCode") String resetCode,
             HttpServletResponse response
     ) throws IOException {
 
+        String loginPagePath = ADDRESS + ":" + PORT + CONTEXT_PATH + "/login";
+//        log.info("登录页路径：{}", loginPagePath);
+
         // 1、检查code是否为空
-        if (StringUtil.isEmpty(code)) {
-            log.warn("用户重置的激活码为空！");
-            response.sendRedirect("/login");
+        if (StringUtil.isEmpty(resetCode)) {
+            log.warn("用户账号重置码为空！");
+            response.sendRedirect(loginPagePath);
             return;
         }
 
         // 2、【根据激活码code】查询此用户是否存在
-        User resetUser = userService.doGetUserByActiveCode(code);
+        User resetUser = userService.doGetUserByCode(resetCode, null);
         if (null == resetUser) {
-            log.warn("用户不存在！");
-            response.sendRedirect("/login");
+            log.warn("用户账号重置码或用户不存在！");
+            response.sendRedirect(loginPagePath);
             return;
         }
 
@@ -527,17 +525,17 @@ public class UserController {
         String content = "";
         if (0 == result) {
             content = "账号重置密码成功！为确保安全，请尽快在个人信息栏中修改密码。";
-            log.info("账号重置密码成功！为确保安全，请尽快在个人信息栏中修改密码。");
+            log.info(content);
 
         } else {
             content = "账号重置密码失败！";
-            log.warn("账号重置密码失败！");
+            log.warn(content);
         }
 
         response.setContentType("text/html; charset=UTF-8");
         response.getWriter().write(
                 "<h1 style='color: #f00'>" + content +
-                        "</h1><a href='http://localhost:8080/chatroom/login'>点击跳转至登陆页面</a>");
+                        "</h1><a href='" + loginPagePath + "'>点击跳转至登陆页面</a>");
     }
 
     /**

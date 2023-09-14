@@ -5,7 +5,6 @@ import edu.hniu.imchatroom.model.bean.messages.ArticleMessage;
 import edu.hniu.imchatroom.model.bean.messages.BroadcastMessage;
 import edu.hniu.imchatroom.model.bean.messages.Message;
 import edu.hniu.imchatroom.model.bean.messages.MessageType;
-import edu.hniu.imchatroom.service.GroupService;
 import edu.hniu.imchatroom.service.MessageService;
 import edu.hniu.imchatroom.service.UserService;
 import edu.hniu.imchatroom.util.StringUtil;
@@ -31,18 +30,6 @@ import static edu.hniu.imchatroom.util.VariableUtil.*;
 @RestController
 @RequestMapping("/entity")
 public class EntityController {
-
-    private UserService userService;
-    private MessageService messageService;
-
-    @Autowired
-    public void setUserService(UserService userService) {
-        this.userService = userService;
-    }
-    @Autowired
-    public void setMessageService(MessageService messageService) {
-        this.messageService = messageService;
-    }
 
     /**
      * 在内存中创建一个长80，宽30的图片，默认黑色背景 的验证码框
@@ -102,6 +89,18 @@ public class EntityController {
         //参数二：图片的格式，如PNG,JPG,GIF
         //参数三：图片输出到哪里去
         ImageIO.write(image,"PNG",response.getOutputStream());
+    }
+
+    private UserService userService;
+    private MessageService messageService;
+
+    @Autowired
+    public void setUserService(UserService userService) {
+        this.userService = userService;
+    }
+    @Autowired
+    public void setMessageService(MessageService messageService) {
+        this.messageService = messageService;
     }
 
     @GetMapping("/update-session-resources")

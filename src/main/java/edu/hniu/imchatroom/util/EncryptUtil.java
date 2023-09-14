@@ -2,14 +2,11 @@ package edu.hniu.imchatroom.util;
 
 import javax.crypto.*;
 import javax.crypto.spec.DESKeySpec;
-import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Base64;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * 加密工具类

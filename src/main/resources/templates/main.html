@@ -218,16 +218,25 @@
                                     <!--                                    简介-->
                                     <div id="profile-introduce">
                                         <ul>
-                                            <li class="profile-item">昵称：<input type="text" class="profile-item-val" th:value="${session.SIGNINED_USER.nickname }" required/></li>
-                                            <li class="profile-item">账号：<span class="profile-item-val" th:text="${session.SIGNINED_USER.account }"></span></li>
+                                            <li class="profile-item">昵称：<input type="text" class="profile-item-val" th:value="${session.SIGNINED_USER.getNickname() }" required/></li>
+                                            <li class="profile-item">账号：<span class="profile-item-val" th:text="${session.SIGNINED_USER.getAccount() }"></span></li>
                                             <li class="profile-item">用户身份：
-                                                <span class="profile-item-val" th:if="${session.SIGNINED_USER.role == session.ADMIN_USER_NAME }">管理员</span>
-                                                <span class="profile-item-val" th:if="${session.SIGNINED_USER.role == session.COMMON_USER_NAME }">普通用户</span>
+                                                <span class="profile-item-val" th:if="${session.SIGNINED_USER.getRole() == session.ADMIN_USER_NAME }">管理员</span>
+                                                <span class="profile-item-val" th:if="${session.SIGNINED_USER.getRole() == session.COMMON_USER_NAME }">普通用户</span>
                                             </li>
-                                            <li class="profile-item">邮箱地址：<span class="profile-item-val" th:text="${session.SIGNINED_USER.email }"></span></li>
+                                            <li class="profile-item">邮箱地址：
+                                                <span class="profile-item-val" th:text="${session.SIGNINED_USER.getEmail() }"></span>
+                                            </li>
                                             <li class="profile-item">密码：<input type="password" class="profile-item-val" required/></li>
-                                            <li class="profile-item">账号激活时间：<span class="profile-item-val" th:text="${#dates.format(session.SIGNINED_USER.activeTime, 'yyyy-MM-dd HH:mm:ss') }"></span></li>
-                                            <li class="profile-item">上次登录时间：<span class="profile-item-val" th:text="${#dates.format(session.SIGNINED_USER.lastSigninTime, 'yyyy-MM-dd HH:mm:ss')}"></span></li>
+                                            <li class="profile-item">账户重置码：
+                                                <span class="profile-item-val" th:text="${session.SIGNINED_USER.getResetCode() }"></span>
+                                            </li>
+                                            <li class="profile-item">账号激活时间：
+                                                <span class="profile-item-val" th:text="${#dates.format(session.SIGNINED_USER.getActiveTime(), 'yyyy-MM-dd HH:mm:ss') }"></span>
+                                            </li>
+                                            <li class="profile-item">上次登录时间：
+                                                <span class="profile-item-val" th:text="${#dates.format(session.SIGNINED_USER.getLastSigninTime(), 'yyyy-MM-dd HH:mm:ss')}"></span>
+                                            </li>
                                             <li>
                                                 <button onclick="editProfile()">保存更改</button>
                                                 <button id="logout-account" onclick="logoutAccount()">注销账号</button>

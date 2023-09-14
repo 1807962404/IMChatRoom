@@ -56,7 +56,8 @@ function sendUrl(url, type, data, successCallbackUrl, failedCallbackUrl) {
         data: data,
         success: function (resp) {
             console.log(resp);
-            callMessage(resp.code, resp.msg);
+            if (resp)
+                callMessage(resp.code, resp.msg);
             // 成功处理逻辑
 
             if (resp.code === 0) {

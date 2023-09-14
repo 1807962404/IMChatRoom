@@ -9,6 +9,8 @@ public final class VariableUtil {
 
     // 项目名称
     public static final String CHATROOM_NAME = "IM";
+    // 上下文路径
+    public static final String CONTEXT_PATH = "/chatroom";
     // 端口号
     public static final Integer PORT = 80;
     // 网络连接地址

@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * 更多工具类
  */
-public class MoreUtil {
+public final class MoreUtil {
 
     /**
      * 合并数组

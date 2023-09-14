@@ -96,6 +96,11 @@ ws.onmessage = (evt) => {
                 "群通知：用户 " + message.content.member.nickname + " 已退出您的群组：" + message.content.group.gName + "！");
 
         } else if (messageType === 'dissolve-group-message') {
+            /*let dissolveGroupMembers = message.content.members;
+            for (let i = 0; i < dissolveGroupMembers.length; i++) {
+                if (dissolveGroupMembers[i].guStatus === '0')
+
+            }*/
             callMessage(0, "群通知：群组 " + message.content.gName + " 已解散，已自动将您移出群聊！");
         }
 

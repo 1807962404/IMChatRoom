@@ -5,7 +5,7 @@
 <!--    User Table Column's name-->
     <sql id="user_column">
         `u_id`, `account`, `password`, `nickname`, `email`, `role`, `avatar_url`, `online_status`, `account_status`,
-            `active_code`, `active_time`, `last_signin_time`, `modified_time`
+            `active_code`, `reset_code`, `active_time`, `last_signin_time`, `modified_time`
     </sql>
 
     <resultMap id="userResultMap" type="edu.hniu.imchatroom.model.bean.User">
@@ -19,6 +19,7 @@
         <result column="online_status" property="onlineStatus" />
         <result column="account_status" property="accountStatus" />
         <result column="active_code" property="activeCode" />
+        <result column="reset_code" property="resetCode" />
         <result column="active_time" property="activeTime" />
         <result column="last_signin_time" property="lastSigninTime" />
         <result column="modified_time" property="modifiedTime" />
@@ -83,6 +84,9 @@
             <if test="null != user.accountStatus and '' != user.accountStatus">
                 `account_status` = #{user.accountStatus },
             </if>
+            <if test="null != user.resetCode and '' != user.resetCode">
+                `reset_code` = #{user.resetCode },
+            </if>
             <if test="null != user.lastSigninTime">
                 `last_signin_time` = #{user.lastSigninTime },
             </if>
@@ -99,10 +103,10 @@
 <!--    Integer insertUser(@Param("user") User user);-->
     <insert id="insertUser">
         INSERT INTO `user`
-            (`account`, `password`, `nickname`, `email`, `active_code`, `modified_time`, `display_status`)
-        VALUES
+            (`account`, `password`, `nickname`, `email`, `active_code`, `reset_code`, `modified_time`, `display_status`)
+        VALUE
             (#{user.account }, #{user.password }, #{user.nickname }, #{user.email },
-             #{user.activeCode}, #{user.modifiedTime }, #{user.displayStatus })
+             #{user.activeCode}, #{user.resetCode }, #{user.modifiedTime }, #{user.displayStatus })
     </insert>
 
 <!--    Integer activeUserAccount(@Param("activeUser") User activeUser);-->
@@ -125,9 +129,15 @@
             ORDER BY `active_time` DESC
     </select>
 
-<!--    User selectUserByActiveCode(String activeCode);-->
-    <select id="selectUserByActiveCode" resultMap="userResultMap">
+<!--    User selectUserByCode(@Param("resetCode") String resetCode, @Param("activeCode") String activeCode);-->
+    <select id="selectUserByCode" resultMap="userResultMap">
         <include refid="AllUsersResult" />
-        WHERE `display_status` = '0' AND `active_code` = #{activeCode }
+        WHERE `display_status` = '0'
+            <if test="resetCode != null and resetCode != ''">
+                AND `reset_code` = #{resetCode }
+            </if>
+            <if test="activeCode != null and activeCode != ''">
+                AND `active_code` = #{activeCode }
+            </if>
     </select>
 </mapper>

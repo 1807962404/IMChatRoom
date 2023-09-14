@@ -61,9 +61,13 @@ public interface UserMapper {
     List<User> selectUsersByFuzzyQuery(@Param("data") String data);
 
     /**
-     * 根据activeCode用户账号激活码查询指定用户
+     * 根据
+     *  resetCode 用户账号重置码 或
+     *  activeCode 用户账号激活码
+     * 查询指定用户
+     * @param resetCode
      * @param activeCode
      * @return
      */
-    User selectUserByActiveCode(String activeCode);
+    User selectUserByCode(@Param("resetCode") String resetCode, @Param("activeCode") String activeCode);
 }

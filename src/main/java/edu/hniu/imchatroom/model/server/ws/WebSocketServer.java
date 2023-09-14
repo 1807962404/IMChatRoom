@@ -168,8 +168,9 @@ public class WebSocketServer {
                 Group dissolveGroup = JSON.parseObject(JSON.toJSONString(messageJson.getContent()), Group.class);
                 for (GroupUser dissolveGroupUser : dissolveGroup.getMembers()) {
                     if (!dissolveGroup.getHostUser().equals(dissolveGroupUser.getMember()))
-                        // 依次通知解散群组内的所有成员
-                        sendInfo(JSON.toJSONString(messageJson), dissolveGroupUser.getMember());
+                        if (null != dissolveGroupUser.getJoinTime())
+                            // 依次通知仍在解散群组内的所有成员
+                            sendInfo(JSON.toJSONString(messageJson), dissolveGroupUser.getMember());
                 }
             }
 

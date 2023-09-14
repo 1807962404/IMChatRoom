@@ -75,14 +75,17 @@
             <include refid="public_message_column" />, `display_status`
         FROM `public_message`
         WHERE `display_status` = '0' AND `g_id` = #{publicMessage.receiveGroup.gId }
-        AND `send_time` > (
-            SELECT
-                `join_time`
-            FROM `group_user`
-            WHERE `display_status` = '0'
-                AND `member_id` = #{publicMessage.sendUser.uId } AND `g_id` = #{publicMessage.receiveGroup.gId }
-            LIMIT 1
-        )
+        <if test="publicMessage.sendUser != null">
+            AND `send_time` > (
+                SELECT
+                    `join_time`
+                FROM `group_user`
+                WHERE `display_status` = '0'
+                    AND `member_id` = #{publicMessage.sendUser.uId } AND
+                        `g_id` = #{publicMessage.receiveGroup.gId }
+                LIMIT 1
+            )
+        </if>
         ORDER BY `send_time` ASC
     </select>
 
@@ -185,9 +188,7 @@
     <update id="deletePriMsg">
         <foreach collection="privateMessages" item="msg" separator=";">
             UPDATE `private_message`
-            <set>
-                `display_status` = '1'
-            </set>
+            SET `display_status` = '1'
             WHERE `pr_id` = #{msg.prId }
         </foreach>
     </update>
@@ -196,9 +197,7 @@
     <update id="deletePubMsg">
         <foreach collection="publicMessages" item="msg" separator=";">
             UPDATE `public_message`
-            <set>
-                `display_status` = '1'
-            </set>
+            SET `display_status` = '1'
             WHERE `pu_id` = #{msg.puId }
         </foreach>
     </update>
@@ -207,9 +206,7 @@
     <update id="deleteBroMsg">
         <foreach collection="broadcastMessages" item="msg" separator=";">
             UPDATE `broadcast_message`
-            <set>
-                `display_status` = '1'
-            </set>
+            SET `display_status` = '1'
             WHERE `b_id` = #{msg.bId }
         </foreach>
     </update>
@@ -218,9 +215,7 @@
     <update id="deleteArtMsg">
         <foreach collection="articleMessages" item="msg" separator=";">
             UPDATE `article_message`
-            <set>
-                `display_status` = '1'
-            </set>
+            SET `display_status` = '1'
             WHERE `a_id` = #{msg.aId }
         </foreach>
     </update>

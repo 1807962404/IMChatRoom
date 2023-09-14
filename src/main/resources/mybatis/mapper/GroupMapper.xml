@@ -35,27 +35,27 @@
                     select="edu.hniu.imchatroom.mapper.UserMapper.selectUserById" />
     </resultMap>
 
-    <sql id="AllGroups">
+    <sql id="AllGroup">
         SELECT
             <include refid="group_column" />, `display_status`
         FROM `group`
     </sql>
-    <sql id="AllGroupsUsers">
+    <sql id="AllGroupUser">
         SELECT
             <include refid="group_user_column" />, `display_status`
         FROM `group_user`
     </sql>
 
-<!--    List<Group> selectMyGroups(@Param("hostId") Long hostId);-->
-    <select id="selectMyGroups" resultMap="GroupsResultMap">
-        <include refid="AllGroups" />
+<!--    List<Group> selectMyCreatedGroups(@Param("hostId") Long hostId);-->
+    <select id="selectMyCreatedGroups" resultMap="GroupsResultMap">
+        <include refid="AllGroup" />
         WHERE `display_status` = '0'
             AND `host_id` = #{hostId }
     </select>
 
 <!--    Group selectGroupById(@Param("gId") Long gId);-->
     <select id="selectGroupById" resultMap="GroupsResultMap">
-        <include refid="AllGroups" />
+        <include refid="AllGroup" />
         WHERE `display_status` = '0'
             AND `display_status` = '0' AND `g_id` = #{gId }
     </select>
@@ -64,7 +64,7 @@
     <insert id="insertGroup" useGeneratedKeys="true" keyProperty="gId">
         INSERT INTO `group`
             (`g_code`, `host_id`, `g_name`, `create_time`, `modified_time`, `display_status`)
-        VALUES
+        VALUE
             (#{newGroup.gCode }, #{newGroup.hostUser.uId }, #{newGroup.gName},
              #{newGroup.createTime }, #{newGroup.modifiedTime }, #{newGroup.displayStatus })
     </insert>
@@ -73,30 +73,28 @@
     <insert id="insertGroupUser">
         INSERT INTO `group_user`
             (`g_id`, `member_id`, `gu_status`, `apply_time`, `display_status`, `join_time`)
-        VALUES
+        VALUE
             (#{groupUser.group.gId }, #{groupUser.member.uId }, #{groupUser.guStatus},
              #{groupUser.applyTime }, #{groupUser.displayStatus },
              <if test="null == groupUser.joinTime">null</if>
              <if test="null != groupUser.joinTime">#{groupUser.joinTime }</if>)
     </insert>
 
-<!--    List<Group> selectMyEnteredGroups(@Param("uId") Long uId);-->
-    <select id="selectMyEnteredGroups" resultMap="GroupsResultMap">
-        <include refid="AllGroups" />
+<!--    List<GroupUser> selectGroupUserByIdAndGuStatus(@Param("uId") Long uId, @Param("guStatus") String guStatus);-->
+    <select id="selectGroupUserByIdAndGuStatus" resultMap="GroupUserResultMap">
+        <include refid="AllGroupUser" />
         WHERE `display_status` = '0'
-            AND `g_id` IN (
-                SELECT
-                    `g_id`
-                FROM `group_user`
-                WHERE `display_status` = '0' AND
-                    `member_id` = #{uId } AND `gu_status` = '0'
-                ORDER BY `join_time` DESC
-            )
+          <if test="uId != null">
+              AND `member_id` = #{uId }
+          </if>
+          <if test="guStatus != null and guStatus != ''">
+              AND `gu_status` = #{guStatus }
+          </if>
     </select>
 
 <!--    List<Group> selectGroupsByFuzzyQuery(@Param("data") String data);-->
     <select id="selectGroupsByFuzzyQuery" resultMap="GroupsResultMap">
-        <include refid="AllGroups" />
+        <include refid="AllGroup" />
         WHERE `display_status` = '0'
             AND (`g_code` LIKE CONCAT('%', #{data }, '%') OR `g_name` LIKE CONCAT('%', #{data }, '%'))
         ORDER BY `create_time` DESC
@@ -104,18 +102,17 @@
 
 <!--    Group selectGroupByGCode(@Param("gCode") String gCode);-->
     <select id="selectGroupByGCode" resultMap="GroupsResultMap">
-        <include refid="AllGroups" />
+        <include refid="AllGroup" />
         WHERE `display_status` = '0'
             AND `g_code` = #{gCode }
     </select>
 
-<!--    List<GroupUser> selectGroupsUsersById(@Param("gId") Long gId, @Param("uId") Long uId);-->
-    <select id="selectGroupsUsersById" resultMap="GroupUserResultMap">
-        <include refid="AllGroupsUsers" />
+<!--    List<GroupUser> selectGroupUserById(@Param("gId") Long gId, @Param("uId") Long uId);-->
+    <select id="selectGroupUserById" resultMap="GroupUserResultMap">
+        <include refid="AllGroupUser" />
         WHERE `display_status` = '0'
             <if test="null != gId">AND `g_id` = #{gId }</if>
             <if test="null != uId">AND `member_id` = #{uId }</if>
---         ORDER BY `apply_time` DESC, `join_time` DESC
     </select>
 
 <!--    Integer updateGroupUserStatus(@Param("groupUser") GroupUser groupUser);-->

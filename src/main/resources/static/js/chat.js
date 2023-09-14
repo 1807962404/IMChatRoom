@@ -188,6 +188,7 @@ function changeMsgWindow() {
 
                 // 如果是最后一张选项卡：更多功能，则需要切换左侧消息窗口为 功能选项卡
                 if (Number(menubar_index) === menubars.length - 1) {
+                    chatBoardHeaderInfo.classList.add('hidden-el');
                     // 获取 功能消息窗口 列表
                     let entity_li = document.querySelectorAll('#chat-box #message .exclusive-chat-box .entity-li');
                     // console.log(entity_li)
@@ -422,7 +423,7 @@ if (enterGroupBtn) {
                             addBtnElem.addEventListener('click', (evt) => {
                                 evt.preventDefault();
                                 // 监听点击加入群聊的按钮
-                                enterGroup(findGroup.gCode)
+                                enterGroup(findGroup.gCode);
                                 // sendUrl(getProjectPath() + '/user/enter-group/' + findGroup.gCode, 'GET');
                             });
 
@@ -886,68 +887,70 @@ function setGroupUsersInfo(myGroup) {
     myGroupUsersElem.classList.add('my-group-members');
     for (let i = 0; i < myGroup.members.length; i++) {
         let groupUser = myGroup.members[i];   // 群成员(GroupUser类型)
-        let member = groupUser.member;        // 群成员（User类型）
+        if (groupUser.guStatus == '0') {
+            let member = groupUser.member;        // 群成员（User类型）
 
-        let friendInfoElem = document.createElement('div');
-        friendInfoElem.classList.add('apply-friend');
+            let friendInfoElem = document.createElement('div');
+            friendInfoElem.classList.add('apply-friend');
 
-        let avatarElem = document.createElement('div');
-        avatarElem.classList.add('avatar');
-        avatarElem.style.background = 'url(' + getProjectPath() + '/images' + member.avatarUrl + ') no-repeat';
+            let avatarElem = document.createElement('div');
+            avatarElem.classList.add('avatar');
+            avatarElem.style.background = 'url(' + getProjectPath() + '/images' + member.avatarUrl + ') no-repeat';
 
-        let friendNameElem = document.createElement('div');
-        friendNameElem.classList.add('friend-name', 'high-light');
+            let friendNameElem = document.createElement('div');
+            friendNameElem.classList.add('friend-name', 'high-light');
 
-        let appContentElem = document.createElement('div');
-        appContentElem.classList.add('app-content');
-        appContentElem.innerText = member.email;
+            let appContentElem = document.createElement('div');
+            appContentElem.classList.add('app-content');
+            appContentElem.innerText = member.email;
 
-        let applyTimeElem = document.createElement('div');
-        applyTimeElem.classList.add('apply-time');
+            let applyTimeElem = document.createElement('div');
+            applyTimeElem.classList.add('apply-time');
 
-        let dropBtnElem = document.createElement('div');
-        dropBtnElem.classList.add('drop-btn');
-        let aElem = document.createElement('a');
-        dropBtnElem.appendChild(aElem);
+            let dropBtnElem = document.createElement('div');
+            dropBtnElem.classList.add('drop-btn');
+            let aElem = document.createElement('a');
+            dropBtnElem.appendChild(aElem);
 
-        if (Number(member.uId) === Number(myGroup.hostUser.uId)) {
-            // 该成员是群主
-            applyTimeElem.innerHTML = '群聊创建时间：<br />' + FormatDate(myGroup.createTime);
+            if (Number(member.uId) === Number(myGroup.hostUser.uId)) {
+                // 该成员是群主
+                applyTimeElem.innerHTML = '群聊创建时间：<br />' + FormatDate(myGroup.createTime);
 
-            friendNameElem.innerText = '（群主）';
+                friendNameElem.innerText = '（群主）';
 
-            aElem.innerText = '解散群聊';
+                aElem.innerText = '解散群聊';
 
-            dropBtnElem.addEventListener('click',  () => {
-                // console.log('解散群聊', myGroup.gCode);
-                // 绑上监听点击事件（解散群聊）
-                doDissolveGroupBtnListener(myGroup.gName, myGroup.gCode);
-            });
+                dropBtnElem.addEventListener('click',  () => {
+                    // console.log('解散群聊', myGroup.gCode);
+                    // 绑上监听点击事件（解散群聊）
+                    doDissolveGroupBtnListener(myGroup.gName, myGroup.gCode);
+                });
 
-        } else {
-            // 仅是群成员
-            applyTimeElem.innerHTML = '入群时间：<br />' + FormatDate(groupUser.joinTime);
+            } else {
+                // 仅是群成员
+                applyTimeElem.innerHTML = '入群时间：<br />' + FormatDate(groupUser.joinTime);
 
-            aElem.innerText = '点击移出群聊';
+                aElem.innerText = '点击移出群聊';
 
-            friendNameElem.innerText = member.nickname;
+                friendNameElem.innerText = member.nickname;
 
-            dropBtnElem.addEventListener('click',  () => {
-                // console.log('移出群聊', myGroup.gCode, member.uId);
-                // 绑上监听点击事件（移出群聊）
-                doDropMemberFromGroupBtnListener(myGroup, member);
-            });
-        }
+                dropBtnElem.addEventListener('click',  () => {
+                    // console.log('移出群聊', myGroup.gCode, member.uId);
+                    // 绑上监听点击事件（移出群聊）
+                    doDropMemberFromGroupBtnListener(myGroup, member);
+                });
+            }
 
-        friendInfoElem.append(avatarElem, friendNameElem, appContentElem, applyTimeElem, dropBtnElem);
-        myGroupUsersElem.appendChild(friendInfoElem);
-        groupElem.append(groupNameElem, myGroupUsersElem);
-        let firstGroupElem = createdGroupElem.firstElementChild;
-        if (firstGroupElem) {
-            createdGroupElem.insertBefore(groupElem, firstGroupElem);
+            friendInfoElem.append(avatarElem, friendNameElem, appContentElem, applyTimeElem, dropBtnElem);
+            myGroupUsersElem.appendChild(friendInfoElem);
+            groupElem.append(groupNameElem, myGroupUsersElem);
+            let firstGroupElem = createdGroupElem.firstElementChild;
+            if (firstGroupElem) {
+                createdGroupElem.insertBefore(groupElem, firstGroupElem);
 
-        } else {
-            createdGroupElem.appendChild(groupElem);
+            } else {
+                createdGroupElem.appendChild(groupElem);
+            }
         }
     }
 }
@@ -1058,6 +1061,15 @@ function findGroupNotifications() {
     })
 }
 function setMessageToGroupNotifications(groupUser) {
+
+    let nonResultElem = document.querySelector('#group-notifications #group-notification .non-search-result');
+    if (!nonResultElem.classList.contains('hidden-el'))
+        nonResultElem.classList.add('hidden-el');
+
+    let hasResultElem = document.querySelector('#group-notifications #group-notification .has-search-result');
+    if (hasResultElem.classList.contains('hidden-el'))
+        hasResultElem.classList.remove('hidden-el');
+
     let friendInfoElem = document.createElement('div');
     friendInfoElem.classList.add('apply-friend');
 
@@ -1077,6 +1089,7 @@ function setMessageToGroupNotifications(groupUser) {
     let aElem = document.createElement('a');
     aElem.classList.add('agree');
 
+    let hasResult = false;
     if (Number(thisUserId) === Number(groupUser.group.hostUser.uId)) {
         // 如果本人为群主
 
@@ -1090,6 +1103,7 @@ function setMessageToGroupNotifications(groupUser) {
                 doAgreeUserToGroup(groupUser.group.gId, groupUser.member.uId);
             });
         }
+        hasResult = true;
 
     } else if (Number(thisUserId) === Number(groupUser.member.uId)) {
         // 否则为群成员
@@ -1097,23 +1111,27 @@ function setMessageToGroupNotifications(groupUser) {
             aElem.innerText = '您已加入：' + groupUser.group.gName + ' 群组！';
 
         else if (groupUser.guStatus === '1')
-            aElem.innerText = '您已发送：' +  + groupUser.group.gName + ' 的入群申请！';
+            aElem.innerText = '您已发送：' + groupUser.group.gName + ' 的入群申请！';
+
+        hasResult = true;
     }
 
-    if (groupUser.guStatus === '0')
-        applyTimeElem.innerHTML = `入群时间：` + FormatDate(groupUser.joinTime);
+    if (hasResult) {
+        if (groupUser.guStatus === '0')
+            applyTimeElem.innerHTML = `入群时间：` + FormatDate(groupUser.joinTime);
 
-    else if (groupUser.guStatus === '1')
-        applyTimeElem.innerHTML = `申请时间：` + FormatDate(groupUser.applyTime);
+        else if (groupUser.guStatus === '1')
+            applyTimeElem.innerHTML = `申请时间：` + FormatDate(groupUser.applyTime);
 
-    appContentElem.appendChild(aElem);
-    friendInfoElem.append(avatarElem, friendNameElem, applyTimeElem, appContentElem);
-    let hasResultElem = document.querySelector('#group-notifications #group-notification .has-search-result');
-    let firstElem = hasResultElem.firstElementChild;
-    if (firstElem) {
-        hasResultElem.insertBefore(friendInfoElem, firstElem);
-    } else {
-        hasResultElem.appendChild(friendInfoElem);
+        appContentElem.appendChild(aElem);
+        friendInfoElem.append(avatarElem, friendNameElem, applyTimeElem, appContentElem);
+
+        let firstElem = hasResultElem.firstElementChild;
+        if (firstElem) {
+            hasResultElem.insertBefore(friendInfoElem, firstElem);
+        } else {
+            hasResultElem.appendChild(friendInfoElem);
+        }
     }
 }
 
@@ -1150,8 +1168,15 @@ function getMyGroups() {
                     let aElem = document.createElement('a');
                     aElem.dataset.code = myEnteredGroup.gCode;
                     // 设置群成员人数
-                    if (myEnteredGroup.members && myEnteredGroup.members.length > 0)
-                        aElem.dataset.memberLen =  myEnteredGroup.members.length;
+                    if (myEnteredGroup.members && myEnteredGroup.members.length > 0) {
+                        let memberSize = 0;
+                        for (let j = 0; j < myEnteredGroup.members.length; j++) {
+                            let thisMember = myEnteredGroup.members[j];
+                            if (thisMember.guStatus === '0')
+                                memberSize += 1;
+                        }
+                        aElem.dataset.memberLen = memberSize;
+                    }
                     aElem.classList.add('my-entered-group');
                     aElem.innerText = myEnteredGroup.gName;
 

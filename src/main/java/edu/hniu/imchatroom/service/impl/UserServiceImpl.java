@@ -17,11 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Date;
 import java.util.List;
 
-import static edu.hniu.imchatroom.util.VariableUtil.CHATROOM_NAME;
-import static edu.hniu.imchatroom.util.VariableUtil.DEFAULT_PASSWORD;
-import static edu.hniu.imchatroom.util.VariableUtil.PORT;
-import static edu.hniu.imchatroom.util.VariableUtil.ADDRESS;
-import static edu.hniu.imchatroom.util.VariableUtil.ADMIN_USER_NAME;
+import static edu.hniu.imchatroom.util.VariableUtil.*;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -168,9 +164,13 @@ public class UserServiceImpl implements UserService {
         // 5、设置展示状态
         user.setDisplayStatus(StatusCode.getNormalStatusCode());
 
-        // 6、发送邮件
+
+        // 6、设置用户账户重置码
+        user.setResetCode(StringUtil.getRandomCode(false));
+
+        // 7、发送邮件
         String content = "<h1 style='color: #f00'>欢迎注册“" + CHATROOM_NAME + "”账户，点击下面链接激活账户，以便获取更多惊喜体验！</h1>" +
-                "<a href='" + ADDRESS + ":" + PORT + "/chatroom/user/active-user-account/" + activeCode
+                "<a href='" + ADDRESS + ":" + PORT + CONTEXT_PATH + "/user/active-user-account/" + activeCode
                 + "'>点击此链接激活【" + CHATROOM_NAME + "】账户！</a>";
         try {
             emailService.sendEmail(user.getEmail(), CHATROOM_NAME + "激活邮件", content);
@@ -269,7 +269,7 @@ public class UserServiceImpl implements UserService {
         if (1 == step) {
             // 第一步：发送邮件
             String content = "<h1 style='color: #f00'>" + CHATROOM_NAME + "邮箱通知，点击下面链接重置账户密码！</h1>" +
-                    "<a href='" + ADDRESS + ":" + PORT + "/chatroom/user/reset-password/" + user.getActiveCode()
+                    "<a href='" + ADDRESS + ":" + PORT + CONTEXT_PATH + "/user/reset-password/" + user.getResetCode()
                     + "'>点击此链接重置【" + CHATROOM_NAME + "】账户密码为默认密码（" + DEFAULT_PASSWORD + "）！</a>";
             try {
                 emailService.sendEmail(user.getEmail(), CHATROOM_NAME + "重置密码邮件", content);
@@ -283,6 +283,8 @@ public class UserServiceImpl implements UserService {
         } else if (2 == step) {
             // 第二步：重置该用户的密码为 默认密码
             try {
+                // 每次重置完一次账户密码，需更新用户账户重置码
+                user.setResetCode(StringUtil.getRandomCode(false));
                 user.setPassword(EncryptUtil.encodeByMd5(DEFAULT_PASSWORD));
             } catch (Exception e) {
                 System.out.println("（重置密码）MD5加密过程中发生错误: " + e.getMessage());
@@ -302,8 +304,20 @@ public class UserServiceImpl implements UserService {
      */
     @Transactional(readOnly = true)
     @Override
-    public User doGetUserByActiveCode(String activeCode) {
-        return userMapper.selectUserByActiveCode(activeCode);
+    /**
+     * 处理 根据
+     *   resetCode 用户账号重置码 或
+     *   activeCode 用户账号激活码
+     * 查询指定用户 的业务逻辑
+     * @param resetCode
+     * @param activeCode
+     * @return
+     */
+    public User doGetUserByCode(String resetCode, String activeCode) {
+        if (StringUtil.isEmpty(resetCode) && StringUtil.isEmpty(activeCode))
+            return null;
+
+        return userMapper.selectUserByCode(resetCode, activeCode);
     }
 
     /**
@@ -346,7 +360,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // 4、检查下需要注销的用户是否 创建或加入了群组
-        List<Group> myCreatedGroups = groupService.doGetMyGroups(loggoutUser.getUId());
+        List<Group> myCreatedGroups = groupService.doGetMyCreatedGroups(loggoutUser.getUId());
         if (!myCreatedGroups.isEmpty()) {
             // 如果此用户创建了群组，则需将这些群组解散
             for (Group myCreatedGroup : myCreatedGroups) {
@@ -363,7 +377,7 @@ public class UserServiceImpl implements UserService {
 
                 else {
                     // 如果仅仅是此用户加入的群组，则直接退出群组即可
-                    List<GroupUser> groupUsers = groupService.doGetGroupsUsersById(group.getGId(), loggoutUser.getUId());
+                    List<GroupUser> groupUsers = groupService.doGetGroupUserById(group.getGId(), loggoutUser.getUId());
                     if (null == groupUsers || groupUsers.isEmpty())
                         continue;
 

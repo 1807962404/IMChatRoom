@@ -1,9 +1,7 @@
 package edu.hniu.imchatroom.config;
 
-import edu.hniu.imchatroom.filter.SystemFilter;
 import edu.hniu.imchatroom.interceptor.LoginInterceptor;
 import edu.hniu.imchatroom.util.StringUtil;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistration;
@@ -39,23 +37,6 @@ public class CoreWebConfig implements WebMvcConfigurer {
     @Bean
     public ServerEndpointExporter serverEndpointExporter() {
         return new ServerEndpointExporter();
-    }
-
-    /**
-     * 注册MyFilter组件
-     * @return
-     */
-    @Bean
-    public FilterRegistrationBean systemFilterRegistrationBean() {
-        FilterRegistrationBean<SystemFilter> registrationBean = new FilterRegistrationBean<>();
-        registrationBean.setOrder(1);
-        registrationBean.addUrlPatterns("/*");
-
-        registrationBean.setFilter(new SystemFilter());
-        // 定义排除指定路径（注意：此处需要的是一个字符串参数，须在过滤器内部对排除路径进行处理）
-        registrationBean.addInitParameter("excludedUris", StringUtil.getExclusivesPath(SystemFilter.class));
-
-        return registrationBean;
     }
 
     /**
