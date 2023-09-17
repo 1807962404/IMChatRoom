@@ -381,17 +381,72 @@ textarea {
 }
 
 #message {
-    margin: 30px auto auto 75px;
+    margin: 32px 20px;
 }
 
 .msg {
     position: relative;
-    margin-bottom: 10px;
-    padding: 10px;
-    width: 450px;
+    width: 97%;
+    margin: 20px auto;
 }
 
-.msg .triangle {
+.msg::after {
+    content: "";
+    display: block;
+    clear: both;
+}
+
+.avatar {
+    width: 42px;
+    height: 42px;
+    background: no-repeat;
+}
+
+.send_msg .send_avatar {
+    float: right;
+}
+
+.rece_msg .rece_avatar {
+    float: left;
+}
+
+.msg .sentence {
+    position: relative;
+    width: 70%;
+}
+
+.msg .sentence .text {
+    display: inline-block;
+    padding: 5px;
+    max-width: 90%; /* 限制聊天记录的最大宽度 */
+    border-radius: 5px;
+    line-height: 1.5em;
+}
+
+/*设置消息位置*/
+.send_msg .sentence {
+    float: right;
+    margin-right: 2%;
+}
+.send_msg .sentence .text {
+    float: right;
+    color: #fff;
+    background-color: #0099ff;
+}
+
+.rece_msg .sentence {
+    float: left;
+    margin-left: 2%;
+}
+.rece_msg .sentence .text {
+    color: #000;
+    background-color: #fff;
+}
+
+/*设置消息三角*/
+.msg .sentence .triangle {
+    position: absolute;
+    top: 5px;
     width: 0;
     height: 0;
     border: 10px solid;
@@ -400,48 +455,33 @@ textarea {
     border-bottom: 5px solid transparent;
 }
 
-.msg .text {
-    padding: 10px;
-    max-width: 80%; /* 限制聊天记录的最大宽度 */
-    border-radius: 5px;
-    word-break:break-all;
-    line-height: 30px;
-}
-
-.send_msg .text {
-    margin-left: 20%; /* 将聊天记录向右对齐 */
-    color: #fff;
-    background-color: #0099ff;
-}
-
-.rece_msg .text {
-    margin-right: 20%; /* 将聊天记录向左对齐 */
-    color: #000;
-    background-color: #fff;
-}
-
-.send_msg .triangle {
+.send_msg .sentence .triangle {
+    right: -15px;
     border-right: 5px solid transparent;
 }
 
-.rece_msg .triangle {
+.rece_msg .sentence .triangle {
+    left: -15px;
     border-left: 5px solid transparent;
 }
 
-.msg .sentence {
-    position: relative;
+.msg .name {
+    position: absolute;
+    top: 40px;
+    color: #999999;
+    font-size: 14px;
+    width: 42px;
+    text-align: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
-.send_msg .sentence .triangle {
-    position: absolute;
-    top: 20px;
-    left: 450px;
+.send_msg .name {
+    right: 0;
 }
-
-.rece_msg .sentence .triangle {
-    position: absolute;
-    top: 20px;
-    left: -15px;
+.rece_msg .name {
+    left: 0;
 }
 
 .msg .sentence .time {
@@ -450,11 +490,13 @@ textarea {
 }
 
 .send_msg .sentence .time {
-    float: right;
+    margin-top: 35px;
+    margin-left: 190px;
 }
 
 .rece_msg .sentence .time {
-    float: left;
+    margin-top: 3px;
+    margin-left: 3px;
 }
 
 /*#message .inter-msg {
@@ -884,37 +926,4 @@ button:hover {
     font-size: 22px;
     color: #f00;
     text-shadow: 0 0 0.2em #0093f5, 0 0 0.2em #0093f5
-}
-
-.avatar {
-    width: 42px;
-    height: 42px;
-    background: no-repeat;
-}
-
-#chat-box #message .send_avatar {
-    position: absolute;
-    left: 470px;
-    background-image: url("../images/avatar/avatar.png");
-}
-
-#chat-box #message .name {
-    position: absolute;
-    top: 55px;
-    color: #999999;
-    font-size: 14px;
-}
-
-#chat-box #message .send_msg .name {
-    left: 480px;
-}
-
-#chat-box #message .rece_msg .name {
-    left: -45px;
-}
-
-#chat-box #message .rece_avatar {
-    position: absolute;
-    left: -45px;
-    background-image: url("../images/avatar/Member002.jpg");
 }
