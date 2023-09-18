@@ -109,3 +109,24 @@ function FormatDate(date) { //参数是时间
     let myDate = new Date(date);
     return formatDateTime(myDate);
 }
+
+/**
+ * 检查内容是否为空
+ * @param content
+ * @returns {boolean}
+ */
+function checkContentIsEmpty(content) {
+    return null === content || undefined === content || 0 === content.trim().length;
+}
+
+/**
+ * 获取实际内容
+ * @param content
+ * @returns {*|null}
+ */
+function getRealContent(content) {
+    if (!checkContentIsEmpty(content))
+        return content.trim();
+
+    return null;
+}

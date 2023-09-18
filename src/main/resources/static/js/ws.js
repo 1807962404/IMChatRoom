@@ -221,10 +221,17 @@ function callSendMessage(evt) {
     evt.preventDefault();
     let content = chatElem.querySelector('textarea[id="content"]');
     let contentVal = content.value;     // 发送内容
-    if (contentVal === '' | contentVal.length === 0) {
+    if (checkContentIsEmpty(contentVal)) {
         callMessage(1, "发送内容不能为空！");
         return;
     }
+
+    if (checkWSIsNull()) {
+        callMessage(-1, '系统服务崩溃，请稍后再试！');
+        return;
+    }
+
+    contentVal = getRealContent(contentVal);
     // console.log(contentVal);
 
     // 判断当前聊天框是私聊消息还是群聊消息
@@ -236,11 +243,6 @@ function callSendMessage(evt) {
         // console.log(friendId)
         let sendMsgData = doMessageJsonData(contentVal, chatTypeElemId);    // 封装需要发送的消息
         // console.log(sendMsgData);
-
-        if (checkWSIsNull()) {
-            callMessage(-1, '系统服务崩溃，请稍后再试！');
-            return;
-        }
 
         $.ajax({
             url: getProjectPath() + '/user/chat/communicate/' + priFriendId,
@@ -335,16 +337,18 @@ if (broadcastBtn) {
     broadcastBtn.addEventListener('click', function (evt) {
         let publishBroadcastElem = document.getElementById('publish-broadcast');
         let publishBroadcastVal = publishBroadcastElem.value;
-        if (publishBroadcastVal === '' | publishBroadcastVal.length === 0) {
+        if (checkContentIsEmpty(publishBroadcastVal)) {
             callMessage(1, "发布内容不能为空！");
             return;
         }
-        ;
 
         if (checkWSIsNull()) {
             callMessage(-1, '系统服务崩溃，请稍后再试！');
             return;
         }
+
+        publishBroadcastVal = getRealContent(publishBroadcastVal);
+        // console.log(publishBroadcastVal);
 
         // console.log(doMessageJsonData(publishBroadcastVal, 'system-message'))
         $.ajax({
@@ -403,7 +407,7 @@ if (articleBtn) {
     articleBtn.addEventListener('click', function (evt) {
         let publishArticleElem = document.getElementById('publish-abstract');
         let publishArticleVal = publishArticleElem.value;
-        if (publishArticleVal === '' | publishArticleVal.length === 0) {
+        if (checkContentIsEmpty(publishArticleVal)) {
             callMessage(1, "发表优文摘要文章内容不能为空！");
             return;
         };
@@ -412,6 +416,9 @@ if (articleBtn) {
             callMessage(-1, '系统服务崩溃，请稍后再试！');
             return;
         }
+
+        publishArticleVal = getRealContent(publishArticleVal);
+        // console.log(publishArticleVal);
 
         $.ajax({
             url: getProjectPath() + '/user/chat/communicate/0',
@@ -438,12 +445,15 @@ var feedbackElem = document.querySelector('#feedback .feedback-opt');
 if (feedbackElem) {
     feedbackElem.querySelector('button[type="button"]').addEventListener('click', (evt) => {
         let feedbackContent = feedbackElem.querySelector('textarea[id="feedback-content"]');
-        if (feedbackContent.value === '' || feedbackContent.value.length === 0) {
+        let feedbackContentVal = feedbackContent.value;
+        if (checkContentIsEmpty(feedbackContentVal)) {
             callMessage(1, "反馈内容不能为空！");
             return ;
         }
 
-        let feedbackContentVal = feedbackContent.value;
+        feedbackContentVal = getRealContent(feedbackContentVal);
+        // console.log(feedbackContentVal);
+
         $.ajax({
             url: getProjectPath() + "/user/chat/communicate/0",
             type: 'POST',

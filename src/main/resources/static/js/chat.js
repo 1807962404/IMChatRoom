@@ -10,7 +10,6 @@ window.onbeforeunload = evt => {
 }
 
 // 获取本人id
-// const thisUserId = document.querySelector('#user-info #this-user').dataset.id;
 const thisUserId = signInUser.uId;
 
 // 滑动私聊聊天板块，会根据内容自适应
@@ -37,11 +36,13 @@ scrollBoard();
 var content = document.querySelector('#chat-ipt #ipt-content #content');
 // 检查内容框中输入内容的长度
 function checkContentLength(contentElem, contentLength) {
-    let contentVal = contentElem.value
-    if (contentVal.length > contentLength)
-        callMessage(1, "发送内容字数不得超过" + contentLength + "！");
+    let contentVal = getRealContent(contentElem.value);
+    if (null != contentVal) {
+        if (contentVal.length > contentLength)
+            callMessage(1, "发送内容字数不得超过" + contentLength + "！");
 
-    contentElem.value = contentVal.substring(0, contentLength);
+        contentElem.value = contentVal.substring(0, contentLength);
+    }
 }
 content.addEventListener('change', function () {
     checkContentLength(this, 120);
@@ -267,7 +268,7 @@ if (searchFriendBtn) {
     searchFriendBtn.addEventListener('click', function (evt) {
         let textElem = document.querySelector('#add-friend input[type="text"]');
         let msgVal = textElem.value;
-        if (msgVal === '' | msgVal.length === 0) {
+        if (checkContentIsEmpty(msgVal)) {
             callMessage(1, "搜索内容不能为空！");
             return;
         }
@@ -360,7 +361,7 @@ if (enterGroupBtn) {
     enterGroupBtn.addEventListener('click', function (evt) {
         let textElem = document.querySelector('#enter-group input[type="text"]');
         let msgVal = textElem.value;
-        if (msgVal === '' | msgVal.length === 0) {
+        if (checkContentIsEmpty(msgVal)) {
             callMessage(1, "搜索内容不能为空！");
             return;
         }
@@ -605,7 +606,7 @@ function doGetMyBroadcasts() {
 
             if (resp.code === 0) {
                 let publishedBroadcasts = resp.data;
-                console.log(publishedBroadcasts);
+                // console.log(publishedBroadcasts);
                 let myPubBroadcastPreviewElem = document.querySelector('#publish-system-broadcast #broadcast-preview');
                 if (publishedBroadcasts && publishedBroadcasts.length > 0) {
                     hasBroadcastElem.classList.remove('hidden-el');
@@ -682,7 +683,7 @@ function doGetMyArticles() {
 
             if (resp.code === 0) {
                 let publishedArticles = resp.data;
-                console.log(publishedArticles);
+                // console.log(publishedArticles);
                 let myPubArticlePreviewElem = document.querySelector('#publish-excellent-abstract #article-preview');
                 if (publishedArticles && publishedArticles.length > 0) {
                     hasArticleElem.classList.remove('hidden-el');
@@ -702,7 +703,7 @@ function doGetMyArticles() {
             }
         },
         error: (resp) => {
-            console.log("Error: " + resp)
+            console.log("Error: " + resp);
         }
     })
 }
@@ -754,8 +755,9 @@ if (allFeedbackElem) {
             url: getProjectPath() + '/user/chat/feedback-history-msg',
             type: 'GET',
             success: (resp) => {
-                console.log(resp);
+                // console.log(resp);
                 let feedbackList = resp;
+
                 let hasFeedbackElem = document.querySelector('#feedback .has-search-result');
                 let hasNonFeedbackElem = document.querySelector('#feedback .non-search-result');
                 let feedbackPreviewElems = document.querySelectorAll('#all-feedback-list .feedback-preview .feedback-preview-content');
@@ -776,7 +778,7 @@ if (allFeedbackElem) {
                 }
             },
             error: (resp) => {
-                console.log("Error: " + resp)
+                console.log("Error: " + resp);
             }
         })
     });
@@ -987,7 +989,7 @@ if (createGroupBtn) {
     createGroupBtn.addEventListener('click', function (evt) {
         let textElem = document.querySelector('#add-group .add-group-opt input[type="text"]');
         let textElemVal = textElem.value;
-        if (textElemVal === undefined || textElemVal === '') {
+        if (checkContentIsEmpty(textElemVal)) {
             callMessage(1, "请填写群聊名称！");
             return ;
         }
@@ -1023,7 +1025,7 @@ function findGroupNotifications() {
         url: getProjectPath() + '/user/find-group-notifications',
         type: 'GET',
         success: (resp) => {
-            console.log(resp);
+            // console.log(resp);
 
             let rootElem = document.getElementById('group-notifications');
             let groupNotificationElem = rootElem.querySelector('#group-notification');
@@ -1154,7 +1156,7 @@ function getMyGroups() {
         type: 'GET',
         success: (resp) => {
             let myEnteredGroupList = resp;
-            console.log(myEnteredGroupList);
+            // console.log(myEnteredGroupList);
             if (myEnteredGroupList && myEnteredGroupList.length > 0) {
 
                 hasResultElem.classList.remove('hidden-el');
@@ -1358,7 +1360,7 @@ function getMyFriends() {
         type: 'GET',
         success: (resp) => {
             let myFriendList = resp;
-            console.log(myFriendList);
+            // console.log(myFriendList);
             if (myFriendList && myFriendList.length > 0) {
 
                 hasResultElem.classList.remove('hidden-el');
@@ -1573,7 +1575,7 @@ function editProfile() {
     let newPasswordVal = document.querySelector('#profile-introduce input[type="password"]').value;
 
     // 1、检查昵称是否合规
-    if (newNicknameVal === '' | newNicknameVal.length < 3 | newNicknameVal.length > 15) {
+    if (checkContentIsEmpty(newNicknameVal) || newNicknameVal.length < 3 || newNicknameVal.length > 15) {
         callMessage(1, "请检查输入的昵称格式！");
         return;
     }
@@ -1585,7 +1587,7 @@ function editProfile() {
 
     // 2、检查密码是否合规
     if (newPasswordVal && '' != newPasswordVal) {
-        if (newPasswordVal === '' | newPasswordVal.length < 6 | newPasswordVal.length > 20) {
+        if (checkContentIsEmpty(newPasswordVal) || newPasswordVal.length < 6 | newPasswordVal.length > 20) {
             callMessage(1, "请检查输入的密码格式！");
             return;
         }

@@ -29,7 +29,7 @@ if (signIn)
 function changeCheckCode(img, isSignIn) {
     const timestamp = new Date().getTime();
     img.src = "entity/verify-code/" + timestamp;
-    console.log(img.src)
+    // console.log(img.src);
 
     // 用于验证 输入验证码的正确与否
     var identify = document.getElementsByClassName('identify');
@@ -42,13 +42,16 @@ function changeCheckCode(img, isSignIn) {
 // 校验邮箱【或账号】
 function checkEmailVal(emailVal, isSignIn) {
 
-    var email_form = /^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z0-9]{2,6}$/;
+    let email_form = /^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z0-9]{2,6}$/;
     // var email_form = /^[0-9a-zA-Z_.-]+[@][0-9a-zA-Z_.-]+([.][a-zA-Z]+){1,2}$/;
-    var error_email = document.getElementsByClassName('error_email');
-    var emailValLength = emailVal.length;
+    let error_email = document.getElementsByClassName('error_email');
+    if (checkContentIsEmpty(emailVal))
+        return false;
+
+    let emailValLength = emailVal.length;
 
     if (isSignIn) {     // 如果为登陆：检查账号或邮箱
-        if (emailVal === '' | emailValLength < 6) {
+        if (emailValLength < 6) {
             error_email[1].innerText = '·请输入正确的账号或邮箱地址！';
             return false;
         } else {
@@ -79,7 +82,7 @@ function checkEmailVal(emailVal, isSignIn) {
 function checkPasswordVal(pwdVal, isSignIn) {
 
     var error_pwd = document.getElementsByClassName('error_pwd');
-    if (pwdVal === '' | pwdVal.length < 6) {
+    if (checkContentIsEmpty(pwdVal) || pwdVal.length < 6) {
         if (isSignIn) {
             error_pwd[1].innerText = '·请检查密码格式！';
             return false;
@@ -100,7 +103,7 @@ function checkPasswordVal(pwdVal, isSignIn) {
 // 校验验证码
 function checkVerifyCodeVal(codeVal, isSignIn) {
     var error_code = document.getElementsByClassName('error_code');
-    if (codeVal === '' | codeVal.length != 4) {
+    if (checkContentIsEmpty(codeVal) || codeVal.length != 4) {
         if (isSignIn) {
             error_code[1].innerText = '·请检查验证码是否输入正确！';
             return false;
@@ -121,7 +124,7 @@ function checkVerifyCodeVal(codeVal, isSignIn) {
 // 注册用户时，校验昵称
 function checkNicknameVal(nicknameVal) {
     var error_nickname = document.getElementsByClassName('error_nickname')[0];
-    if (nicknameVal === '' | nicknameVal.length < 3 | nicknameVal.length > 15) {
+    if (checkContentIsEmpty(nicknameVal) || nicknameVal.length < 3 || nicknameVal.length > 15) {
         error_nickname.innerText = '·请检查昵称格式！';
         return false;
     } else {
@@ -133,7 +136,7 @@ function checkNicknameVal(nicknameVal) {
 // 表单提交的数据校验
 function checkVal(isSignIn) {
 
-    var emailVal = isSignIn ?
+    let emailVal = isSignIn ?
         document.querySelector('#signin input[name="email"]').value :
         document.querySelector('#signup input[name="email"]').value;
     if (!checkEmailVal(emailVal, isSignIn)) {
@@ -141,7 +144,7 @@ function checkVal(isSignIn) {
         return false;
     }
 
-    var passwordVal = isSignIn ?
+    let passwordVal = isSignIn ?
         document.querySelector('#signin input[name="password"]').value :
         document.querySelector('#signup input[name="password"]').value;
     if (!checkPasswordVal(passwordVal, isSignIn)) {
@@ -149,7 +152,7 @@ function checkVal(isSignIn) {
         return false;
     }
 
-    var verifyCodeVal = isSignIn ?
+    let verifyCodeVal = isSignIn ?
         document.querySelector('#signin input[name="verifyCode"]').value :
         document.querySelector('#signup input[name="verifyCode"]').value;
     if (!checkVerifyCodeVal(verifyCodeVal, isSignIn)) {
@@ -192,7 +195,7 @@ function getFormData(isSignIn) {
         'identify': identifyVal
     };
     if (!isSignIn) {
-        var nicknameVal = document.querySelector('#signup input[name="nickname"]').value;
+        let nicknameVal = document.querySelector('#signup input[name="nickname"]').value;
         formData['nickname'] = nicknameVal;
     };
 
@@ -318,9 +321,8 @@ function doFinalForgetPasswordBtnListener(isCancelld) {
     // 检查邮箱
     let resetEmail = document.querySelector("#customized-modal .custom-modal-content #reset-email");
     let emailVal = resetEmail.value;
-    // console.log(emailVal);
-    var email_form = /^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z0-9]{2,6}$/;
-    if (emailVal === undefined || emailVal === '' || emailVal.length < 10 || !email_form.test(emailVal)) {
+    let email_form = /^[a-zA-Z0-9_.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z0-9]{2,6}$/;
+    if (checkContentIsEmpty(emailVal) || emailVal.length < 10 || !email_form.test(emailVal)) {
         callMessage(1, '请输入正确的邮箱地址！');
         return ;
     }
@@ -342,6 +344,5 @@ function doFinalForgetPasswordBtnListener(isCancelld) {
                 console.log("Error: " + resp);
             }
         });
-        // sendUrl(getProjectPath() + '/user/reset-password', 'POST', doSingleDataToJson(emailVal));
     }
 }
