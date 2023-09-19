@@ -3,6 +3,7 @@ package edu.hniu.imchatroom.service.impl;
 import edu.hniu.imchatroom.mapper.UserMapper;
 import edu.hniu.imchatroom.model.bean.*;
 import edu.hniu.imchatroom.model.bean.messages.*;
+import edu.hniu.imchatroom.properties.SysEntityProperties;
 import edu.hniu.imchatroom.service.GroupService;
 import edu.hniu.imchatroom.service.EmailService;
 import edu.hniu.imchatroom.service.MessageService;
@@ -11,13 +12,15 @@ import edu.hniu.imchatroom.util.EncryptUtil;
 import edu.hniu.imchatroom.util.StringUtil;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
 
-import static edu.hniu.imchatroom.util.VariableUtil.*;
+import static edu.hniu.imchatroom.util.VariableUtil.DEFAULT_PASSWORD;
+import static edu.hniu.imchatroom.util.VariableUtil.ADMIN_USER_NAME;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -26,6 +29,7 @@ public class UserServiceImpl implements UserService {
     private MessageService messageService;
     private GroupService groupService;
     private EmailService emailService;
+    private SysEntityProperties sysEntityProperties;
 
     @Autowired
     public void setUserMapper(UserMapper userMapper) {
@@ -40,9 +44,18 @@ public class UserServiceImpl implements UserService {
         this.groupService = groupService;
     }
     @Autowired
-    public void setMailService(EmailService emailService) {
+    public void setEmailService(EmailService emailService) {
         this.emailService = emailService;
     }
+    @Autowired
+    public void setEntityProperties(SysEntityProperties sysEntityProperties) {
+        this.sysEntityProperties = sysEntityProperties;
+    }
+
+    @Value("${server.port}")
+    private String port;
+    @Value("${server.servlet.context-path}")
+    private String contextPath;
 
     /**
      * 检查表单发送过来的验证码是否 与session中存储的verifycode相等
@@ -169,11 +182,11 @@ public class UserServiceImpl implements UserService {
         user.setResetCode(StringUtil.getRandomCode(false));
 
         // 7、发送邮件
-        String content = "<h1 style='color: #f00'>欢迎注册“" + CHATROOM_NAME + "”账户，点击下面链接激活账户，以便获取更多惊喜体验！</h1>" +
-                "<a href='" + ADDRESS + ":" + PORT + CONTEXT_PATH + "/user/active-user-account/" + activeCode
-                + "'>点击此链接激活【" + CHATROOM_NAME + "】账户！</a>";
+        String content = "<h1 style='color: #f00'>欢迎注册“" + sysEntityProperties.getChatroomName() + "”账户，点击下面链接激活账户，以便获取更多惊喜体验！</h1>" +
+                "<a href='" + sysEntityProperties.getAddress() + ":" + this.port + this.contextPath +
+                "/user/active-user-account/" + activeCode + "'>点击此链接激活【" + sysEntityProperties.getChatroomName() + "】账户！</a>";
         try {
-            emailService.sendEmail(user.getEmail(), CHATROOM_NAME + "激活邮件", content);
+            emailService.sendEmail(user.getEmail(), sysEntityProperties.getChatroomName() + "激活邮件", content);
         } catch (MessagingException e) {
             System.out.println("邮件发送失败：" + e.getMessage());
             return 0;
@@ -268,11 +281,13 @@ public class UserServiceImpl implements UserService {
         boolean success = false;
         if (1 == step) {
             // 第一步：发送邮件
-            String content = "<h1 style='color: #f00'>" + CHATROOM_NAME + "邮箱通知，点击下面链接重置账户密码！</h1>" +
-                    "<a href='" + ADDRESS + ":" + PORT + CONTEXT_PATH + "/user/reset-password/" + user.getResetCode()
-                    + "'>点击此链接重置【" + CHATROOM_NAME + "】账户密码为默认密码（" + DEFAULT_PASSWORD + "）！</a>";
+            String content = "<h1 style='color: #f00'>" + sysEntityProperties.getChatroomName() + "邮箱通知，点击下面链接重置账户密码！</h1>" +
+                    "<a href='" + sysEntityProperties.getAddress() + ":" + this.port + this.contextPath +
+                    "/user/reset-password/" + user.getResetCode() + "'>点击此链接重置【" +
+                    sysEntityProperties.getChatroomName() + "】账户密码为默认密码（" + DEFAULT_PASSWORD + "）！</a>";
             try {
-                emailService.sendEmail(user.getEmail(), CHATROOM_NAME + "重置密码邮件", content);
+                emailService.sendEmail(user.getEmail(), sysEntityProperties.getChatroomName() +
+                        "重置密码邮件", content);
                 success = true;
                 System.out.println("邮件发送成功！");
             } catch (MessagingException e) {

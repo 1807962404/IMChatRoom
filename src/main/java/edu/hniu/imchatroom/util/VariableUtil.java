@@ -7,15 +7,6 @@ import edu.hniu.imchatroom.model.enums.RoleEnum;
  */
 public final class VariableUtil {
 
-    // 项目名称
-    public static final String CHATROOM_NAME = "IM";
-    // 上下文路径
-    public static final String CONTEXT_PATH = "/chatroom";
-    // 端口号
-    public static final Integer PORT = 80;
-    // 网络连接地址
-    public static final String ADDRESS = "http://127.0.0.1";
-//    public static final String ADDRESS = "http://8.130.104.52";
     // 默认密码
     public static final String DEFAULT_PASSWORD = "123456";
     // 登陆用户

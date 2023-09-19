@@ -18,7 +18,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
-import static edu.hniu.imchatroom.util.VariableUtil.*;
+import static edu.hniu.imchatroom.util.VariableUtil.SIGNINED_USER;
+import static edu.hniu.imchatroom.util.VariableUtil.ADMIN_USER_NAME;
 
 /**
  * 收发消息控制器

@@ -262,6 +262,36 @@ for (let i = 0; i < more_entities_input.length; i++) {
     });
 };
 
+/**
+ * 复制文本内容
+ * @param textElem
+ */
+function copyTextToClipboard(textElem) {
+    let copyText = textElem.innerText;
+
+    if (navigator.clipboard) {
+        // clipboard api 复制
+        navigator.clipboard.writeText(copyText);
+
+    } else {
+        var textarea = document.createElement('textarea');
+        document.body.appendChild(textarea);
+        // 隐藏此输入框
+        textarea.style.position = 'fixed';
+        textarea.style.clip = 'rect(0 0 0 0)';
+        textarea.style.top = '10px';
+        // 赋值
+        textarea.value = copyText;
+        // 选中
+        textarea.select();
+        // 复制
+        document.execCommand('copy', true);
+        // 移除输入框
+        document.body.removeChild(textarea);
+    }
+    callMessage(0, '已成功复制消息文本内容!');
+}
+
 // 监听 添加好友栏（搜索好友） 的button
 var searchFriendBtn = document.querySelector('#add-friend button');
 if (searchFriendBtn) {
@@ -1333,6 +1363,11 @@ function setMessageToPubMsgBoard(pubMsg, gCode) {
             timeElem.innerText = sendTime.getFullYear() + "年" + (sendTime.getMonth() + 1) + "月" + sendTime.getDate() + "日 "
                 + sendTime.getHours() + "时" + sendTime.getMinutes() + "分" + sendTime.getSeconds() + "秒";
 
+            textElem.addEventListener("contextmenu", function (evt) {
+                evt.preventDefault(); // 阻止事件传播
+                copyTextToClipboard(this);
+            });
+
             sentenceElem.append(textElem, triangleElem, timeElem);
             msgElem.append(uIdElem, avatarElem, nameElem, sentenceElem);
             correspondingElem.appendChild(msgElem);
@@ -1540,6 +1575,10 @@ function setMessageToPriMsgBoard(priMsg, friendId) {
             timeElem.innerText = sendTime.getFullYear() + "年" + (sendTime.getMonth() + 1) + "月" + sendTime.getDate() + "日 "
                 + sendTime.getHours() + "时" + sendTime.getMinutes() + "分" + sendTime.getSeconds() + "秒";
 
+            textElem.addEventListener("contextmenu", function (evt) {
+                evt.preventDefault(); // 阻止事件传播
+                copyTextToClipboard(this);
+            });
             sentenceElem.append(textElem, triangleElem, timeElem);
             msgElem.append(uIdElem, avatarElem, nameElem, sentenceElem);
             correspondingElem.appendChild(msgElem);
@@ -1648,25 +1687,3 @@ function uploadAvatar(file) {
         }
     });
 }
-
-// 消息的右键菜单栏
-/*
-var interMsg = document.querySelector('#chat-box #message .inter-msg');
-var more_opt_submenu = document.querySelector('#chat-box #message .inter-msg .more_opt_submenu ul');
-interMsg.addEventListener("contextmenu", function (evt) {
-    evt.preventDefault(); // 阻止事件传播
-    more_opt_submenu.style.display = "block";   // 显示
-
-    var x = evt.clientX;
-    var y = evt.clientY;
-
-    var diffX = document.documentElement.clientWidth - more_opt_submenu.offsetWidth;
-    var diffY = document.documentElement.clientHeight - more_opt_submenu.offsetHeight;
-    // 以免出边界
-    x = x >= diffX ? diffX : x;
-    y = y >= diffY ? diffY : y;
-
-    list.style.left = x + "px";
-    list.style.top = y + "px";
-});
-document.addEventListener("click", () => more_opt_submenu.style.display = "none");*/

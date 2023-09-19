@@ -433,6 +433,12 @@ textarea {
     color: #fff;
     background-color: #0099ff;
 }
+.send_msg .sentence .text:hover {
+    background-color: #0086e0;
+}
+.send_msg .sentence .text:hover + .triangle {
+    border-color: transparent transparent transparent #0086e0;
+}
 
 .rece_msg .sentence {
     float: left;
@@ -441,6 +447,12 @@ textarea {
 .rece_msg .sentence .text {
     color: #000;
     background-color: #fff;
+}
+.rece_msg .sentence .text:hover {
+    background-color: #e0e0e0;
+}
+.rece_msg .sentence .text:hover + .triangle {
+    border-color: transparent #e0e0e0 transparent transparent;
 }
 
 /*设置消息三角*/

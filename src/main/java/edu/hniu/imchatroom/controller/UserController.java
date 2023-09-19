@@ -4,6 +4,7 @@ import edu.hniu.imchatroom.model.bean.*;
 import edu.hniu.imchatroom.model.bean.messages.*;
 import edu.hniu.imchatroom.model.bean.response.Result;
 import edu.hniu.imchatroom.model.bean.response.ResultVO;
+import edu.hniu.imchatroom.properties.SysEntityProperties;
 import edu.hniu.imchatroom.service.FriendService;
 import edu.hniu.imchatroom.service.MessageService;
 import edu.hniu.imchatroom.service.UserService;
@@ -14,6 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.ClassUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,12 +37,7 @@ public class UserController {
     private UserService userService;
     private FriendService friendService;
     private MessageService messageService;
-
-    // 记录在线用户
-    private static final Map<String, User> onlineUserToUseMap = new ConcurrentHashMap<>();
-    // 记录在线用户人数
-    private static Integer onlineUserCount = 0;
-
+    private SysEntityProperties sysEntityProperties;
     @Autowired
     public void setUserService(UserService userService) {
         this.userService = userService;
@@ -53,6 +50,20 @@ public class UserController {
     public void setMessageService(MessageService messageService) {
         this.messageService = messageService;
     }
+    @Autowired
+    public void setEntityProperties(SysEntityProperties sysEntityProperties) {
+        this.sysEntityProperties = sysEntityProperties;
+    }
+
+    // 记录在线用户
+    private static final Map<String, User> onlineUserToUseMap = new ConcurrentHashMap<>();
+    // 记录在线用户人数
+    private static Integer onlineUserCount = 0;
+    
+    @Value("${server.port}")
+    private String port;
+    @Value("${server.servlet.context-path}")
+    private String contextPath;
 
     private void printOnlineUsers() {
         if (null == onlineUserToUseMap || onlineUserToUseMap.isEmpty()) {
@@ -82,12 +93,18 @@ public class UserController {
                              String identify,
                              HttpServletRequest request) {
 
+        // 1、检查系统是否开启了注册功能
+        if (!sysEntityProperties.getEntities().get("sign-up").get("enabled").equals("true")) {
+            log.warn("注册功能正在系统维护中，请稍后再试！");
+            return Result.warn("注册功能正在系统维护中，请稍后再试！");
+        }
+
         if (StringUtil.isEmpty(identify)) {
             log.warn("身份识别错误！（传入的identify：" + identify + " 错误）");
             return Result.failed("身份识别错误！");
         }
 
-        // 1、获取服务端中对应时间戳的验证码的验证码，并将其与提交的表单中输入的验证码内容 进行忽略大小写比对
+        // 2、获取服务端中对应时间戳的验证码的验证码，并将其与提交的表单中输入的验证码内容 进行忽略大小写比对
         Map<String, String> verifyCodeMap = (Map<String, String>) request.getSession().getAttribute(CHECK_CODE);
         log.info("时间戳：{}，时间戳对应验证码：{}，验证码：{}", identify, verifyCodeMap.get(identify), verifyCode);
         boolean flag = userService.doCheckVerifyCode(verifyCodeMap.get(identify), verifyCode);
@@ -98,7 +115,7 @@ public class UserController {
 
         log.info("用户注册中输入的用户信息：{}", user);
 
-        // 2、检查用户信息是否存在
+        // 3、检查用户信息是否存在
         User userByIdentified = userService.doCheckUserExists(user, false);
         log.info("账号信息为：{}", userByIdentified);
 
@@ -167,7 +184,8 @@ public class UserController {
         response.setContentType("text/html; charset=UTF-8");
         response.getWriter().write(
                 "<h1 style='color: #f00'>" + content +
-                        "</h1><a href='" + ADDRESS + ":" + PORT + CONTEXT_PATH + "/login'>点击跳转至登陆页面</a>");
+                        "</h1><a href='" + sysEntityProperties.getAddress() + ":" + this.port +
+                        this.contextPath + "/login'>点击跳转至登陆页面</a>");
     }
 
     /**
@@ -445,7 +463,13 @@ public class UserController {
     @PostMapping("/reset-password")
     public ResultVO doResetPassword(String data) {
 
-        // 检查用户信息是否存在
+        // 1、检查系统是否开启了账户密码重置功能
+        if (!sysEntityProperties.getEntities().get("reset-password").get("enabled").equals("true")) {
+            log.warn("账户密码重置功能正在系统维护中，请稍后再试！");
+            return Result.warn("账户密码重置功能正在系统维护中，请稍后再试！");
+        }
+
+        // 2、检查用户信息是否存在
         User resetUser = new User();
         resetUser.setEmail(data);
         User userByIdentified = userService.doCheckUserExists(resetUser, false);
@@ -502,7 +526,7 @@ public class UserController {
             HttpServletResponse response
     ) throws IOException {
 
-        String loginPagePath = ADDRESS + ":" + PORT + CONTEXT_PATH + "/login";
+        String loginPagePath = sysEntityProperties.getAddress() + ":" + this.port + this.contextPath + "/login";
 //        log.info("登录页路径：{}", loginPagePath);
 
         // 1、检查code是否为空
