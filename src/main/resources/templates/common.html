@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Title</title>
 
-    <!--用于消息弹窗
+    <!--消息弹窗模块
   该css是引用 iconfont.cn 的一些字体图标。官方地址： https://www.iconfont.cn/ -->
     <link rel="stylesheet" href="http://at.alicdn.com/t/font_1117508_wxidm5ry7od.css">
     <link rel="stylesheet" th:href="@{/css/message.css }">
@@ -15,6 +15,7 @@
 </head>
 <body>
 
+<!--弹窗提示模块-->
 <div th:fragment="modal-content" id="customized-modal" class="modal">
   <div class="modal-content">
     <!--    默认模块显示内容-->
@@ -27,6 +28,16 @@
     <!--    用户自定义模块显示内容-->
     <div class="custom-modal-content hidden-el"></div>
   </div>
+</div>
+
+<div th:fragment="loader-content">
+    <!--加载显示模块-->
+    <div class="process-background">
+        <div class="progressBar">
+            <div class="load-gif"></div>
+            <div class="load-content">正在加载中，请稍等...</div>
+        </div>
+    </div>
 </div>
 
 <div id="commonscripts">

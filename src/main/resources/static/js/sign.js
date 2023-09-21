@@ -261,30 +261,23 @@ function doFinalSignUp(isCancelled) {
     if (!isCancelled) {
         // 3、封装登陆表单的数据
         let data = getFormData(false);
+        showLoader();
         // 4、发送请求
         $.ajax({
             url: getProjectPath() + '/user/signup',
             type: 'POST',
             data: data,
             success: function (resp) {
-                console.log(resp)
-                // 成功处理逻辑
-                let verifyCodeElem = document.querySelector('#signup input[name="verifyCode"]');
+                // console.log(resp);
+                hiddenLoader();
+                callMessage(resp.code, resp.msg);
 
-                if (resp.code === 0) {
-                    // 注册成功
-                    callMessage(0, resp.msg);
-                    sleep(sleepTime).then(()=> window.location.href = getProjectPath() + '/login');
-
-                } else {
-                    callMessage(resp.code, resp.msg);
-                    // 注册失败需要切换验证码
-                    changeCheckCode(verifyCode[0], false);
-                }
-                verifyCodeElem.value = '';
+                changeCheckCode(verifyCode[0], false);  // 更新验证码框
+                document.querySelector('#signup input[name="verifyCode"]').value = '';  // 清空验证码框内容
             },
             error: function (resp) {
-                console.log(resp)
+                hiddenLoader();
+                console.log(resp);
                 // 发生错误时处理逻辑
                 callMessage(-1, "***哎呀出错啦，请稍后再试吧！");
                 // 注册失败需要切换验证码
@@ -328,11 +321,13 @@ function doFinalForgetPasswordBtnListener(isCancelld) {
     }
 
     if (!isCancelld) {
+        showLoader();
         $.ajax({
             url: getProjectPath() + '/user/reset-password',
             type: 'POST',
             data: doSingleDataToJson(emailVal),
             success: (resp) => {
+                hiddenLoader();
                 callMessage(resp.code, resp.msg);
 
                 if (resp.code === 0) {
@@ -342,6 +337,7 @@ function doFinalForgetPasswordBtnListener(isCancelld) {
             },
             error: (resp) => {
                 console.log("Error: " + resp);
+                hiddenLoader();
             }
         });
     }

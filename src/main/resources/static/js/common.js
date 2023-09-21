@@ -130,3 +130,19 @@ function getRealContent(content) {
 
     return null;
 }
+
+/**
+ * 加载显示
+ */
+function showLoader() {
+    let processElem = document.querySelector('.process-background');
+    processElem.style.display = 'block';
+}
+
+/**
+ * 加载隐藏
+ */
+function hiddenLoader() {
+    let processElem = document.querySelector('.process-background');
+    processElem.style.display = 'none';
+}
